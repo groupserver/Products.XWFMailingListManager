@@ -202,12 +202,15 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
                 curr_thread_results.append(result)
             else: # new thread
                 if curr_thread_results:
-                    fr = curr_thread_results[0]
                     threads.append((len(curr_thread_results),
                                     curr_thread_results))
                 curr_thread_results = [result]
                 curr_thread = result.mailSubject
 
+        if curr_thread_results:
+            threads.append((len(curr_thread_results),
+                            curr_thread_results))
+                            
         threads.sort(thread_sorter)
 
         (b_start, b_end, b_size, result_size, result_set) = createBatch(threads, b_start, b_size)
