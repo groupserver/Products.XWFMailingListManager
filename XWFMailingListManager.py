@@ -25,6 +25,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
 
     """
     security = ClassSecurityInfo()
+    security.setPermissionDefault('View', ('Manager',))
     
     meta_type = 'XWF Mailing List Manager'
     version = 0.38
@@ -102,7 +103,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
             apply(self.set_metadataIndex, mdi)
         
         return True
-        
+       
+    security.declareProtected('Add Mail Boxers','manage_afterAdd') 
     def manage_afterAdd(self, item, container):
         """ For configuring the object post-instantiation.
                         
@@ -152,12 +154,14 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         
         return True
 
+    security.declareProtected('View','get_catalog')
     def get_catalog(self):
         """ Get the catalog associated with this file library.
         
         """
         return self.Catalog
 
+    security.declareProtected('View','find_email')
     def find_email(self, query):
         """ Return the catalog 'brains' objects representing the results of
         our query.
@@ -167,12 +171,29 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         
         return catalog.searchResults(query)
 
+    security.declareProtected('View','get_list')
     def get_list(self, list_id):
         """ Get a contained list, given the list ID.
         
         """
         return getattr(self.aq_explicit, list_id)
 
+    security.declareProtected('View','get_listPropertiesFromMailto')
+    def get_listPropertiesFromMailto(self, mailto):
+        """ Get a contained list, given the list mailto.
+        
+        """
+        list_props = {}
+        for listobj in self.objectValues('XWF Mailing List'):
+            if getattr(listobj, 'mailto', None) == mailto:
+                for prop in self._properties:
+                    pid = prop['id']
+                    list_props[pid] = getattr(listobj, pid, None)
+                list_props['id'] = listobj.getId()
+                return list_props
+        return {}
+
+    security.declareProtected('View','get_listProperty')
     def get_listProperty(self, list_id, property, default=None):
         """ Get the given property of the given list_id.
         
