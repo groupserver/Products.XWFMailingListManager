@@ -171,7 +171,7 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
         message_id = None
         if email_id:
             orig_email = self.get_email(email_id)
-            subject = 'Re: %s' % orig_email.getProperty('subject')
+            subject = 'Re: %s' % orig_email.getProperty('mailSubject')
             message_id = orig_email.getProperty('message-id', '')
             
         name = '%s %s' % (user.preferredName, user.lastName)
