@@ -307,6 +307,20 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         else:
             return """"""
 
+    def get_list(self, list_id):
+        """ Get a contained list, given the list ID.
+        
+        """
+        return getattr(self.aq_explicit, list_id)
+
+    def get_listProperty(self, list_id, property, default=None):
+        """ Get the given property of the given list_id.
+        
+        """
+        list = self.get_list(list_id)
+                
+        return list.getProperty(property, default)
+
     security.declareProtected('Upgrade objects', 'upgrade')
     security.setPermissionDefault('Upgrade objects', ('Manager', 'Owner'))
     def upgrade(self):

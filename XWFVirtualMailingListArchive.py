@@ -72,6 +72,17 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
             
         return self.restrictedTraverse(self.xwf_mailing_list_manager_path)
 
+    def get_listProperty(self, list_id, property, default=None):
+        """ Get the given property of a given list or return the default.
+        
+        """
+        if list_id not in self.xwf_mailing_list_ids:
+            raise (XWFVirtualListError,
+                  'Unable to retrieve list_id %s, list not registered' % list_id)
+        list_manager = self.get_xwfMailingListManager()
+        
+        return list_manager.get_listProperty(list_id, property, default)
+
     def get_xml(self, set_top=0):
         """ Generate an XML representation of this folder.
         
