@@ -140,7 +140,7 @@ class XWFMailingList(MailBoxer):
         id_string = '[%s]' % self.getProperty('title')
         Subject = Subject.replace(id_string, '').strip()
         
-        if Subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
+        if Subject.lower().find('re:', 0, 3) == 0 and len(Subject) > 3:
             Subject = Subject[3:].strip()
             mailObject.manage_addProperty('mailSubject', Subject, 'string')
         elif len(Subject) == 0:
