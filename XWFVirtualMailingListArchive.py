@@ -228,14 +228,12 @@ Subject: %s
         
         return presentation.email(result_set=result_set)
         
-    def view_threads(self, REQUEST, b_start=1, b_size=20, s_on='mailDate', s_order='desc'):
-        """ Return the threaded view.
-        
-        """
-        from DocumentTemplate import sequence
-        presentation = self.Presentation.Tofu.MailingListManager.xml
-        
-        def thread_sorter(a, b):
+    def thread_results(self, REQUEST, bstart, bsize, s_on, s_order):
+	""" Get a thread result set.
+	
+	"""
+	from DocumentTemplate import sequence
+	def thread_sorter(a, b):
             if s_on in ('mailDate', 'mailSubject'):
                 a = getattr(a[1][0], s_on); b = getattr(b[1][0], s_on)
             elif s_on in ('mailCount', ):
@@ -271,12 +269,36 @@ Subject: %s
                             
         threads.sort(thread_sorter)
 
-        (b_start, b_end, b_size, result_size, result_set) = createBatch(threads, b_start, b_size)
+        return createBatch(threads, b_start, b_size)
         
-        return presentation.threaded(result_set=result_set,
-                                     b_start=b_start+1, b_size=b_size, b_end=b_end,
-                                     result_size=result_size)
-    
+    def view_threads(self, REQUEST, b_start=1, b_size=20, s_on='mailDate', s_order='desc'):
+        """ Return the threaded view.
+        
+        """
+        presentation = self.Presentation.Tofu.MailingListManager.xml
+        presenter = getattr(presentation, 'threaded')
+	
+	(b_start, b_end, b_size, 
+	 result_size, result_set) = self.thread_results(REQUEST, b_start, b_size, s_on, s_order)
+	
+        return presenter(result_set=result_set,
+                         b_start=b_start+1, b_size=b_size, b_end=b_end,
+                         result_size=result_size)
+
+    def view_thread_rss(self, REQUEST, b_start=1, b_size=20, s_on='mailDate', s_order='desc'):
+        """ Return the threaded view.
+        
+        """
+        presentation = self.Presentation.Tofu.MailingListManager.xml
+        presenter = getattr(presentation, 'threaded.rss')
+
+        (b_start, b_end, b_size, 
+	 result_size, result_set) = self.thread_results(REQUEST, b_start, b_size, s_on, s_order)
+	
+        return presenter(result_set=result_set,
+                         b_start=b_start+1, b_size=b_size, b_end=b_end,
+                         result_size=result_size)
+        
     def view_search(self):
         """ Return the search view.
         
