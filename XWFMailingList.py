@@ -116,7 +116,7 @@ class XWFMailingList(MailBoxer):
         member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
         uids = []
         for gid in member_groups:
-            group = self.acl_users.getGroupById(gid)        
+            group = self.acl_users.getGroupById(gid)
             uids += group.getUsers()
         users = []
         for uid in uids:
@@ -306,6 +306,108 @@ class XWFMailingList(MailBoxer):
         self.catalogMailBoxerMail(mailObject)
 
         return mailObject
+    
+    def checkMail(self, REQUEST):
+        # richard@iopen.net: this is mostly the same as the MailBoxer parent,
+        # only with notification.
+        
+        # Check for ip, loops and spam.
+        
+        # Check for correct IP
+        mtahosts = self.getValueFor('mtahosts')
+        if mtahosts:
+            if 'HTTP_X_FORWARDED_FOR' in self.REQUEST.environ.keys():
+                REMOTE_IP = self.REQUEST.environ['HTTP_X_FORWARDED_FOR']
+            else:
+                REMOTE_IP = self.REQUEST.environ['REMOTE_ADDR']
+
+            if REMOTE_IP not in mtahosts:
+                message = 'Host %s is not allowed' % (REMOTE_IP)
+                LOG('MailBoxer', PROBLEM,  message)
+                return message
+
+        # Check for x-mailer-loop
+        mailString = self.getMailFromRequest(REQUEST)
+        (header, body) = self.splitMail(mailString)
+
+        if header.get('x-mailer') == self.getValueFor('xmailer'):
+            message = 'Mail already processed'
+            LOG('MailBoxer', PROBLEM, message)
+            return(message)
+
+        # Check for empty return-path => automatic mail
+        if header.get('return-path', '') == '<>':
+            self.bounceMail(REQUEST)
+            message = 'Automated response detected from %s' % (header.get('from',
+                                                                          '<>'))
+            LOG('MailBoxer', PROBLEM, message)
+            return (message)
+
+        # Check for hosed denial-of-service-vacation mailers
+        # or other infinite mail-loops...
+        sender = self.mime_decode_header(header.get('from', 'No Sender'))
+        (name, email) = rfc822.parseaddr(sender)
+        email = email.lower()
+
+        disabled = list(self.getValueFor('disabled'))
+
+        if email in disabled:
+            message = '%s is disabled.' % sender
+            LOG('MailBoxer', PROBLEM, message)
+            return message
+
+        senderlimit = self.getValueFor('senderlimit')
+        senderinterval = self.getValueFor('senderinterval')
+
+        if senderlimit and senderinterval:
+            sendercache = self.sendercache
+
+            ntime = int(DateTime())
+
+            if sendercache.has_key(email):
+                sendercache[email].insert(0, ntime)
+            else:
+                sendercache[email] = [ntime]
+            
+            etime = ntime-senderinterval
+            count = 0
+            for atime in sendercache[email]:
+                if atime > etime:
+                    count += 1
+                else:
+                    break
+
+            # prune our cache back to the time intervall
+            sendercache[email] = sendercache[email][:count]
+            self.sendercache = sendercache
+
+            if count > senderlimit:
+                #if email not in disabled:
+                #    self.setValueFor('disabled', disabled + [email])
+                user = self.acl_users.get_userByEmail(email)
+                user.send_notification('sender_limit_exceeded', self.listId())
+                message = ('Sender %s has sent %s mails in %s seconds' %
+                                              (sender, count, senderinterval))
+                LOG('MailBoxer', PROBLEM, message)
+                return message
+
+        # Check for spam
+        for regexp in self.getValueFor('spamlist'):
+            if regexp and re.search(regexp, mailString):
+                message = 'Spam detected: %s\n\n%s\n' % (regexp, mailString)
+                LOG('MailBoxer', PROBLEM, message)
+                return message
+        
+        # GroupServer specific checks
+        blocked_members = self.getProperty('blocked_members')
+        if blocked_members:
+            user = self.acl_users.get_userByEmail(email)
+            if user and user.getId() in blocked_members:
+                message = 'Blocked user: %s from posting' % user.getId()
+                LOG('MailBoxer', PROBLEM, message)
+                user.send_notification('post_blocked', self.listId())
+                return message
+                
 
     def requestMail(self, REQUEST):
         # Handles un-/subscribe-requests.
