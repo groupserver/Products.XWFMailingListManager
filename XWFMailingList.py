@@ -135,13 +135,18 @@ class XWFMailingList(MailBoxer):
         
         # and now add some properties to our new mailobject 
         mailObject.manage_addProperty('mailFrom', From, 'string')
-        if Subject.lower().find('re:', 0, 3):
-            mailObject.manage_addProperty('mailSubject', Subject, 'string')
-        elif len(Subject) > 3:
-            mailObject.manage_addProperty('mailSubject', Subject[3:].strip(), 'string')
-        else:
-            mailObject.manage_addProperty('mailSubject', Subject, 'string')
         
+        # correct the subject so we don't have the list id in it
+        id_string = '[%s]' % self.getProperty('title')
+        Subject = Subject.replace(id_string, '').strip()
+        
+        if Subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
+            Subject = Subject[3:].strip()
+            mailObject.manage_addProperty('mailSubject', Subject, 'string')
+        elif len(Subject) == 0:
+            Subject = 'No Subject'
+        
+        mailObject.manage_addProperty('mailSubject', Subject, 'string')
         mailObject.manage_addProperty('mailDate', time, 'date')
         mailObject.manage_addProperty('mailBody', mailBody, 'text')
         
@@ -174,7 +179,33 @@ class XWFMailingList(MailBoxer):
             getattr(self, self.catalog).catalog_object(mailObject)
     
         return mailObject
-    
+        
+    def reindex_mailObjects(self):
+        """ Reindex the mailObjects that we contain.
+             
+        """
+        for object in self.archive.objectValues('Folder'):
+            if hasattr(object, 'mailFrom'):
+                pp = '/'.join(indexable.getPhysicalPath())
+                self.Catalog.uncatalog_object(pp)
+                self.Catalog.catalog_object(indexable, pp)
+         
+        return indexables
+        
+    def correct_subjects(self):
+        """ Correct the subject line by stripping out the group id.
+        
+        """
+        id_string = '[%s]' % self.getProperty('title')
+        subjects = []
+        for object in self.archive.objectValues('Folder'):
+            if hasattr(object, 'mailFrom'):
+                subject = object.getProperty('mailSubject')
+                subject = subject.replace(id_string, '').strip()
+                object.mailSubject = subject
+        
+        return 1
+        
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt',
     globals(),
