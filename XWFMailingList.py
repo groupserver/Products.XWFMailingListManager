@@ -359,8 +359,55 @@ class XWFMailingList(MailBoxer):
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
             return email
+    
+    def manage_digestBoxer(self, REQUEST):
+        """ Send out a digest of topics to users who have
+	    requested it.
+        
+	"""
+        memberlist = self.lowerList(self.getValueFor('digestlist'))
+        maillist = []
+        for email in memberlist:
+            if '@' in email and email not in maillist:
+                maillist.append(email)
+        
+	digest = self.xwf_email_topic_digest(self, REQUEST, list_object=self,
+                                                   getValueFor=self.getValueFor)
+        
+        if ((MaildropHostIsAvailable and
+             getattr(self, "MailHost").meta_type=='Maildrop Host')
+            or (SecureMailHostIsAvailable and
+                getattr(self, "MailHost").meta_type=='Secure Mail Host')):
+            TransactionalMailHost = getattr(self, "MailHost")
+            # Deliver each mail on its own with a transactional MailHost
+            batchsize = 1
+        else:
+            TransactionalMailHost = None
+            batchsize = self.getValueFor('batchsize')
+        
+        # start batching mails
+        while maillist:
+            # if no batchsize is set (default)
+            # or batchsize is greater than maillist,
+            # bulk all mails in one batch,
+            # otherwise bulk only 'batch'-mails at once
 
+            if (batchsize == 0) or (batchsize > len(maillist)):
+                batch = len(maillist)
+            else:
+                batch = batchsize
+            
+            if TransactionalMailHost:
+                TransactionalMailHost._send(returnpath, maillist[0:batch], newMail)
+            else:
+                smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
+                                          int(self.MailHost.smtp_port))
+                smtpserver.sendmail(returnpath, maillist[0:batch], newMail)
+                smtpserver.quit()
 
+            # remove already bulked addresses
+            maillist = maillist[batch:]
+            	
     security.declareProtected('Manage properties','manage_addMember')
     def manage_addMember(self, email):
         """ Add member to group. """
