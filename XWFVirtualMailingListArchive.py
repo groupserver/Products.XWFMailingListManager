@@ -147,6 +147,19 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
         presentation = self.Presentation.Tofu.MailingListManager.xml
         
         return presentation.default()
+
+    def view_send_email(self, id=None):
+        """ Return the email view.
+        
+        """
+        presentation = self.Presentation.Tofu.MailingListManager.xml
+        
+        if id:
+            email_object = self.get_email(id)
+        else:
+            email_object = None
+            
+        return presentation.sendemail(email_object=email_object)
         
     def view_email(self, id, show_thread=0):
         """ Return the email view.
