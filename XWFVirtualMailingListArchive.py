@@ -228,7 +228,7 @@ Subject: %s
         
         return presentation.email(result_set=result_set)
         
-    def thread_results(self, REQUEST, bstart, bsize, s_on, s_order):
+    def thread_results(self, REQUEST, b_start, b_size, s_on, s_order):
 	""" Get a thread result set.
 	
 	"""
