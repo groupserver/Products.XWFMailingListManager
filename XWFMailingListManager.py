@@ -69,6 +69,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         self._setupMetadata()
         self._setupProperties()
         
+        self.__initialised = 0
+        
     def _setupProperties(self):
         """ Setup the properties to be provided by default in the manager.
         
@@ -135,6 +137,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """ For configuring the object post-instantiation.
                         
         """
+        if getattr(self, '__initialised', 0):
+            return 1
+            
         item._setObject('Catalog', XWFCatalog())
         
         wordsplitter = Record()
@@ -331,6 +336,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         if currversion == self.version:
             return 'already running latest version (%s)' % currversion
 
+        self.__initialised = 1
         self._setupMetadata()
         self._setupProperties()
         self._version = self.version
@@ -338,11 +344,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         return 'upgraded %s to version %s from version %s' % (self.getId(),
                                                               self._version,
                                                               currversion)
-                                                              
-    # an example of using value checking -- DOCUMENT ME PROPERLY!
-    #def check_foo(self, value):
-    #    """ Check the value for foo """
-    #    return 'foobar'
 
 manage_addXWFMailingListManagerForm = PageTemplateFile(
     'management/manage_addXWFMailingListManagerForm.zpt',
