@@ -108,7 +108,7 @@ class XWFMailingList(MailBoxer):
         # Use manage_changeProperties as default for setting properties
         prop_loc.manage_changeProperties({key:value})
         
-    security.declarePrivate('getMemberUserObjects')
+    security.declareProtected('Manage properties','getMemberUserObjects')
     def get_memberUserObjects(self):
         """ Get the user objects corresponding to the membership list, assuming we can.
         
@@ -301,7 +301,7 @@ class XWFMailingList(MailBoxer):
             Catalog.catalog_object(mailObject)
         return mailObject
     
-    security.declarePrivate('get_mailUserId')
+    security.declareProtected('Manage properties','getMemberUserObjects')
     def get_mailUserId(self, from_addrs=[]):
         member_users = self.get_memberUserObjects()
         for addr in from_addrs:
@@ -313,6 +313,7 @@ class XWFMailingList(MailBoxer):
                         
         return sender_id
     
+    security.declareProtected('Manage properties','reindex_mailObjects')
     def reindex_mailObjects(self):
         """ Reindex the mailObjects that we contain.
              
