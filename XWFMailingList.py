@@ -108,7 +108,7 @@ class XWFMailingList(MailBoxer):
         # Use manage_changeProperties as default for setting properties
         prop_loc.manage_changeProperties({key:value})
         
-    security.declareProtected('Manage properties','getMemberUserObjects')
+    security.declareProtected('Manage properties','get_memberUserObjects')
     def get_memberUserObjects(self):
         """ Get the user objects corresponding to the membership list, assuming we can.
         
@@ -125,29 +125,87 @@ class XWFMailingList(MailBoxer):
                 users.append(user)
                 
         return users
+    
+    security.declareProtected('Manage properties','get_moderatedUserObjects')
+    def get_moderatedUserObjects(self):
+        """ Get the user objects corresponding to the moderated list, assuming we can.
+        
+        """
+        member_groups = self.getProperty('moderated_groups', [])
+        uids = []
+        for gid in member_groups:
+            group = self.acl_users.getGroupById(gid)
+            uids += group.getUsers()
+        
+        uids += self.getProperty('moderated_members', [])
+        
+        users = []
+        for uid in uids:
+            user = self.acl_users.getUser(uid)
+            if user:
+                users.append(user)
+                
+        return users
+    
+    security.declareProtected('Manage properties','get_moderatorUserObjects')
+    def get_moderatorUserObjects(self):
+        """ Get the user objects corresponding to the moderator, assuming we can.
+        
+        """
+        member_groups = self.getProperty('moderator_groups', [])
+        uids = []
+        for gid in member_groups:
+            group = self.acl_users.getGroupById(gid)
+            uids += group.getUsers()
+        
+        uids += self.getProperty('moderator_members', [])
+        
+        users = []
+        for uid in uids:
+            user = self.acl_users.getUser(uid)
+            if user:
+                users.append(user)
+                
+        return users
        
     security.declareProtected('Access contents information', 'getValueFor')
     def getValueFor(self, key):
-        # getting the maillist is a special case, working in with the
+        # getting the maillist and moderatedlist is a special case, working in with the
         # XWFT group framework
         pass_group_id = False
-        if key in ('digestmaillist', 'maillist', 'mailinlist'):
+        if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist','mailinlist'):
+            maillist = []
             if key in ('digestmaillist', 'maillist'):
                 address_getter = 'get_deliveryEmailAddressesByKey'
+                member_getter = 'get_memberUserObjects'
                 #address_getter = 'get_preferredEmailAddresses'
                 pass_group_id = True
                 maillist_script = getattr(self, 'maillist_members', None)
+            elif key in ('moderator',):
+                address_getter = 'get_emailAddresses'
+                member_getter = 'get_moderatorUserObjects'
+                maillist_script = None
+                maillist = self.aq_inner.getProperty('moderator', [])
+                if not maillist:
+                    maillist = self.aq_parent.getProperty('moderator',[])
+            elif key in ('moderatedlist',):
+                address_getter = 'get_emailAddresses'
+                member_getter = 'get_moderatedUserObjects'
+                maillist_script = None
+                maillist = self.aq_inner.getProperty('moderatedlist', [])
+                if not maillist:
+                    maillist = self.aq_parent.getProperty('moderatedlist',[])
             else:
                 address_getter = 'get_emailAddresses'
+                member_getter = 'get_memberUserObjects'
                 maillist_script = getattr(self, 'mailinlist_members', None)
                 
             # look for a maillist script
             if maillist_script:
                 return maillist_script()
                 
-            maillist = []
             try:
-                users = self.get_memberUserObjects()
+                users = getattr(self, member_getter)()
                 for user in users:
                     # we're looking to send out regular email, but this user is set to digest
                     if key == 'maillist' and user.get_deliverySettingsByKey(self.getId()) == 3:
@@ -173,7 +231,7 @@ class XWFMailingList(MailBoxer):
             if maillist == None:
                 maillist = self.getProperty('maillist', [])
             
-            return maillist
+            return maillist    
         
         # Again, look for the property locally, then assume it is in the parent
         if self.aq_inner.hasProperty(key):
@@ -498,7 +556,7 @@ class XWFMailingList(MailBoxer):
         """ Send out a digest of topics to users who have
 	    requested it.
         
-	"""
+	    """
         memberlist = self.lowerList(self.getValueFor('digestmaillist'))
         maillist = []
         for email in memberlist:
