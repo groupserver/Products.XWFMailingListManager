@@ -424,6 +424,23 @@ class XWFMailingList(MailBoxer):
         
         memberlist = self.lowerList(self.getValueFor('mailinlist'))
         
+        # process digest commands
+        if email.lower() in memberlist:
+            user = self.acl_users.get_userByEmail(email)
+            digest_on = re.match('(?i)digest on', subject.strip())
+            if user and digest_on:
+                user.set_enableDigestByKey(self.getId())
+                self.mail_digest_on(self, REQUEST, mail=header, body=body)
+                
+                return email
+            
+            digest_off = re.match('(?i)digest off', subject.strip())
+            if user and digest_off:
+                user.set_disableDigestByKey(self.getId())
+                self.mail_digest_off(self, REQUEST, mail=header, body=body)
+                
+                return email 
+                
         # subscription? only subscribe if subscription is enabled.
         subscribe = self.getValueFor('subscribe')
         if (subscribe <> '' and
@@ -716,6 +733,60 @@ class XWFMailingList(MailBoxer):
             returnpath = self.getValueFor('moderator')[0]
             
         reply = getattr(self, 'xwf_email_unsubscribe_key', None)
+        
+        email_address = mail['from']
+        
+        if reply:
+            reply_text = reply(REQUEST, list_object=context,
+                                   getValueFor=self.getValueFor,
+                                   mail=mail, body=body)
+            smtpserver.sendmail(returnpath, [email_address], reply_text)
+        else:
+            pass
+            
+        smtpserver.quit()
+
+    security.declarePrivate('mail_digest_on')
+    def mail_digest_on(self, context, REQUEST, mail=None, body=''):
+        """ Send out a message that the digest feature has been turned on.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, 'xwf_email_digest_on', None)
+        
+        email_address = mail['from']
+        
+        if reply:
+            reply_text = reply(REQUEST, list_object=context,
+                                   getValueFor=self.getValueFor,
+                                   mail=mail, body=body)
+            smtpserver.sendmail(returnpath, [email_address], reply_text)
+        else:
+            pass
+            
+        smtpserver.quit()
+
+    security.declarePrivate('mail_digest_off')
+    def mail_digest_off(self, context, REQUEST, mail=None, body=''):
+        """ Send out a message that the digest feature has been turned off.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, 'xwf_email_digest_off', None)
         
         email_address = mail['from']
         
