@@ -326,8 +326,6 @@ class XWFMailingList(MailBoxer):
         
         return True
     
-    def get_userFromEmail(
-    
     security.declarePrivate('mail_reply')
     def mail_reply(self, context, REQUEST, mail=None, body=''):
         """ A hook used by the MailBoxer framework, which we provide here as
@@ -410,3 +408,4 @@ def initialize(context):
         constructors=(manage_addXWFMailingListForm,
                       manage_addXWFMailingList),
         )
+        
