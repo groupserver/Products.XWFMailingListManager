@@ -202,6 +202,8 @@ class XWFMailingList(MailBoxer):
             if hasattr(object, 'mailFrom'):
                 subject = object.getProperty('mailSubject')
                 subject = subject.replace(id_string, '').strip()
+                if subject == '':
+                    subject = 'No Subject'
                 object.mailSubject = subject
         
         return 1
