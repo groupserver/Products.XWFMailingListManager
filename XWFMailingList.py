@@ -279,7 +279,7 @@ class XWFMailingList(MailBoxer):
                  'from': ('lines', convert_addrs),
                  'to': ('lines', convert_addrs),
                  'received': ('lines', null_convert),}
-                 
+        
         for key in header.keys():
             if key in types:
                 mailObject.manage_addProperty(key,
@@ -290,6 +290,9 @@ class XWFMailingList(MailBoxer):
                                               self.mime_decode_header(header.get(key,'')),
                                               'text')
         
+        sender_id = self.get_mailUserId(mailObject.getProperty('from', []))
+        mailObject.manage_addProperty('mailUserId', sender_id, 'string')
+        
         # Index the new created mailFolder in the catalog
         Catalog = self.unrestrictedTraverse(self.getValueFor('catalog'),
                                             default=None)
@@ -297,6 +300,18 @@ class XWFMailingList(MailBoxer):
         if Catalog is not None:
             Catalog.catalog_object(mailObject)
         return mailObject
+    
+    security.declarePrivate('get_mailUserId')
+    def get_mailUserId(self, from_addrs=[]):
+        member_users = self.get_memberUserObjects()
+        for addr in from_addrs:
+            for member_user in member_users:
+                addrs = member_user.getProperty('emailAddresses', [])
+                for member_addr in addrs:
+                    if member_addr.lower() == addr.lower():
+                        return member_user.getId()
+                        
+        return sender_id
     
     def reindex_mailObjects(self):
         """ Reindex the mailObjects that we contain.
