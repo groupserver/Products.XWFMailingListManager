@@ -111,9 +111,15 @@ class XWFMailingList(MailBoxer):
     def getValueFor(self, key):
         # getting the maillist is a special case, working in with the
         # XWFT group framework
-        if key == 'maillist':
+        if key in ('maillist', 'mailinlist'):
+            if key == 'maillist':
+                address_getter = 'get_preferredEmailAddresses'
+                maillist_script = getattr(self, 'maillist_members', None)
+            else:
+                address_getter = 'get_emailAddresses'
+                maillist_script = getattr(self, 'mailinlist_members', None)
+                
             # look for a maillist script
-            maillist_script = getattr(self, 'maillist_members', None)
             if maillist_script:
                 return maillist_script()
                 
@@ -126,7 +132,11 @@ class XWFMailingList(MailBoxer):
                     uids += group.getUsers()
                 for uid in uids:
                     user = self.acl_users.getUser(uid)
-                    for email in user.get_preferredEmailAddresses():
+                    try:
+                        addresses = getattr(user, address_getter)()
+                    except:
+                        continue
+                    for email in addresses:
                         email = email.strip()
                         if email and email not in maillist:
                             maillist.append(email)
@@ -148,6 +158,10 @@ class XWFMailingList(MailBoxer):
     def get_maillist(self):
         """ """
         return self.getValueFor('maillist')
+    
+    def get_mailinlist(self):
+        """ """
+        return self.getValueFor('mailinlist')
     
     def listId(self):
         """ Mostly intended to be tracked by the catalog, to allow us to
