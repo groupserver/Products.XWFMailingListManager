@@ -186,9 +186,9 @@ class XWFMailingList(MailBoxer):
         """
         for object in self.archive.objectValues('Folder'):
             if hasattr(object, 'mailFrom'):
-                pp = '/'.join(indexable.getPhysicalPath())
+                pp = '/'.join(object.getPhysicalPath())
                 self.Catalog.uncatalog_object(pp)
-                self.Catalog.catalog_object(indexable, pp)
+                self.Catalog.catalog_object(object, pp)
          
         return indexables
         
