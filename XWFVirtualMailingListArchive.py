@@ -159,7 +159,8 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
         """
         list_manager = self.get_xwfMailingListManager()
         
-        user = security.getUser()
+        sec = getSecurityManager()
+        user = sec.getUser()
         if email_address not in user.get_emailAddresses():
             raise 'Forbidden', 'Only the authenticated owner of an email address may use it to post'
         
