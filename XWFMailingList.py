@@ -167,11 +167,11 @@ class XWFMailingList(MailBoxer):
                         if email and email not in maillist:
                             maillist.append(email)
             except:
-                pass
+                maillist = None
             
             # last ditch effort
-            if not maillist:
-                maillist = self.getProperty('maillist')  
+            if maillist == None:
+                maillist = self.getProperty('maillist', [])
             
             return maillist
         
