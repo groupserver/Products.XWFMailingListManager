@@ -367,7 +367,7 @@ class XWFMailingList(MailBoxer):
 
         user = self.acl_users.get_userByEmail(email)
         if user:
-           user.add_groupWithNotification('%s_member' % self.getId())
+            user.add_groupWithNotification('%s_member' % self.getId())
         
         return 1
 
@@ -375,7 +375,11 @@ class XWFMailingList(MailBoxer):
     def manage_delMember(self, email):
         """ Remove member from group. """
         
-        pass
+        user = self.acl_users.get_userByEmail(email)
+        if user:
+            user.del_groupWithNotification('%s_member' % self.getId())
+        
+        return 1
 
     security.declareProtected('Manage properties','getMemberUserObjects')
     def get_mailUserId(self, from_addrs=[]):
