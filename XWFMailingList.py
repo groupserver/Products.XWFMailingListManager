@@ -60,7 +60,19 @@ class XWFMailingList(MailBoxer):
         self.title = title
         self.mailto = mailto
         self.hashkey = str(random.random())
-            
+    
+    def get_property(self, id):
+        """
+        
+        """
+        return getattr(aq_base(self), id)
+    
+    def del_property(self, id):
+        """ 
+        
+        """
+        return delattr(aq_base(self), id)
+    
     def init_properties(self):
         """ Tidy up the property sheet, since we don't want to control most of
         the properties that have already been defined in the parent MailingListManager.
@@ -72,11 +84,8 @@ class XWFMailingList(MailBoxer):
         for item in self._properties:
             if item['id'] not in delete_properties:
                 props.append(item)
-            else:
-                try:
-                    delattr(self, property)
-                except:
-                    pass
+            else:         
+                delattr(aq_base(self), item['id'])
                     
         self._properties = tuple(props)
         self._p_changed = 1
