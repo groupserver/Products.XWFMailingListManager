@@ -311,7 +311,7 @@ class XWFMailingList(MailBoxer):
                     if member_addr.lower() == addr.lower():
                         return member_user.getId()
                         
-        return sender_id
+        return ''
     
     security.declareProtected('Manage properties','reindex_mailObjects')
     def reindex_mailObjects(self):
