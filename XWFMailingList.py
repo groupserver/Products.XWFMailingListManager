@@ -313,7 +313,33 @@ class XWFMailingList(MailBoxer):
         
         return True
     
-    security.declarePrivate('mail_header')    
+    security.declarePrivate('mail_reply')
+    def mail_reply(self, context, REQUEST, mail=None, body=''):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, 'xwf_email_reply', None)
+        
+        email_address = mail['from']
+        
+        if reply:
+            reply_text = reply(REQUEST, list_object=context, mail=mail, body=body)
+            smtpserver.sendmail(returnpath, [email_address], reply_text)
+        else:
+            pass
+            
+        smtpserver.quit()
+    
+    security.declarePrivate('mail_header')
     def mail_header(self, context, REQUEST, getValueFor=None, title='', mail=None, body=''):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
