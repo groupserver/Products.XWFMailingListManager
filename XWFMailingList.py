@@ -336,7 +336,7 @@ class XWFMailingList(MailBoxer):
                         nparts = name.split()
                         if len(nparts) >= 2:
                             first_name = nparts[0]
-                            last_name = nparts[1:]
+                            last_name = ' '.join(nparts[1:])
                         elif len(nparts) == 1:
                             first_name = last_name = nparts[0]
                         else:
@@ -377,7 +377,7 @@ class XWFMailingList(MailBoxer):
 	    requested it.
         
 	"""
-        memberlist = self.lowerList(self.getValueFor('maillist'))
+        memberlist = self.lowerList(self.getValueFor('digestmaillist'))
         maillist = []
         for email in memberlist:
             if '@' in email and email not in maillist:
