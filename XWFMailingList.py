@@ -108,6 +108,24 @@ class XWFMailingList(MailBoxer):
         # Use manage_changeProperties as default for setting properties
         prop_loc.manage_changeProperties({key:value})
         
+    security.declarePrivate('getMemberUserObjects')
+    def get_memberUserObjects(self):
+        """ Get the user objects corresponding to the membership list, assuming we can.
+        
+        """
+        member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
+        uids = []
+        for gid in member_groups:
+            group = self.acl_users.getGroupById(gid)        
+            uids += group.getUsers()
+        users = []
+        for uid in uids:
+            user = self.acl_users.getUser(uid)
+            if user:
+                users.append(user)
+                
+        return users
+       
     security.declareProtected('Access contents information', 'getValueFor')
     def getValueFor(self, key):
         # getting the maillist is a special case, working in with the
@@ -126,13 +144,8 @@ class XWFMailingList(MailBoxer):
                 
             maillist = []
             try:
-                member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
-                uids = []
-                for gid in member_groups:
-                    group = self.acl_users.getGroupById(gid)        
-                    uids += group.getUsers()
-                for uid in uids:
-                    user = self.acl_users.getUser(uid)
+                users = self.get_memberUserObjects()
+                for user in users:
                     try:
                         addresses = getattr(user, address_getter)()
                     except:
@@ -149,7 +162,7 @@ class XWFMailingList(MailBoxer):
                 maillist = self.getProperty('maillist')  
             
             return maillist
-            
+        
         # Again, look for the property locally, then assume it is in the parent
         if self.aq_inner.hasProperty(key):
             return self.aq_inner.getProperty(key)
@@ -284,7 +297,7 @@ class XWFMailingList(MailBoxer):
         if Catalog is not None:
             Catalog.catalog_object(mailObject)
         return mailObject
-                
+    
     def reindex_mailObjects(self):
         """ Reindex the mailObjects that we contain.
              
@@ -312,6 +325,8 @@ class XWFMailingList(MailBoxer):
                 object.mailSubject = subject
         
         return True
+    
+    def get_userFromEmail(
     
     security.declarePrivate('mail_reply')
     def mail_reply(self, context, REQUEST, mail=None, body=''):
