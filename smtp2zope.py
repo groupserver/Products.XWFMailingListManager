@@ -371,8 +371,6 @@ def getAuthorizedURL(url, auth):
      
     urlparts = list(urlparse.urlparse(url))
     urlparts[1] = auth+'@'+urlparts[1]
-    f = file('/home/richard/foo.txt', 'a+')
-    f.write(str(urlparts))
     return urlparse.urlunparse(urlparts)
     
 def eventNotification(url, event_codes, mailString):
