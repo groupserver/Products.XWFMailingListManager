@@ -152,6 +152,9 @@ class XWFMailingList(MailBoxer):
                     # we're looking to send out regular email, but this user is set to digest
                     if key == 'maillist' and user.get_deliverySettingsByKey(self.getId()) == 3:
                         continue
+                    elif key == 'digestmaillist' and user.get_deliverySettingsByKey(self.getId()) != 3:
+                        continue
+
                     try:
                         if pass_group_id:
                             addresses = getattr(user, address_getter)(self.getId())
