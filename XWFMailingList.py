@@ -170,8 +170,10 @@ class XWFMailingList(MailBoxer):
        
     security.declareProtected('Access contents information', 'getValueFor')
     def getValueFor(self, key):
-        # getting the maillist and moderatedlist is a special case, working in with the
-        # XWFT group framework
+        """ getting the maillist and moderatedlist is a special case, working
+            in with the XWFT group framework.
+        
+        """
         pass_group_id = False
         if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist','mailinlist'):
             maillist = []
@@ -206,6 +208,7 @@ class XWFMailingList(MailBoxer):
                 
             try:
                 users = getattr(self, member_getter)()
+                maillist = list(maillist) # make sure we're not a tuple!
                 for user in users:
                     # we're looking to send out regular email, but this user is set to digest
                     if key == 'maillist' and user.get_deliverySettingsByKey(self.getId()) == 3:
@@ -224,7 +227,9 @@ class XWFMailingList(MailBoxer):
                         email = email.strip()
                         if email and email not in maillist:
                             maillist.append(email)
-            except:
+            except Exception, x:
+                LOG('XWFMailingList', PROBLEM,
+                    'A problem was experienced while getting values: %s' % x)
                 maillist = None
             
             # last ditch effort
