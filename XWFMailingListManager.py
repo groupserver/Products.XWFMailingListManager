@@ -171,6 +171,16 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         
         return catalog.searchResults(query)
 
+    security.declareProtected('Manage properties', 'unrestricted_find_email')
+    def unrestricted_find_email(self, query):
+        """ Similar to find email, but using the unrestricted version of
+        searchResults.
+        
+        """
+        catalog = self.get_catalog()
+        
+        return catalog.unrestrictedSearchResults(query)
+
     security.declareProtected('View','get_list')
     def get_list(self, list_id):
         """ Get a contained list, given the list ID.
