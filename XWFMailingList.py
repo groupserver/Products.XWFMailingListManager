@@ -55,24 +55,20 @@ class XWFMailingList(MailBoxer):
         """ Setup a MailBoxer with reasonable defaults.
         
         """
-        import random
-        self.id = id
-        self.title = title
+        MailBoxer.__init__(self, id, title)
+        
         self.mailto = mailto
-        self.hashkey = str(random.random())
-    
-    def get_property(self, id):
-        """
         
-        """
-        return getattr(aq_base(self), id)
-    
-    def del_property(self, id):
-        """ 
+    def valid_property_id(self, id):
+        # A modified version of the 'valid_property_id' in the PropertyManager
+        # class. This one _doesn't_ check for the existence of the ID,
+        # since it might exist in our base class, and we can't remove
+        # things from there
+        if not id or id[:1]=='_' or (id[:3]=='aq_') \
+           or (' ' in id) or escape(id) != id:
+            return False
+        return True
         
-        """
-        return delattr(aq_base(self), id)
-    
     def init_properties(self):
         """ Tidy up the property sheet, since we don't want to control most of
         the properties that have already been defined in the parent MailingListManager.
@@ -84,9 +80,12 @@ class XWFMailingList(MailBoxer):
         for item in self._properties:
             if item['id'] not in delete_properties:
                 props.append(item)
-            else:         
-                delattr(aq_base(self), item['id'])
-                    
+            else:
+                try:
+                    self._delProperty(item['id'])
+                except:
+                    pass
+                
         self._properties = tuple(props)
         self._p_changed = 1
         
@@ -99,6 +98,8 @@ class XWFMailingList(MailBoxer):
     security.declareProtected('Manage properties', 'setValueFor')
     def setValueFor(self, key, value):
         # We look for the property locally, then assume it is in the parent
+        # We don't try to access the property directly, because it might be
+        # defined in our base class, which we can't remove
         if self.aq_inner.hasProperty(key):
             prop_loc = self.aq_inner
         else:
@@ -154,14 +155,6 @@ class XWFMailingList(MailBoxer):
             return self.aq_inner.getProperty(key)
         else:
             return self.aq_parent.getProperty(key)
-    
-    def get_maillist(self):
-        """ """
-        return self.getValueFor('maillist')
-    
-    def get_mailinlist(self):
-        """ """
-        return self.getValueFor('mailinlist')
     
     def listId(self):
         """ Mostly intended to be tracked by the catalog, to allow us to
@@ -356,7 +349,7 @@ manage_addXWFMailingListForm = PageTemplateFile(
 def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
                                      REQUEST=None):
     """ Add an XWFMailingList to a container.
-
+    
     """
     ob = XWFMailingList(id, title, mailto)
     self._setObject(id, ob)
