@@ -131,8 +131,8 @@ class XWFMailingList(MailBoxer):
         # getting the maillist is a special case, working in with the
         # XWFT group framework
         pass_group_id = False
-        if key in ('maillist', 'mailinlist'):
-            if key == 'maillist':
+        if key in ('digestmaillist', 'maillist', 'mailinlist'):
+            if key in ('digestmaillist', 'maillist'):
                 address_getter = 'get_deliveryEmailAddressesByKey'
                 #address_getter = 'get_preferredEmailAddresses'
                 pass_group_id = True
@@ -149,6 +149,9 @@ class XWFMailingList(MailBoxer):
             try:
                 users = self.get_memberUserObjects()
                 for user in users:
+                    # we're looking to send out regular email, but this user is set to digest
+                    if key == 'maillist' and user.get_deliverySettingsByKey(self.getId()) == 3:
+                        continue
                     try:
                         if pass_group_id:
                             addresses = getattr(user, address_getter)(self.getId())
@@ -365,14 +368,19 @@ class XWFMailingList(MailBoxer):
 	    requested it.
         
 	"""
-        memberlist = self.lowerList(self.getValueFor('digestlist'))
+        memberlist = self.lowerList(self.getValueFor('maillist'))
         maillist = []
         for email in memberlist:
             if '@' in email and email not in maillist:
                 maillist.append(email)
         
-	digest = self.xwf_email_topic_digest(self, REQUEST, list_object=self,
-                                                   getValueFor=self.getValueFor)
+        # if no digestreturnpath is set, use first moderator as returnpath
+        returnpath=self.getValueFor('digestreturnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+        
+	digest = self.xwf_email_topic_digest(REQUEST, list_object=self,
+                                             getValueFor=self.getValueFor)
         
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host')
@@ -398,11 +406,11 @@ class XWFMailingList(MailBoxer):
                 batch = batchsize
             
             if TransactionalMailHost:
-                TransactionalMailHost._send(returnpath, maillist[0:batch], newMail)
+                TransactionalMailHost._send(returnpath, maillist[0:batch], digest)
             else:
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
                                           int(self.MailHost.smtp_port))
-                smtpserver.sendmail(returnpath, maillist[0:batch], newMail)
+                smtpserver.sendmail(returnpath, maillist[0:batch], digest)
                 smtpserver.quit()
 
             # remove already bulked addresses
