@@ -130,9 +130,12 @@ class XWFMailingList(MailBoxer):
     def getValueFor(self, key):
         # getting the maillist is a special case, working in with the
         # XWFT group framework
+        pass_group_id = False
         if key in ('maillist', 'mailinlist'):
             if key == 'maillist':
-                address_getter = 'get_preferredEmailAddresses'
+                address_getter = 'get_deliveryEmailAddressesByKey'
+                #address_getter = 'get_preferredEmailAddresses'
+                pass_group_id = True
                 maillist_script = getattr(self, 'maillist_members', None)
             else:
                 address_getter = 'get_emailAddresses'
@@ -147,7 +150,10 @@ class XWFMailingList(MailBoxer):
                 users = self.get_memberUserObjects()
                 for user in users:
                     try:
-                        addresses = getattr(user, address_getter)()
+                        if pass_group_id:
+                            addresses = getattr(user, address_getter)(self.getId())
+                        else:
+                            addresses = getattr(user, address_getter)()
                     except:
                         continue
                     for email in addresses:
@@ -210,7 +216,7 @@ class XWFMailingList(MailBoxer):
         return subject
         
     security.declareProtected('Add Folders','manage_addMail')
-    def manage_addMail(self, Mail):
+    def manage_addMail(self, mailString):
         """ Store mail & attachments in a folder and return it.
         
         """
@@ -222,7 +228,7 @@ class XWFMailingList(MailBoxer):
         if archive is None:
             return None
             
-        (header, body) = self.splitMail(Mail)
+        (header, body) = self.splitMail(mailString)
         
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
@@ -258,22 +264,20 @@ class XWFMailingList(MailBoxer):
         mailObject = getattr(mailFolder, id)
         
         # unpack attachments
-        (TextBody, ContentType, HtmlBody) =  self._unpackMultifile(mailObject, 
-                                                     multifile.MultiFile(
-                                                      StringIO.StringIO(Mail)))
-
+        (TextBody, ContentType, HtmlBody, Attachments) = self.unpackMail(
+                                                              mailString)
         # ContentType is only set for the TextBody
         if ContentType:
             mailBody = TextBody
         else:
             mailBody = self.HtmlToText(HtmlBody)
              
-        # and now add some properties to our new mailobject 
-        mailObject.manage_addProperty('mailFrom', sender, 'string')
-        mailObject.manage_addProperty('mailSubject', subject, 'string')
-        mailObject.manage_addProperty('mailDate', time, 'date')
-        mailObject.manage_addProperty('mailBody', mailBody, 'text')
-        mailObject.manage_addProperty('compressedSubject', compressedsubject, 'string')
+        # and now add some properties to our new mailobject
+        self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender, 'string')
+        self.setMailBoxerMailProperty(mailObject, 'mailSubject', subject, 'string')
+        self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
+        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'text')
+        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'string')       
         
         types = {'date': ('date', convert_date),
                  'from': ('lines', convert_addrs),
@@ -282,25 +286,97 @@ class XWFMailingList(MailBoxer):
         
         for key in header.keys():
             if key in types:
-                mailObject.manage_addProperty(key,
+                self.setMailBoxerMailProperty(mailObject, key,
                                               types[key][1](self.mime_decode_header(header.get(key,''))),
                                               types[key][0])
             else:
-                mailObject.manage_addProperty(key,
+                self.setMailBoxerMailProperty(mailObject, key,
                                               self.mime_decode_header(header.get(key,'')),
                                               'text')
         
         sender_id = self.get_mailUserId(mailObject.getProperty('from', []))
-        mailObject.manage_addProperty('mailUserId', sender_id, 'string')
+        self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'string')
         
-        # Index the new created mailFolder in the catalog
-        Catalog = self.unrestrictedTraverse(self.getValueFor('catalog'),
-                                            default=None)
-                                            
-        if Catalog is not None:
-            Catalog.catalog_object(mailObject)
+        self.catalogMailBoxerMail(mailObject)
+
         return mailObject
-    
+
+    def requestMail(self, REQUEST):
+        # Handles un-/subscribe-requests.
+
+        mailString = self.getMailFromRequest(REQUEST)
+        (header, body) = self.splitMail(mailString)
+
+        # get subject
+        subject = self.mime_decode_header(header.get('subject',''))
+
+        # get email-address
+        sender = self.mime_decode_header(header.get('from',''))
+        (name, email) = self.parseaddr(sender)
+        
+        memberlist = self.lowerList(self.getValueFor('maillist'))
+        
+        # subscription? only subscribe if subscription is enabled.
+        subscribe = self.getValueFor('subscribe')
+        if (subscribe <> '' and
+            re.match('(?i)' + subscribe + "|.*: " + subscribe, subject)):
+
+            if email.lower() not in memberlist:
+                if subject.find(self.pin(sender))<>-1:
+                    self.manage_addMember(email)
+                    self.mail_subscribe(self, REQUEST, mail=header, body=body)
+                else:
+                    user = self.acl_users.get_userByEmail(email)
+                    if user: # if the user exists, send out a subscription email
+                        self.mail_subscribe_key(self, REQUEST, mail=header, body=body)
+                    else: # otherwise handle subscription as part of registration
+                        user_id, password, verification_code = \
+                                 self.acl_users.register_user(email=email,
+                                                              first_name=name)
+                        user = self.acl_users.getUser(user_id)
+                        group_object = self.Scripts.get.group_by_id(self.getId())
+                        division_id = group_object.get_division_id()
+                        user.set_verificationGroups(['%s_member' % self.getId(),
+                                                     '%s_member' % division_id])
+                        user.send_userVerification()
+            else:
+                self.mail_reply(self, REQUEST, mail=header, body=body)
+
+            return email
+
+        # unsubscription? only unsubscribe if unsubscription is enabled...
+        unsubscribe = self.getValueFor('unsubscribe')
+        if (unsubscribe <> '' and
+            re.match('(?i)' + unsubscribe + "|.*: " + unsubscribe, subject)):
+
+            if email.lower() in memberlist:
+                if subject.find(self.pin(sender))<>-1:
+                    self.manage_delMember(email)
+                    self.mail_unsubscribe(self, REQUEST, mail=header, body=body)
+                else:
+                    self.mail_unsubscribe_key(self, REQUEST, mail=header, body=body)
+            else:
+                self.mail_reply(self, REQUEST, mail=header, body=body)
+
+            return email
+
+
+    security.declareProtected('Manage properties','manage_addMember')
+    def manage_addMember(self, email):
+        """ Add member to group. """
+
+        user = self.acl_users.get_userByEmail(email)
+        if user:
+           user.add_groupWithNotification('%s_member' % self.getId())
+        
+        return 1
+
+    security.declareProtected('Manage properties','manage_delMember')
+    def manage_delMember(self, email):
+        """ Remove member from group. """
+        
+        pass
+
     security.declareProtected('Manage properties','getMemberUserObjects')
     def get_mailUserId(self, from_addrs=[]):
         member_users = self.get_memberUserObjects()
@@ -365,6 +441,148 @@ class XWFMailingList(MailBoxer):
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
             pass
+            
+        smtpserver.quit()
+
+    security.declarePrivate('mail_subscribe_key')
+    def mail_subscribe_key(self, context, REQUEST, mail=None, body=''):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, 'xwf_email_subscribe_key', None)
+        
+        email_address = mail['from']
+        
+        if reply:
+            reply_text = reply(REQUEST, list_object=context,
+                                   getValueFor=self.getValueFor,
+                                   mail=mail, body=body)
+            smtpserver.sendmail(returnpath, [email_address], reply_text)
+        else:
+            pass
+            
+        smtpserver.quit()
+
+    security.declarePrivate('mail_subscribe')
+    def mail_subscribe(self, context, REQUEST, mail=None, body=''):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, 'xwf_email_subscribe', None)
+        
+        email_address = mail['from']
+        
+        if reply:
+            reply_text = reply(REQUEST, list_object=context,
+                                   getValueFor=self.getValueFor,
+                                   mail=mail, body=body)
+            smtpserver.sendmail(returnpath, [email_address], reply_text)
+        else:
+            pass
+            
+        smtpserver.quit()
+    
+    security.declarePrivate('mail_unsubscribe')
+    def mail_unsubscribe(self, context, REQUEST, mail=None, body=''):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, 'xwf_email_unsubscribe', None)
+        
+        email_address = mail['from']
+        
+        if reply:
+            reply_text = reply(REQUEST, list_object=context,
+                                   getValueFor=self.getValueFor,
+                                   mail=mail, body=body)
+            smtpserver.sendmail(returnpath, [email_address], reply_text)
+        else:
+            pass
+            
+        smtpserver.quit()
+
+    security.declarePrivate('mail_unsubscribe_key')
+    def mail_unsubscribe_key(self, context, REQUEST, mail=None, body=''):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, 'xwf_email_unsubscribe_key', None)
+        
+        email_address = mail['from']
+        
+        if reply:
+            reply_text = reply(REQUEST, list_object=context,
+                                   getValueFor=self.getValueFor,
+                                   mail=mail, body=body)
+            smtpserver.sendmail(returnpath, [email_address], reply_text)
+        else:
+            pass
+            
+        smtpserver.quit()
+
+    security.declarePrivate('mail_event_default')
+    def mail_event_default(self, context, event_codes, headers):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
+        
+        """
+        import smtplib
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+        
+        email_address = headers.get('from','')
+        seen = []
+        for code in event_codes:
+            if code in seen: continue
+            reply = getattr(self, 'xwf_email_event', None)
+            
+            if reply:
+                reply_text = reply(list_object=context, event_code=code, headers=headers)
+                if reply_text and email_address:
+                    smtpserver.sendmail(returnpath, [email_address], reply_text)
+            else:
+                pass
+            seen.append(code)
             
         smtpserver.quit()
     
