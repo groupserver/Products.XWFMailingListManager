@@ -112,8 +112,8 @@ class XWFMailingList(MailBoxer):
             try:
                 member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
                 uids = []
-                for group in member_groups:
-                    group = self.acl_users.getGroupById('%s_member' % self.listId())        
+                for gid in member_groups:
+                    group = self.acl_users.getGroupById(gid)        
                     uids += group.getUsers()
                 for uid in uids:
                     user = self.acl_users.getUser(uid)
