@@ -190,7 +190,7 @@ class XWFMailingList(MailBoxer):
                 self.Catalog.uncatalog_object(pp)
                 self.Catalog.catalog_object(object, pp)
          
-        return indexables
+        return 1
         
     def correct_subjects(self):
         """ Correct the subject line by stripping out the group id.
