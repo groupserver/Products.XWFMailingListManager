@@ -148,8 +148,52 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
         
         return presentation.default()
 
+    def send_email(self, REQUEST, RESPONSE,
+                   group_id, email_address,  email_id,  message, 
+                   subject=''):
+        """ Send an email to the group.
+            
+            We send the email via the mail server so it will handle
+            things like message ID's for us.
+            
+        """
+        list_manager = self.get_xwfMailingListManager()
+        
+        user = security.getUser()
+        if email_address not in user.get_emailAddresses():
+            raise 'Forbidden', 'Only the authenticated owner of an email address may use it to post'
+        
+        group = getattr(listmanager, group_id)
+        group_email = group.getProperty('mailto')
+        group_name = group.getProperty('title')
+        
+        message_id = None
+        if email_id:
+            orig_email = self.get_email(email_id)
+            subject = 'Re: %s' % orig_email.getProperty('subject')
+            message_id = orig_email.getProperty('message-id', '')
+            
+        name = '%s %s' % (user.preferredName, user.lastName)
+        
+        headers = """From: %s <%s>
+To: %s <%s>
+Subject: %s
+""" % (name, email_address, group_name, group_email, subject)
+
+        if message_id:
+            headers += """In-Reply-To: %s
+""" % (message_id,)
+
+        message = """%s
+
+%s""" %  (headers, message)
+
+        list_manager.MailHost.send(message)
+
+        return RESPONSE.redirect('view_threads')
+        
     def view_send_email(self, id=None):
-        """ Return the email view.
+        """ Return the email sending view.
         
         """
         presentation = self.Presentation.Tofu.MailingListManager.xml
