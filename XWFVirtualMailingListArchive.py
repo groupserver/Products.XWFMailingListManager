@@ -126,9 +126,12 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
         if list_manager.meta_type == 'XWF Virtual Mailing List Archive':
             raise (XWFVirtualListError, 
             'Caught potential recursion, mailing list archive is a virtual list archive')
-            
-        return list_manager.find_email(query)
+        
+        # we use an unrestricted find, so that our search is based on the
+        # access to this find_email
+        return list_manager.unrestricted_find_email(query)
 
+    # get_email is protected by the security of find_email
     def get_email(self, id):
         """ Get an email given its unique identifier.
         
