@@ -218,8 +218,7 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
         return presentation.threaded(result_set=result_set,
                                      b_start=b_start+1, b_size=b_size, b_end=b_end,
                                      result_size=result_size)
-
-
+    
     def view_search(self):
         """ Return the search view.
         
@@ -249,7 +248,7 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
                                                     ('mailDate', 'cmp', s_order)))
         
         (b_start, b_end, b_size, result_size, result_set) = createBatch(result_set, b_start, b_size)
-
+        
         return presentation.results(result_set=result_set,
                                     b_start=b_start+1, b_size=b_size, b_end=b_end,
                                     result_size=result_size)        

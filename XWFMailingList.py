@@ -45,27 +45,95 @@ class XWFMailingList(MailBoxer):
     meta_type = 'XWF Mailing List'
     version = 0.34
     
-    def __init__(self, id, title, mailto): #, moderator, moderated, archived, mtahosts):
-        """ setup a MailBoxer with reasonable defaults """
+    # a tuple of properties that we _don't_ want to inherit from the parent
+    # list manager
+    mailinglist_properties = ('title',
+                              'mailto',
+                              'hashkey')
+    
+    def __init__(self, id, title, mailto):
+        """ Setup a MailBoxer with reasonable defaults.
         
+        """
+        import random
         self.id = id
         self.title = title
         self.mailto = mailto
-        
-    def _setPropValue(self, id, value):
-        self._wrapperCheck(value)
-        if hasattr(self.aq_base, id):        
-            # if we have the attribute locally, just set it
-            setattr(self, id, value)
-        elif hasattr(self.aq_parent, id):
-            # if the parent has the attribute, and we've got a different value
-            # set it locally
-            if value != getattr(self.aq_parent, id):            
-                setattr(self, id, value)
-        else:
-            # if all else fails, set it locally
-            setattr(self, id, value)
+        self.hashkey = str(random.random())
             
+    def init_properties(self):
+        """ Tidy up the property sheet, since we don't want to control most of
+        the properties that have already been defined in the parent MailingListManager.
+        
+        """
+        delete_properties = filter(lambda x: x not in self.mailinglist_properties,
+                                self.propertyIds())
+        props = []
+        for item in self._properties:
+            if item['id'] not in delete_properties:
+                props.append(item)
+            else:
+                try:
+                    delattr(self, property)
+                except:
+                    pass
+                    
+        self._properties = tuple(props)
+        self._p_changed = 1
+        
+        return True
+
+    ###
+    # Universal getter / setter for retrieving / storing properties
+    # or calling appropriate handlers in ZODB
+    ##
+    security.declareProtected('Manage properties', 'setValueFor')
+    def setValueFor(self, key, value):
+        # We look for the property locally, then assume it is in the parent
+        if self.aq_inner.hasProperty(key):
+            prop_loc = self.aq_inner
+        else:
+            prop_loc = self.aq_parent
+            
+        # Use manage_changeProperties as default for setting properties
+        prop_loc.manage_changeProperties({key:value})
+        
+    security.declareProtected('Access contents information', 'getValueFor')
+    def getValueFor(self, key):
+        # getting the maillist is a special case, working in with the
+        # XWFT group framework
+        if key == 'maillist':
+            # look for a maillist script
+            maillist_script = getattr(self, 'maillist_members', None)
+            if maillist_script:
+                return maillist_script()
+                
+            maillist = []
+            try:
+                group = self.acl_users.getGroupById('%s_member' % self.listId())
+                uids = group.getUsers()
+                for uid in uids:
+                    user = self.acl_users.getUser(uid)
+                    maillist += user.get_preferredEmailAddresses()
+            except:
+                pass
+            
+            # last ditch effort
+            if not maillist:
+                maillist = self.getProperty('maillist')  
+            
+            return maillist
+            
+        # Again, look for the property locally, then assume it is in the parent
+        if self.aq_inner.hasProperty(key):
+            return self.aq_inner.getProperty(key)
+        else:
+            return self.aq_parent.getProperty(key)
+    
+    def get_maillist(self):
+        """ """
+        return self.getValueFor('maillist')
+    
     def listId(self):
         """ Mostly intended to be tracked by the catalog, to allow us to
         track which email belongs to which list.
@@ -73,55 +141,87 @@ class XWFMailingList(MailBoxer):
         """
         return self.getId()
         
+    def tidy_subject(self, subject, strip_listid=1, reduce_whitespace=1):
+        """ A helper method for tidying the subject line.
+        
+        """
+        import re
+        if strip_listid:
+            subject = re.sub('\[%s\]' % self.getValueFor('title'), '', subject).strip()
+        if reduce_whitespace:
+            subject = re.sub('\s+', ' ', subject).strip()
+        
+        return subject
+        
+    def create_mailableSubject(self, subject, include_listid=1):
+        """ A helper method for tidying up the mailing list subject for remailing.
+        
+        """
+        # there is an assumption that if we're including a listid we should
+        # strip any existing listid reference
+        subject = self.tidy_subject(subject, include_listid)
+        
+        is_reply = 0
+        if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
+            subject = subject[3:].strip()
+            is_reply = 1
+        
+        re_string = '%s' % (is_reply and 'Re: ' or '')
+        if include_listid:
+            subject = '%s[%s] %s' % (re_string, self.getValueFor('title'), subject)
+        else:
+            subject = '%s%s' % (re_string, subject)
+            
+        return subject
+        
     security.declareProtected('Add Folders','manage_addMail')
     def manage_addMail(self, Mail):
-        """ store mail & attachments in a folder and return it """
+        """ Store mail & attachments in a folder and return it.
+        
+        """
+        import re
+        archive = self.restrictedTraverse(self.getValueFor('storage'),
+                                          default=None)
 
-        (mailHeader, mailBody) = self.splitMail(Mail)
-
-        # always take our own date... don't believe the clients!
-        if self.keepdate:
-            timetuple = rfc822.parsedate_tz(mailHeader.get('date'))
+        # no archive available? then return immediately
+        if archive is None:
+            return None
+            
+        (header, body) = self.splitMail(Mail)
+        
+        # if 'keepdate' is set, get date from mail,
+        if self.getValueFor('keepdate'):
+            timetuple = rfc822.parsedate_tz(header.get('date'))
             time = DateTime(rfc822.mktime_tz(timetuple))
+        # ... take our own date, clients are always lying!
         else:
             time = DateTime()
-        
-        LOG('MailHeader', WARNING, str(mailHeader.items()))
-         
-        # unlike the original archive, we don't store the email in a yyyy/mm format,
-        # but we do record this information for the presentation layer to use,
-        # should it wish to do so
-        year  = str(time.year())  # yyyy
-        month = str(time.mm())    # mm                
-        
-        archive = getattr(self,'archive')
         
         # let's create the mailObject
         mailFolder = archive
         
-        Subject = self.mime_decode_header(mailHeader.get('subject',
-                                                         'No Subject')).strip()
-                                                         
-        From = self.mime_decode_header(mailHeader.get('from','No From'))
-        Title = "%s / %s" % (Subject, From)
-
-        # maybe it's a reply ?
-        #if ':' in Subject:
-        #    for currentFolder in monthFolder.objectValues(['Folder']):
-        #        if difflib.get_close_matches(Subject,
-        #                                     [currentFolder.mailSubject]):
-        #            mailFolder=currentFolder
-
-        # search a free id for the mailobject
-        id = time.millis()
-        while hasattr(mailFolder,str(id)):  
-             id = id + 1
-             
-        id = str(id)
-
-        mailFolder.manage_addFolder(id, title=Title)
+        subject = self.mime_decode_header(header.get('subject', 'No Subject'))
+        
+        # correct the subject
+        subject = self.tidy_subject(subject)
+        
+        if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
+            subject = subject[3:].strip()
+        elif len(subject) == 0:
+            subject = 'No Subject'
+        
+        compressedsubject = re.sub('\s+', '', subject)
+        
+        sender = self.mime_decode_header(header.get('from','No From'))
+        title = "%s / %s" % (subject, sender)
+        
+        # we use our IdFactory to get the next ID, rather than trying something
+        # ad-hoc
+        id = str(self.get_nextId())
+        
+        self.addMailBoxerMail(mailFolder, id, title)
         mailObject = getattr(mailFolder, id)
-
+        
         # unpack attachments
         (TextBody, ContentType, HtmlBody) =  self._unpackMultifile(mailObject, 
                                                      multifile.MultiFile(
@@ -132,53 +232,37 @@ class XWFMailingList(MailBoxer):
             mailBody = TextBody
         else:
             mailBody = self.HtmlToText(HtmlBody)
-        
+             
         # and now add some properties to our new mailobject 
-        mailObject.manage_addProperty('mailFrom', From, 'string')
-        
-        # correct the subject so we don't have the list id in it
-        id_string = '[%s]' % self.getProperty('title')
-        Subject = Subject.replace(id_string, '').strip()
-        
-        if Subject.lower().find('re:', 0, 3) == 0 and len(Subject) > 3:
-            Subject = Subject[3:].strip()
-        elif len(Subject) == 0:
-            Subject = 'No Subject'
-        
-        mailObject.manage_addProperty('mailSubject', Subject, 'string')
+        mailObject.manage_addProperty('mailFrom', sender, 'string')
+        mailObject.manage_addProperty('mailSubject', subject, 'string')
         mailObject.manage_addProperty('mailDate', time, 'date')
         mailObject.manage_addProperty('mailBody', mailBody, 'text')
+        mailObject.manage_addProperty('compressedSubject', compressedsubject, 'string')
         
         types = {'date': ('date', convert_date),
                  'from': ('lines', convert_addrs),
                  'to': ('lines', convert_addrs),
                  'received': ('lines', null_convert),}
-        for key in mailHeader.keys():
+                 
+        for key in header.keys():
             if key in types:
                 mailObject.manage_addProperty(key,
-                                              types[key][1](self.mime_decode_header(mailHeader.get(key,''))),
+                                              types[key][1](self.mime_decode_header(header.get(key,''))),
                                               types[key][0])
             else:
                 mailObject.manage_addProperty(key,
-                                              self.mime_decode_header(mailHeader.get(key,'')),
+                                              self.mime_decode_header(header.get(key,'')),
                                               'text')
         
-        # insert header if a regular expression is set and matches
-        if self.headers:
-            msg = mimetools.Message(StringIO.StringIO(Mail))
-            headers = []
-            for (key,value) in msg.items():
-                if re.match(self.headers, key, re.IGNORECASE):
-                    headers.append('%s: %s' % (key, value.strip()))
-            
-            mailObject.manage_addProperty('mailHeader', headers, 'lines')
-
         # Index the new created mailFolder in the catalog
-        if hasattr(self, self.catalog):
-            getattr(self, self.catalog).catalog_object(mailObject)
-    
+        Catalog = self.unrestrictedTraverse(self.getValueFor('catalog'),
+                                            default=None)
+                                            
+        if Catalog is not None:
+            Catalog.catalog_object(mailObject)
         return mailObject
-        
+                
     def reindex_mailObjects(self):
         """ Reindex the mailObjects that we contain.
              
@@ -189,7 +273,7 @@ class XWFMailingList(MailBoxer):
                 self.Catalog.uncatalog_object(pp)
                 self.Catalog.catalog_object(object, pp)
          
-        return 1
+        return True
         
     def correct_subjects(self):
         """ Correct the subject line by stripping out the group id.
@@ -205,8 +289,36 @@ class XWFMailingList(MailBoxer):
                     subject = 'No Subject'
                 object.mailSubject = subject
         
-        return 1
+        return True
+    
+    security.declarePrivate('mail_header')    
+    def mail_header(self, context, REQUEST, getValueFor=None, title='', mail=None, body=''):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
         
+        """
+        header = getattr(self, 'xwf_email_header', None)
+        if header:
+            return header(REQUEST, list_object=context,
+                                   getValueFor=getValueFor,
+                                   title=title, mail=mail, body=body)
+        else:
+            return ""
+    
+    security.declarePrivate('mail_footer')
+    def mail_footer(self, context, REQUEST, getValueFor=None, title='', mail=None, body=''):
+        """ A hook used by the MailBoxer framework, which we provide here as
+        a clean default.
+        
+        """
+        footer = getattr(self, 'xwf_email_footer', None)
+        if footer:
+            return footer(REQUEST, list_object=context,
+                                   getValueFor=getValueFor,
+                                   title=title, mail=mail, body=body)
+        else:
+            return ""
+    
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt',
     globals(),
@@ -220,6 +332,7 @@ def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
     ob = XWFMailingList(id, title, mailto)
     self._setObject(id, ob)
     ob = getattr(self, id)
+    ob.init_properties()
     manage_addFolder(ob, 'archive', 'mailing list archives')
     
     if REQUEST is not None:
