@@ -164,7 +164,7 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
         if email_address not in user.get_emailAddresses():
             raise 'Forbidden', 'Only the authenticated owner of an email address may use it to post'
         
-        group = getattr(listmanager, group_id)
+        group = getattr(list_manager, group_id)
         group_email = group.getProperty('mailto')
         group_name = group.getProperty('title')
         
