@@ -13,6 +13,8 @@ if __name__ == '__main__':
 from Testing import ZopeTestCase
 
 ZopeTestCase.installProduct('XWFMailingListManager')
+ZopeTestCase.installProduct('ZCTextIndex')
+ZopeTestCase.installProduct('MailHost')
 
 from Products.XWFMailingListManager import XWFMailingListManager
 XWFMailingListManager.XWFMailingListManager
@@ -29,7 +31,10 @@ class TestXWFMailingListManager(ZopeTestCase.ZopeTestCase):
         pass
 
     def test_01_exists(self):
-        self.failUnless(self.mm)
+        self.failUnless(hasattr(self, 'mm'))
+        
+    def test_02_catalogExists(self):
+        self.failUnless(hasattr(self.mm, 'Catalog'))
     
 if __name__ == '__main__':
     framework(descriptions=1, verbosity=1)

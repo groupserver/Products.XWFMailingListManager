@@ -15,6 +15,9 @@ from OFS.Folder import Folder
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 from Products.XWFCore.XWFCatalog import XWFCatalog
 
+class Record:
+    pass
+
 class XWFMailingListManager(Folder, XWFMetadataProvider):
     """ A searchable, self indexing mailing list manager.
 
@@ -66,12 +69,56 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         self.set_metadataNSDefault('http://xwft.org/ns/mailinglistmanager/0.9/')
         fl = (('id','','FieldIndex'),
               ('title','','FieldIndex'),
-              ('modification_time','','DateIndex'),
-              ('virtual_path','','MultiplePathIndex'),
-              ('content_folder_id', '', 'KeywordIndex'),
+              ('mailDate','','DateIndex'),
+              ('mailFrom','','ZCTextIndex'),
+              ('mailSubject', '', 'ZCTextIndex'),
+              ('mailBody', '', 'ZCTextIndex'),
               )
+              
         for mdi in fl:
             apply(self.set_metadataIndex, mdi)
+
+    def manage_afterAdd(self, item, container):
+        """ For configuring the object post-instantiation.
+                        
+        """
+        item._setObject('Catalog', XWFCatalog())
+        
+        wordsplitter = Record()
+        wordsplitter.group = 'Word Splitter'
+        wordsplitter.name = 'HTML aware splitter'
+        
+        casenormalizer = Record()
+        casenormalizer.group = 'Case Normalizer'
+        casenormalizer.name = 'Case Normalizer'
+        
+        stopwords = Record()
+        stopwords.group = 'Stop Words'
+        stopwords.name = 'Remove listed and single char words'
+        
+        item.Catalog.manage_addProduct['ZCTextIndex'].manage_addLexicon(
+            'Lexicon', 'Default Lexicon', (wordsplitter, casenormalizer, stopwords))
+        
+        zctextindex_extras = Record()
+        zctextindex_extras.index_type = 'Okapi BM25 Rank'
+        zctextindex_extras.lexicon_id = 'Lexicon'
+        
+        for key, index in self.get_metadataIndexMap().items():
+            if index == 'ZCTextIndex':
+                zctextindex_extras.doc_attr = key
+                item.Catalog.addIndex(key, index, zctextindex_extras)
+            elif index == 'MultiplePathIndex':
+                # we need to shortcut this one
+                item.Catalog._catalog.addIndex(key, MultiplePathIndex(key))
+            else:
+                item.Catalog.addIndex(key, index)
+                
+        # make sure we store the ID of the object in the metadata of the catalog
+        item.Catalog.addColumn('id')
+
+        item.manage_addProduct['MailHost'].manage_addMailHost('MailHost', 
+                                                              smtp_host='127.0.0.1')
+
 
     security.declareProtected('Upgrade objects', 'upgrade')
     security.setPermissionDefault('Upgrade objects', ('Manager', 'Owner'))
@@ -95,9 +142,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     #    return 'foobar'
 
 manage_addXWFMailingListManagerForm = PageTemplateFile(
-    'zpt/manage_addMailingListManagerForm.zpt',
+    'management/manage_addXWFMailingListManagerForm.zpt',
     globals(),
-    __name__='manage_addMailingListManagerForm')
+    __name__='manage_addXWFMailingListManagerForm')
 
 def manage_addXWFMailingListManager(self, id, title='Mailing List Manager',
                                      REQUEST=None):
