@@ -110,11 +110,17 @@ class XWFMailingList(MailBoxer):
                 
             maillist = []
             try:
-                group = self.acl_users.getGroupById('%s_member' % self.listId())
-                uids = group.getUsers()
+                member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
+                uids = []
+                for group in member_groups:
+                    group = self.acl_users.getGroupById('%s_member' % self.listId())        
+                    uids += group.getUsers()
                 for uid in uids:
                     user = self.acl_users.getUser(uid)
-                    maillist += user.get_preferredEmailAddresses()
+                    for email in user.get_preferredEmailAddresses():
+                        email = email.strip()
+                        if email and email not in maillist:
+                            maillist.append(email)
             except:
                 pass
             
