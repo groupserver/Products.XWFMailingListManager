@@ -317,7 +317,7 @@ class XWFMailingList(MailBoxer):
         sender = self.mime_decode_header(header.get('from',''))
         (name, email) = self.parseaddr(sender)
         
-        memberlist = self.lowerList(self.getValueFor('maillist'))
+        memberlist = self.lowerList(self.getValueFor('mailinlist'))
         
         # subscription? only subscribe if subscription is enabled.
         subscribe = self.getValueFor('subscribe')
