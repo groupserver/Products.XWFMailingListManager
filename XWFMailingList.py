@@ -11,7 +11,6 @@
 from AccessControl import getSecurityManager, ClassSecurityInfo
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.CustomProperties.CustomProperties import CustomProperties
 from Globals import InitializeClass, PersistentMapping
 from OFS.Folder import Folder, manage_addFolder
 
