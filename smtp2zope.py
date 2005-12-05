@@ -52,7 +52,7 @@ DEFAULT_MAX_SIZE = 20000
 # Note that this is not necessary in the default MailBoxer configuration, but
 # may be used to add some extra security.
 # Format: username:password
-AUTHORIZATION='pegasus:AiHogtocIa'
+AUTHORIZATION='username:password'
 
 # If you want to strip out all attachments, leaving only plain text, set this.
 # If you have a email size limit set, it will apply on what is left _after_
