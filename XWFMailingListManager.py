@@ -16,6 +16,7 @@ from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
 from Products.XWFCore.XWFCatalog import XWFCatalog
 from Products.MailBoxer.MailBoxer import MailBoxer
+from Products.ZCatalog.Catalog import CatalogError
 
 class Record:
     pass
@@ -28,7 +29,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
     security.setPermissionDefault('View', ('Manager',))
     
     meta_type = 'XWF Mailing List Manager'
-    version = 0.38
+    version = 0.42
     
     manage_options = Folder.manage_options + \
                      ({'label': 'Configure',
@@ -109,8 +110,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         """ For configuring the object post-instantiation.
                         
         """
-        if getattr(self, '__initialised', 1):
-            return 1
+        if getattr(item, '_initialised', False):
+            return False
             
         item._setObject('Catalog', XWFCatalog())
         
@@ -126,9 +127,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         stopwords.group = 'Stop Words'
         stopwords.name = 'Remove listed and single char words'
         
-        item.Catalog.manage_addProduct['ZCTextIndex'].manage_addLexicon(
-            'Lexicon', 'Default Lexicon', (wordsplitter, casenormalizer, stopwords))
-        
         zctextindex_extras = Record()
         zctextindex_extras.index_type = 'Okapi BM25 Rank'
         zctextindex_extras.lexicon_id = 'Lexicon'
@@ -136,21 +134,28 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         for key, index in self.get_metadataIndexMap().items():
             if index == 'ZCTextIndex':
                 zctextindex_extras.doc_attr = key
-                item.Catalog.addIndex(key, index, zctextindex_extras)
-            elif index == 'MultiplePathIndex':
-                # we need to shortcut this one
-                item.Catalog._catalog.addIndex(key, MultiplePathIndex(key))
+                try:
+                    item.Catalog.addIndex(key, index, zctextindex_extras)
+                except CatalogError:
+                    pass
             else:
-                item.Catalog.addIndex(key, index)
+                try:
+                    item.Catalog.addIndex(key, index)
+                except CatalogError:
+                    pass
                 
         # add the metadata we need
-        item.Catalog.addColumn('id')
-        item.Catalog.addColumn('mailSubject')
-        item.Catalog.addColumn('mailFrom')
-        item.Catalog.addColumn('mailDate')
+        for md in ('id','mailSubject','mailFrom','mailDate'):
+            try:
+                item.Catalog.addColumn(md)
+            except CatalogError:
+                pass
         
         item.manage_addProduct['MailHost'].manage_addMailHost('MailHost', 
                                                               smtp_host='127.0.0.1')
+        
+        # make sure manage_afterAdd doesn't get called twice!
+        item._initialised = True
         
         return True
 
@@ -222,7 +227,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         if currversion == self.version:
             return 'already running latest version (%s)' % currversion
 
-        self.__initialised = 1
+        self._initialised = True
         self._setupMetadata()
         self._setupProperties()
         self._version = self.version
