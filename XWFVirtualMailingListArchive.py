@@ -16,10 +16,10 @@ from types import *
 from Globals import InitializeClass, PersistentMapping
 from OFS.Folder import Folder
 from Products.XWFCore.XWFUtils import createBatch
+from zLOG import LOG, WARNING, PROBLEM, INFO
 
 class XWFVirtualListError(Exception):
     pass
-
 
 class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
     """ A folder for virtualizing mailing list content.
@@ -156,9 +156,6 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
                    subject=''):
         """ Send an email to the group.
             
-            We send the email via the mail server so it will handle
-            things like message ID's for us.
-            
         """
         list_manager = self.get_xwfMailingListManager()
         
@@ -168,6 +165,22 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
             raise 'Forbidden', 'Only the authenticated owner of an email address may use it to post'
         
         group = getattr(list_manager, group_id)
+
+        blocked_members = group.getProperty('blocked_members')
+        if blocked_members and user.getId() in blocked_members:
+            message = 'Blocked user: %s from posting via web' % user.getId()
+            LOG('XWFVirtualMailingListArchive', PROBLEM, message)
+            raise 'Forbidden', 'You are currently blocked from posting. Please contact the group administrator'
+        
+        moderatedlist = group.getValueFor('moderatedlist')
+        via_mailserver = False
+        if moderatedlist:
+            for address in user.get_emailAddresses():
+                if address in moderatedlist:
+                    LOG('XWFVirtualMailingListArchive', INFO, 'User "%s" posted from web while moderated' % user.getId())
+                    via_mailserver = True
+                    break
+
         group_email = group.getProperty('mailto')
         group_name = group.getProperty('title')
         
@@ -191,8 +204,11 @@ Subject: %s
         message = """%s
 
 %s""" %  (headers, message)
-
-        list_manager.MailHost.send(message)
+        
+        if via_mailserver:
+            list_manager.MailHost.send(message)
+        else:
+            group.manage_listboxer({'Mail': message})
 
         return RESPONSE.redirect('view_threads')
         
