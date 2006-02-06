@@ -629,7 +629,7 @@ class XWFMailingList(MailBoxer):
         
         return 1
 
-    security.declareProtected('Manage properties','getMemberUserObjects')
+    security.declareProtected('Manage properties','get_mailUserId')
     def get_mailUserId(self, from_addrs=[]):
         member_users = self.get_memberUserObjects()
         for addr in from_addrs:
@@ -651,6 +651,20 @@ class XWFMailingList(MailBoxer):
                 pp = '/'.join(object.getPhysicalPath())
                 self.Catalog.uncatalog_object(pp)
                 self.Catalog.catalog_object(object, pp)
+         
+        return True
+        
+    security.declareProtected('Manage properties','unindex_mailObjects')
+    def unindex_mailObjects(self):
+        """ Unindex the mailObjects that we contain.
+            
+            Handy for playing with a single list without having to reindex
+            all lists!
+        """
+        for object in self.archive.objectValues('Folder'):
+            if hasattr(object, 'mailFrom'):
+                pp = '/'.join(object.getPhysicalPath())
+                self.Catalog.uncatalog_object(pp)
          
         return True
         
