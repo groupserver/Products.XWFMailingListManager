@@ -8,6 +8,9 @@
 #
 from AccessControl import getSecurityManager, ClassSecurityInfo
 
+import logging, os, time
+logger = logging.getLogger()
+
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Globals import InitializeClass, PersistentMapping
 from OFS.Folder import Folder
@@ -17,6 +20,8 @@ from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
 from Products.XWFCore.XWFCatalog import XWFCatalog
 from Products.MailBoxer.MailBoxer import MailBoxer
 from Products.ZCatalog.Catalog import CatalogError
+
+MAILDROP_SPOOL='/tmp/mailboxer_spool'
 
 class Record:
     pass
@@ -112,7 +117,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         """
         if getattr(item, '_initialised', False):
             return False
-            
+ 
         item._setObject('Catalog', XWFCatalog())
         
         wordsplitter = Record()
@@ -156,7 +161,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         
         # make sure manage_afterAdd doesn't get called twice!
         item._initialised = True
-        
+
         return True
 
     security.declareProtected('View','get_catalog')
@@ -216,6 +221,37 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         list = self.get_list(list_id)
                 
         return list.getProperty(property, default)
+    
+    def processSpool(self):
+        """ Process the deferred spool files.
+            
+        """
+        objdir = os.path.join(*self.getPhysicalPath())
+        spooldir = os.path.join(MAILDROP_SPOOL, objdir)
+        if not os.path.exists(spooldir): # we don't have a spool to process yet
+            return
+        for spoolfilepath in os.listdir(spooldir):
+            if os.path.exists(os.path.join(spooldir, '%s.lck' % spoolfilepath)):
+                continue # we're locked
+            spoolfilepath = os.path.join(spooldir, spoolfilepath)
+            spoolfile = file(spoolfilepath)
+            line = spoolfile.readline().strip()
+            if len(line) < 5 or line[:2] != ';;' or line[-2:] != ';;':
+                logger.error('No group was specified (line was "%s")' % line)
+                continue
+            
+            groupname = line[2:-2]
+            group = self.get_list(groupname)
+            if not group:
+                logger.error('No such group "%s"' % groupname)
+                continue
+            
+            mailString = spoolfile.read()
+            group.sendMail(mailString)
+            spoolfile.close()
+            os.remove(spoolfilepath)
+            # sleep a little
+            time.sleep(0.5)
 
     security.declareProtected('Upgrade objects', 'upgrade')
     security.setPermissionDefault('Upgrade objects', ('Manager', 'Owner'))
