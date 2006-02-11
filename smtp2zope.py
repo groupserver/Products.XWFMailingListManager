@@ -29,8 +29,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 """
 
-import os, sys
-import urllib, urllib2
+import os, sys, re
+import urllib, urllib2, urlparse
 import xmlrpclib
 import base64
 import socket
@@ -63,7 +63,7 @@ AUTHORIZATION='username:password'
 # If attachments are to be stripped, MailBoxerTools.py must also be available
 # in your PYTHONPATH. If MailBoxerTools.py is not available, this will be set
 # back to 0.
-STRIP_ATTACHMENTS = 1
+STRIP_ATTACHMENTS = 1 
 
 # Notify Zope-side MailBoxer of events (such as attachments that have been
 # stripped). Messages will still be logged to the syslog (if available).
@@ -366,9 +366,7 @@ def getAuthorizedURL(url, auth):
     # it out, we now need to add it back in again
     if not auth:
         return url
-    
-    import urlparse
-     
+         
     urlparts = list(urlparse.urlparse(url))
     urlparts[1] = auth+'@'+urlparts[1]
     return urlparse.urlunparse(urlparts)
@@ -382,15 +380,19 @@ def eventNotification(url, event_codes, mailString):
         headers, body = MailBoxerTools.splitMail(mailString)
         server.manage_event(event_codes, headers)
     
-def getListInfo(url, mailString):
+def getListInfo(url, mailto):
     url = getAuthorizedURL(url, AUTHORIZATION)
     server = xmlrpclib.ServerProxy(url)
-    headers, body = MailBoxerTools.splitMail(mailString)
-    original_mailto = headers.get('x-original-to', '')
-    properties = server.get_listPropertiesFromMailto(original_mailto)
+    properties = server.get_listPropertiesFromMailto(mailto)
     
     return properties
+
+def handleBounce(url, group_id, email):
+    url = getAuthorizedURL(url, AUTHORIZATION)
+    server = xmlrpclib.ServerProxy(url)
     
+    return server.process_bounces(group_id, email)
+
 ##
 # Main part of submitting an email to a http-server.
 # All requests will be serialized with locks.
@@ -429,9 +431,29 @@ if callURL.find('http://') == -1:
 mailString = sys.stdin.read()
 event_codes = []
 
+if AUTOMATIC: # detect bounces
+    headers, body = MailBoxerTools.splitMail(mailString)
+    original_mailto = headers.get('x-original-to', '')
+    result = re.search('(.*?)\+(.*?)\=(.*?)\@(.*)', original_mailto)
+    if result and len(result.groups()) == 4:
+        gs = result.groups()
+        list_props = getListInfo(callURL, '%s@%s' % (gs[0],gs[3]))
+        if list_props:
+            log_info('Bounce detected from %s@%s, to list %s' %
+                             (gs[1],gs[2],list_props['id']))
+            res = handleBounce(callURL, list_props['id'], '%s@%s' % (gs[1],gs[2]))
+            log_info('%s' % res)
+        else:
+            log_info('Bounce detected from %s@%s, to a list I could not detect'
+                     ' (%s@%s)' % (gs[1],gs[2],gs[0],gs[3]))
+        
+        sys.exit()
+
 maxBytesOverride = 0
 if AUTOMATIC:
-    list_props = getListInfo(callURL, mailString)
+    headers, body = MailBoxerTools.splitMail(mailString)
+    original_mailto = headers.get('x-original-to', '')
+    list_props = getListInfo(callURL, original_mailto)
     if not list_props:
         sys.stderr.write('I\'m sorry, but no such list exists on this server')
         sys.exit(EXIT_NOPERM)
@@ -477,7 +499,7 @@ if STRIP_ATTACHMENTS:
     num_attachments = len(attachments)
     if num_attachments or html_body:
         content_type, text_body = MailBoxerTools.getPlainBodyFromMail(mailString)
-        headers = MailBoxerTools.headersAsString(mailString, {'Content-Type': content_type})
+        headers = MailBoxerTools.headersAsString(mailString, {'Content-Type': content_type, 'Content-Transfer-Encoding': '7bit'})
         mailString = '%s\r\n\r\n%s' % (headers, text_body)
         
         if html_body:
