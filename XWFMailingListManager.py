@@ -8,9 +8,6 @@
 #
 from AccessControl import getSecurityManager, ClassSecurityInfo
 
-import logging, os, time
-logger = logging.getLogger()
-
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Globals import InitializeClass, PersistentMapping
 from OFS.Folder import Folder
@@ -19,9 +16,10 @@ from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
 from Products.XWFCore.XWFCatalog import XWFCatalog
 from Products.MailBoxer.MailBoxer import MailBoxer
-from Products.ZCatalog.Catalog import CatalogError
 
-MAILDROP_SPOOL='/tmp/mailboxer_spool'
+import os, time
+
+MAILDROP_SPOOL = '/tmp/mailboxer_spool2'
 
 class Record:
     pass
@@ -34,7 +32,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
     security.setPermissionDefault('View', ('Manager',))
     
     meta_type = 'XWF Mailing List Manager'
-    version = 0.42
+    version = 0.43
     
     manage_options = Folder.manage_options + \
                      ({'label': 'Configure',
@@ -69,7 +67,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
             if propval == None:
                 propval = getattr(MailBoxer, property['id'])
             setattr(self, property['id'], propval)
-        
+        self._properties = MailBoxer._properties 
+       
         return True
         
     def _setupMetadata(self):
@@ -115,9 +114,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         """ For configuring the object post-instantiation.
                         
         """
-        if getattr(item, '_initialised', False):
-            return False
- 
+        if getattr(self, '__initialised', 1):
+            return 1
+            
         item._setObject('Catalog', XWFCatalog())
         
         wordsplitter = Record()
@@ -132,6 +131,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         stopwords.group = 'Stop Words'
         stopwords.name = 'Remove listed and single char words'
         
+        item.Catalog.manage_addProduct['ZCTextIndex'].manage_addLexicon(
+            'Lexicon', 'Default Lexicon', (wordsplitter, casenormalizer, stopwords))
+        
         zctextindex_extras = Record()
         zctextindex_extras.index_type = 'Okapi BM25 Rank'
         zctextindex_extras.lexicon_id = 'Lexicon'
@@ -139,29 +141,22 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         for key, index in self.get_metadataIndexMap().items():
             if index == 'ZCTextIndex':
                 zctextindex_extras.doc_attr = key
-                try:
-                    item.Catalog.addIndex(key, index, zctextindex_extras)
-                except CatalogError:
-                    pass
+                item.Catalog.addIndex(key, index, zctextindex_extras)
+            elif index == 'MultiplePathIndex':
+                # we need to shortcut this one
+                item.Catalog._catalog.addIndex(key, MultiplePathIndex(key))
             else:
-                try:
-                    item.Catalog.addIndex(key, index)
-                except CatalogError:
-                    pass
+                item.Catalog.addIndex(key, index)
                 
         # add the metadata we need
-        for md in ('id','mailSubject','mailFrom','mailDate'):
-            try:
-                item.Catalog.addColumn(md)
-            except CatalogError:
-                pass
+        item.Catalog.addColumn('id')
+        item.Catalog.addColumn('mailSubject')
+        item.Catalog.addColumn('mailFrom')
+        item.Catalog.addColumn('mailDate')
         
         item.manage_addProduct['MailHost'].manage_addMailHost('MailHost', 
                                                               smtp_host='127.0.0.1')
         
-        # make sure manage_afterAdd doesn't get called twice!
-        item._initialised = True
-
         return True
 
     security.declareProtected('View','get_catalog')
@@ -205,7 +200,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         """
         list_props = {}
         for listobj in self.objectValues('XWF Mailing List'):
-            if getattr(listobj, 'mailto', None) == mailto:
+            if getattr(listobj, 'mailto', '').lower() == mailto.lower():
                 for prop in self._properties:
                     pid = prop['id']
                     list_props[pid] = getattr(listobj, pid, None)
@@ -221,31 +216,30 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         list = self.get_list(list_id)
                 
         return list.getProperty(property, default)
-    
+
     def processSpool(self):
         """ Process the deferred spool files.
-            
+
         """
         objdir = os.path.join(*self.getPhysicalPath())
         spooldir = os.path.join(MAILDROP_SPOOL, objdir)
-        if not os.path.exists(spooldir): # we don't have a spool to process yet
+        if not os.path.exists(spooldir): # no spool to process yet
             return
         for spoolfilepath in os.listdir(spooldir):
-            if os.path.exists(os.path.join(spooldir, '%s.lck' % spoolfilepath)):
-                continue # we're locked
+            if os.path.exists(os.path.join(spooldir, '%s.lck' % spoolfilepath)):                continue # we're locked
             spoolfilepath = os.path.join(spooldir, spoolfilepath)
             spoolfile = file(spoolfilepath)
             line = spoolfile.readline().strip()
             if len(line) < 5 or line[:2] != ';;' or line[-2:] != ';;':
-                logger.error('No group was specified (line was "%s")' % line)
+                #logger.error('No group was specified (line was "%s")' % line)
                 continue
-            
+
             groupname = line[2:-2]
             group = self.get_list(groupname)
             if not group:
-                logger.error('No such group "%s"' % groupname)
+                #logger.error('No such group "%s"' % groupname)
                 continue
-            
+
             mailString = spoolfile.read()
             group.sendMail(mailString)
             spoolfile.close()
@@ -263,11 +257,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         if currversion == self.version:
             return 'already running latest version (%s)' % currversion
 
-        self._initialised = True
+        self.__initialised = 1
         self._setupMetadata()
         self._setupProperties()
         self._version = self.version
-        
+
         return 'upgraded %s to version %s from version %s' % (self.getId(),
                                                               self._version,
                                                               currversion)

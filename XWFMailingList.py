@@ -11,6 +11,7 @@
 from AccessControl import getSecurityManager, ClassSecurityInfo
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+from Products.CustomProperties.CustomProperties import CustomProperties
 from Globals import InitializeClass, PersistentMapping
 from OFS.Folder import Folder, manage_addFolder
 
@@ -74,7 +75,7 @@ class XWFMailingList(MailBoxer):
         
         """
         delete_properties = filter(lambda x: x not in self.mailinglist_properties,
-                                self.propertyIds())
+                                   self.propertyIds())
         props = []
         for item in self._properties:
             if item['id'] not in delete_properties:
@@ -84,7 +85,7 @@ class XWFMailingList(MailBoxer):
                     self._delProperty(item['id'])
                 except:
                     pass
-                
+                        
         self._properties = tuple(props)
         self._p_changed = 1
         
@@ -179,7 +180,6 @@ class XWFMailingList(MailBoxer):
             if key in ('digestmaillist', 'maillist'):
                 address_getter = 'get_deliveryEmailAddressesByKey'
                 member_getter = 'get_memberUserObjects'
-                #address_getter = 'get_preferredEmailAddresses'
                 pass_group_id = True
                 maillist_script = getattr(self, 'maillist_members', None)
             elif key in ('moderator',):
@@ -256,7 +256,7 @@ class XWFMailingList(MailBoxer):
         """
         import re
         if strip_listid:
-            subject = re.sub('\[%s\]' % self.getValueFor('title'), '', subject).strip()
+            subject = re.sub('\[%s\]' % re.escape(self.getValueFor('title')), '', subject).strip()
         if reduce_whitespace:
             subject = re.sub('\s+', ' ', subject).strip()
         
@@ -369,6 +369,34 @@ class XWFMailingList(MailBoxer):
 
         return mailObject
     
+    def is_senderBlocked(self, user_id):
+        """ Get the sendercache entry for a particular user.
+
+            Returns a tuple containing:
+            (isblocked (boolean), unblock time (datetime))
+        """
+        senderlimit = self.getValueFor('senderlimit')
+        senderinterval = self.getValueFor('senderinterval')
+        user = self.acl_users.getUserById(user_id)
+
+        for email in user.get_emailAddresses():
+            ntime = int(DateTime())
+            count = 0
+            etime = ntime-senderinterval
+            earliest = 0
+            for atime in self.sendercache.get(email, []):
+                if atime > etime:
+                    if not earliest or atime < earliest:
+                        earliest = atime
+                    count += 1
+                else:
+                    break
+
+        if count >= senderlimit:
+            return (True, DateTime(earliest+senderinterval))
+
+        return (False, -1)
+
     def checkMail(self, REQUEST):
         # richard@iopen.net: this is mostly the same as the MailBoxer parent,
         # only with notification.
@@ -408,6 +436,7 @@ class XWFMailingList(MailBoxer):
         # Check for hosed denial-of-service-vacation mailers
         # or other infinite mail-loops...
         sender = self.mime_decode_header(header.get('from', 'No Sender'))
+        subject = self.mime_decode_header(header.get('subject', 'No Subject'))
         (name, email) = rfc822.parseaddr(sender)
         email = email.lower()
 
@@ -420,38 +449,48 @@ class XWFMailingList(MailBoxer):
 
         senderlimit = self.getValueFor('senderlimit')
         senderinterval = self.getValueFor('senderinterval')
-
-        if senderlimit and senderinterval:
+        unsubscribe = self.getValueFor('unsubscribe')
+        # if the person is unsubscribing, we can't handle it with the loop
+        # stuff, because they might easily exceed it if it is a tight setting
+        if (unsubscribe != '' and
+            re.match('(?i)' + unsubscribe + "|.*: " + unsubscribe, subject)):
+            pass        
+        elif senderlimit and senderinterval:
             sendercache = self.sendercache
 
             ntime = int(DateTime())
 
+            count = 0
+            etime = ntime-senderinterval
+            earliest = 0
+            for atime in sendercache.get(email, []):
+                if atime > etime:
+                    if not earliest or atime < earliest:
+                        earliest = atime
+                    count += 1
+                else:
+                    break
+
+            if count >= senderlimit:
+                user = self.acl_users.get_userByEmail(email)
+                if user:
+                    user.send_notification('sender_limit_exceeded', self.listId(),
+                                            n_dict={'expiry_time': DateTime(earliest+senderinterval)})
+                    message = ('Sender %s has sent %s mails in %s seconds' %
+                                              (sender, count, senderinterval))
+                LOG('MailBoxer', PROBLEM, message)
+                return message
+
+            # this only happens if we're not already blocking
             if sendercache.has_key(email):
                 sendercache[email].insert(0, ntime)
             else:
                 sendercache[email] = [ntime]
             
-            etime = ntime-senderinterval
-            count = 0
-            for atime in sendercache[email]:
-                if atime > etime:
-                    count += 1
-                else:
-                    break
-
-            # prune our cache back to the time intervall
-            sendercache[email] = sendercache[email][:count]
+            # prune our cache back to the limit
+            sendercache[email] = sendercache[email][:senderlimit+1]
+            
             self.sendercache = sendercache
-
-            if count > senderlimit:
-                #if email not in disabled:
-                #    self.setValueFor('disabled', disabled + [email])
-                user = self.acl_users.get_userByEmail(email)
-                user.send_notification('sender_limit_exceeded', self.listId())
-                message = ('Sender %s has sent %s mails in %s seconds' %
-                                              (sender, count, senderinterval))
-                LOG('MailBoxer', PROBLEM, message)
-                return message
 
         # Check for spam
         for regexp in self.getValueFor('spamlist'):
@@ -470,7 +509,6 @@ class XWFMailingList(MailBoxer):
                 user.send_notification('post_blocked', self.listId())
                 return message
                 
-
     def requestMail(self, REQUEST):
         # Handles un-/subscribe-requests.
 
@@ -531,9 +569,15 @@ class XWFMailingList(MailBoxer):
                                                               last_name=last_name)
                         user = self.acl_users.getUser(user_id)
                         group_object = self.Scripts.get.group_by_id(self.getId())
-                        division_id = group_object.get_division_id()
-                        user.set_verificationGroups(['%s_member' % self.getId(),
-                                                     '%s_member' % division_id])
+                        #division_id = group_object.get_division_id()
+                        division = group_object.Scripts.get.division_object()
+                        div_mem = self.Scripts.get.division_membership(division.getId())
+                        if div_mem:
+                            v_groups = ['%s_member' % self.getId(), div_mem]
+                        else:
+                            v_groups = ['%s_member' % self.getId()]
+                            
+                        user.set_verificationGroups(v_groups)
                         user.send_userVerification()
             else:
                 self.mail_reply(self, REQUEST, mail=header, body=body)
@@ -629,7 +673,7 @@ class XWFMailingList(MailBoxer):
         
         return 1
 
-    security.declareProtected('Manage properties','get_mailUserId')
+    security.declareProtected('Manage properties','getMemberUserObjects')
     def get_mailUserId(self, from_addrs=[]):
         member_users = self.get_memberUserObjects()
         for addr in from_addrs:
@@ -653,11 +697,11 @@ class XWFMailingList(MailBoxer):
                 self.Catalog.catalog_object(object, pp)
          
         return True
-        
+
     security.declareProtected('Manage properties','unindex_mailObjects')
     def unindex_mailObjects(self):
         """ Unindex the mailObjects that we contain.
-            
+
             Handy for playing with a single list without having to reindex
             all lists!
         """
@@ -665,9 +709,9 @@ class XWFMailingList(MailBoxer):
             if hasattr(object, 'mailFrom'):
                 pp = '/'.join(object.getPhysicalPath())
                 self.Catalog.uncatalog_object(pp)
-         
+
         return True
-        
+            
     def correct_subjects(self):
         """ Correct the subject line by stripping out the group id.
         

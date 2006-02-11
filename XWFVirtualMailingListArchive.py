@@ -21,6 +21,7 @@ from zLOG import LOG, WARNING, PROBLEM, INFO
 class XWFVirtualListError(Exception):
     pass
 
+
 class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
     """ A folder for virtualizing mailing list content.
         
@@ -171,7 +172,7 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
             message = 'Blocked user: %s from posting via web' % user.getId()
             LOG('XWFVirtualMailingListArchive', PROBLEM, message)
             raise 'Forbidden', 'You are currently blocked from posting. Please contact the group administrator'
-        
+
         moderatedlist = group.getValueFor('moderatedlist')
         via_mailserver = False
         if moderatedlist:
@@ -204,7 +205,7 @@ Subject: %s
         message = """%s
 
 %s""" %  (headers, message)
-        
+
         if via_mailserver:
             list_manager.MailHost.send(message)
         else:
@@ -236,10 +237,11 @@ Subject: %s
         
         if show_thread:
             result_set = map(lambda x: x.getObject(),
-                             self.find_email(query={'mailSubject': '"%s"' % email_object.mailSubject}))
+                             self.find_email(query={'compressedTopic': '%s' % email_object.compressedSubject}))
             
             # we probably did really well with the exact phrase search, but we need to be bang on
-            result_set = filter(lambda x: x and x.mailSubject == email_object.mailSubject, result_set)
+            result_set = filter(lambda x: x and x.compressedSubject.lower() == 
+                                                email_object.compressedSubject.lower(), result_set)
             result_set = sequence.sort(result_set, (('mailDate', 'cmp', 'asc'),
                                                     ('mailSubject', 'nocase', 'asc')))
         else:
@@ -249,10 +251,10 @@ Subject: %s
         
     def thread_results(self, REQUEST, b_start, b_size, s_on, s_order):
 	""" Get a thread result set.
-	
-	"""
-	from DocumentTemplate import sequence
-	def thread_sorter(a, b):
+        
+        """
+        from DocumentTemplate import sequence
+        def thread_sorter(a, b):
             if s_on in ('mailDate', 'mailSubject'):
                 a = getattr(a[1][0], s_on); b = getattr(b[1][0], s_on)
             elif s_on in ('mailCount', ):
@@ -268,19 +270,28 @@ Subject: %s
                 return 0 
         
         result_set = self.find_email(REQUEST)
-        result_set = sequence.sort(result_set, (('mailSubject', 'nocase'), ('mailDate', 'cmp', 'desc')))
+        result_set = sequence.sort(result_set, (('mailSubject', 'nocase'),
+                                                ('mailDate', 'cmp', 'desc')))
         threads = []
         curr_thread = None
         curr_thread_results = []
+        thread_index = {}
         for result in result_set:
-            if result.mailSubject == curr_thread: # existing thread
+            if result.mailSubject.lower() == curr_thread: # existing thread
                 curr_thread_results.append(result)
             else: # new thread
                 if curr_thread_results:
-                    threads.append((len(curr_thread_results),
-                                    curr_thread_results))
+                    if thread_index.has_key(curr_thread):
+                        tr = list(threads[thread_index[curr_thread]][-1])
+                        tr += curr_thread_results
+                        threads[thread_index[curr_thread]] = (len(tr), tr)
+                    else:
+                        threads.append((len(curr_thread_results),
+                                        curr_thread_results))
+                        thread_index[curr_thread] = len(threads) - 1
+                    
                 curr_thread_results = [result]
-                curr_thread = result.mailSubject
+                curr_thread = result.mailSubject.lower()
 
         if curr_thread_results:
             threads.append((len(curr_thread_results),
