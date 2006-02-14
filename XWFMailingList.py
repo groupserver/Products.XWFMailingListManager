@@ -22,6 +22,8 @@ from cgi import escape
 
 from zLOG import LOG, WARNING
 
+import md5
+
 def convert_date(date):
     import time
     from email.Utils import parsedate
@@ -50,6 +52,9 @@ class XWFMailingList(MailBoxer):
     mailinglist_properties = ('title',
                               'mailto',
                               'hashkey')
+    
+    # track the checksum of the last email sent
+    last_email_checksum = ''
     
     def __init__(self, id, title, mailto):
         """ Setup a MailBoxer with reasonable defaults.
@@ -419,11 +424,11 @@ class XWFMailingList(MailBoxer):
         # Check for x-mailer-loop
         mailString = self.getMailFromRequest(REQUEST)
         (header, body) = self.splitMail(mailString)
-
+        
         if header.get('x-mailer') == self.getValueFor('xmailer'):
             message = 'Mail already processed'
             LOG('MailBoxer', PROBLEM, message)
-            return(message)
+            return message
 
         # Check for empty return-path => automatic mail
         if header.get('return-path', '') == '<>':
@@ -431,8 +436,18 @@ class XWFMailingList(MailBoxer):
             message = 'Automated response detected from %s' % (header.get('from',
                                                                           '<>'))
             LOG('MailBoxer', PROBLEM, message)
-            return (message)
-
+            return message
+        
+        # A sanity check ... have we seen this email before?
+        checksum_string = header.get('from','')+body
+        last_email_checksum = md5.new(checksum_string).hexdigest()
+        if self.last_email_checksum:
+            if self.last_email_checksum == last_email_checksum:
+                message = 'detected duplicate message from "%s"' % header.get('from','')
+                LOG('MailBoxer', PROBLEM, message)
+                return message
+        self.last_email_checksum = last_email_checksum
+        
         # Check for hosed denial-of-service-vacation mailers
         # or other infinite mail-loops...
         sender = self.mime_decode_header(header.get('from', 'No Sender'))
