@@ -226,7 +226,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         if not os.path.exists(spooldir): # no spool to process yet
             return
         for spoolfilepath in os.listdir(spooldir):
-            if os.path.exists(os.path.join(spooldir, '%s.lck' % spoolfilepath)):                continue # we're locked
+            if os.path.exists(os.path.join(spooldir, '%s.lck' % spoolfilepath)):
+                continue # we're locked
             spoolfilepath = os.path.join(spooldir, spoolfilepath)
             spoolfile = file(spoolfilepath)
             line = spoolfile.readline().strip()
@@ -241,6 +242,15 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
                 continue
 
             mailString = spoolfile.read()
+            (header, body) = MailBoxerTools.splitMail(mailString)
+            # a robustness check -- if we an archive ID, and we aren't in
+            # the archive, what are we doing here?
+            archive = getattr(group, group.getValueFor('storage'))
+            archive_id = header.get('x-archive-id', '').strip()
+            if archive_id and not hasattr(archive.aq_explicit, archive_id):
+                #logger.error('Spooled email had archive_id, but did not exist in archive')
+                continue
+
             group.sendMail(mailString)
             spoolfile.close()
             os.remove(spoolfilepath)
