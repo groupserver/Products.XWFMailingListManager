@@ -174,13 +174,19 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
             raise 'Forbidden', 'You are currently blocked from posting. Please contact the group administrator'
 
         moderatedlist = group.getValueFor('moderatedlist')
+        moderated = self.getValueFor('moderated')
         via_mailserver = False
-        if moderatedlist:
+        # if we are moderated _and_ we have a moderatedlist, only users in the moderated list are moderated
+        if moderated and moderatedlist:
             for address in user.get_emailAddresses():
                 if address in moderatedlist:
                     LOG('XWFVirtualMailingListArchive', INFO, 'User "%s" posted from web while moderated' % user.getId())
                     via_mailserver = True
                     break
+        # otherwise if we are moderated, everyone is moderated
+        elif moderated:
+              LOG('XWFVirtualMailingListArchive', INFO, 'User "%s" posted from web while moderated' % user.getId())
+              via_mailserver = True
 
         group_email = group.getProperty('mailto')
         group_name = group.getProperty('title')
