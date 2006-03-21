@@ -296,13 +296,26 @@ class XWFMailingList(MailBoxer):
         import re
         archive = self.restrictedTraverse(self.getValueFor('storage'),
                                           default=None)
-
+        
         # no archive available? then return immediately
         if archive is None:
             return None
             
         (header, body) = self.splitMail(mailString)
         
+        ct = header.get('content-type',None)
+        if ct:
+            encoding_match = re.search('charset=[\'\"]?(.*?)[\'\"].*?;', ct)
+            encoding = encoding_match and encoding_match.groups()[0] or None
+            if encoding:
+                for try_encoding in (encoding, 'utf-8', 'iso-8859-1'):
+                    try:
+                        mailString = mailString.decode(try_encoding)
+                        (header, body) = self.splitMail(mailString)
+                        break
+                    except (UnicodeDecodeError, LookupError):
+                        pass
+                    
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
             timetuple = rfc822.parsedate_tz(header.get('date'))
@@ -631,7 +644,7 @@ class XWFMailingList(MailBoxer):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
         
-	digest = self.xwf_email_topic_digest(REQUEST, list_object=self,
+        digest = self.xwf_email_topic_digest(REQUEST, list_object=self,
                                              getValueFor=self.getValueFor)
         
         if ((MaildropHostIsAvailable and
