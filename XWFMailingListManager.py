@@ -15,7 +15,7 @@ from OFS.Folder import Folder
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
 from Products.XWFCore.XWFCatalog import XWFCatalog
-from Products.MailBoxer.MailBoxer import MailBoxer
+from Products.MailBoxer.MailBoxer import MailBoxer, MailBoxerTools
 
 import os, time
 
