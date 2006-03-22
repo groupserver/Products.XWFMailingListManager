@@ -37,6 +37,17 @@ def convert_addrs(field):
     
     return map(lambda x: x[1], AddressList(field).addresslist)
 
+def convert_encoding_to_default(s, possible_encoding):
+    for try_encoding in (possible_encoding, 'utf-8', 'iso-8859-1', 'iso-8859-15'):
+            try:
+                s = s.decode(try_encoding)
+                s.encode(getConfiguration().default_zpublisher_encoding or 'utf-8')
+                break
+            except (UnicodeDecodeError, LookupError):
+                pass
+            
+    return s
+
 null_convert = lambda x: x
 
 class XWFMailingList(MailBoxer):
@@ -310,15 +321,9 @@ class XWFMailingList(MailBoxer):
         if ct:
             encoding_match = re.search('charset=[\'\"]?(.*?)[\'\"].*?;', ct)
             encoding = encoding_match and encoding_match.groups()[0] or 'ascii'
-            
-        for try_encoding in (encoding, 'utf-8', 'iso-8859-1', 'iso-8859-15'):
-            try:
-                mailString = mailString.decode(try_encoding)
-                mailString.encode(getConfiguration().default_zpublisher_encoding or 'utf-8')
-                (header, body) = self.splitMail(mailString)
-                break
-            except (UnicodeDecodeError, LookupError):
-                pass
+        
+        convert_encoding_to_default(mailString, encoding)
+        (header, body) = self.splitMail(mailString)
         
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
@@ -332,6 +337,7 @@ class XWFMailingList(MailBoxer):
         mailFolder = archive
         
         subject = self.mime_decode_header(header.get('subject', 'No Subject'))
+        subject = convert_encoding_to_default(subject, encoding)
         
         # correct the subject
         subject = self.tidy_subject(subject)
@@ -344,6 +350,8 @@ class XWFMailingList(MailBoxer):
         compressedsubject = re.sub('\s+', '', subject)
         
         sender = self.mime_decode_header(header.get('from','No From'))
+        sender = convert_encoding_to_default(sender, encoding)
+        
         title = "%s / %s" % (subject, sender)
         
         # we use our IdFactory to get the next ID, rather than trying something
@@ -363,11 +371,14 @@ class XWFMailingList(MailBoxer):
             mailBody = self.HtmlToText(HtmlBody)
              
         # and now add some properties to our new mailobject
-        self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender, 'ustring')
-        self.setMailBoxerMailProperty(mailObject, 'mailSubject', subject, 'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender,
+                                      'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'mailSubject',
+                                      subject,
+                                      'ustring')
         self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
         self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'utext')
-        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'string')       
+        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'ustring')
         
         types = {'date': ('date', convert_date),
                  'from': ('lines', convert_addrs),
