@@ -309,12 +309,12 @@ class XWFMailingList(MailBoxer):
         encoding = 'ascii'
         if ct:
             encoding_match = re.search('charset=[\'\"]?(.*?)[\'\"].*?;', ct)
-            encoding = encoding_match and encoding_match.groups()[0]
+            encoding = encoding_match and encoding_match.groups()[0] or 'ascii'
             
         for try_encoding in (encoding, 'utf-8', 'iso-8859-1', 'iso-8859-15'):
             try:
                 mailString = mailString.decode(try_encoding)
-                mailString.encode(getConfiguration().default_zpublisher_encoding or 'UTF-8')
+                mailString.encode(getConfiguration().default_zpublisher_encoding or 'utf-8')
                 (header, body) = self.splitMail(mailString)
                 break
             except (UnicodeDecodeError, LookupError):
