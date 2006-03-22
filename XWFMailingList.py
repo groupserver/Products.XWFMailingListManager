@@ -314,7 +314,7 @@ class XWFMailingList(MailBoxer):
         for try_encoding in (encoding, 'utf-8', 'iso-8859-1', 'iso-8859-15'):
             try:
                 mailString = mailString.decode(try_encoding)
-                mailString.encode(getConfiguration().default_zpublisher_encoding)
+                mailString.encode(getConfiguration().default_zpublisher_encoding or 'UTF-8')
                 (header, body) = self.splitMail(mailString)
                 break
             except (UnicodeDecodeError, LookupError):
