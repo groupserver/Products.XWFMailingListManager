@@ -17,6 +17,7 @@ from OFS.Folder import Folder, manage_addFolder
 
 from Products.MailBoxer.MailBoxer import *
 from Acquisition import ImplicitAcquisitionWrapper, aq_base, aq_parent
+from App.config import getConfiguration
 
 from cgi import escape
 
@@ -303,19 +304,22 @@ class XWFMailingList(MailBoxer):
             
         (header, body) = self.splitMail(mailString)
         
+        # get the content type header, and re-encode the email to the default encoding
         ct = header.get('content-type',None)
+        encoding = 'ascii'
         if ct:
             encoding_match = re.search('charset=[\'\"]?(.*?)[\'\"].*?;', ct)
-            encoding = encoding_match and encoding_match.groups()[0] or None
-            if encoding:
-                for try_encoding in (encoding, 'utf-8', 'iso-8859-1'):
-                    try:
-                        mailString = mailString.decode(try_encoding)
-                        (header, body) = self.splitMail(mailString)
-                        break
-                    except (UnicodeDecodeError, LookupError):
-                        pass
-                    
+            encoding = encoding_match and encoding_match.groups()[0]
+            
+        for try_encoding in (encoding, 'utf-8', 'iso-8859-1', 'iso-8859-15'):
+            try:
+                mailString = mailString.decode(try_encoding)
+                mailString.encode(getConfiguration().default_zpublisher_encoding)
+                (header, body) = self.splitMail(mailString)
+                break
+            except (UnicodeDecodeError, LookupError):
+                pass
+        
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
             timetuple = rfc822.parsedate_tz(header.get('date'))
@@ -359,10 +363,10 @@ class XWFMailingList(MailBoxer):
             mailBody = self.HtmlToText(HtmlBody)
              
         # and now add some properties to our new mailobject
-        self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender, 'string')
-        self.setMailBoxerMailProperty(mailObject, 'mailSubject', subject, 'string')
+        self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender, 'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'mailSubject', subject, 'ustring')
         self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
-        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'text')
+        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'utext')
         self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'string')       
         
         types = {'date': ('date', convert_date),
