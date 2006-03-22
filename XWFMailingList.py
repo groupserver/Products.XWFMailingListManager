@@ -372,13 +372,13 @@ class XWFMailingList(MailBoxer):
              
         # and now add some properties to our new mailobject
         self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender,
-                                      'ustring')
+                                      'string')
         self.setMailBoxerMailProperty(mailObject, 'mailSubject',
                                       subject,
-                                      'ustring')
+                                      'string')
         self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
-        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'utext')
-        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'text')
+        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'string')
         
         types = {'date': ('date', convert_date),
                  'from': ('lines', convert_addrs),
