@@ -425,8 +425,8 @@ class XWFMailingList(MailBoxer):
                 else:
                     break
 
-        if count >= senderlimit:
-            return (True, DateTime(earliest+senderinterval))
+            if count >= senderlimit:
+                return (True, DateTime(earliest+senderinterval))
 
         return (False, -1)
 
