@@ -299,4 +299,5 @@ def initialize(context):
         permission="Add XWF MailingListManager",
         constructors=(manage_addXWFMailingListManagerForm,
                       manage_addXWFMailingListManager),
+        icon='icons/ic-mailinglistmanager.png'
         )
