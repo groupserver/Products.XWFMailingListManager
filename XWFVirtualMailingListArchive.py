@@ -245,7 +245,8 @@ Subject: %s
             result_set = map(lambda x: x.getObject(),
                              self.find_email(query={'compressedTopic': '%s' % email_object.compressedSubject}))
             
-            # we probably did really well with the exact phrase search, but we need to be bang on
+            # We probably did really well with the exact phrase
+            #   search, but we need to be bang on 
             result_set = filter(lambda x: x and x.compressedSubject.lower() == 
                                                 email_object.compressedSubject.lower(), result_set)
             result_set = sequence.sort(result_set, (('mailDate', 'cmp', 'asc'),
@@ -254,10 +255,22 @@ Subject: %s
             result_set = (email_object,)
         
         return presentation.email(result_set=result_set)
-        
-    def thread_results(self, REQUEST, b_start, b_size, s_on, s_order):
-	""" Get a thread result set.
-        
+
+    def get_all_threads(self, REQUEST, s_on, s_order):
+        """Get all the threads associated with the email archive
+
+        ARGUMENTS
+          * "REQUEST" The HTTP request object.
+          * "s_on" What to sort on: 'mailDate', 'mailSubject' or
+            'mailCount'.
+          * "s_order" The sort order for the list, where 'asc' is
+            ascending.
+
+        RETURNS
+          The list of threads.
+
+        SIDE EFFECTS
+          None.
         """
         from DocumentTemplate import sequence
         def thread_sorter(a, b):
@@ -305,6 +318,12 @@ Subject: %s
                             
         threads.sort(thread_sorter)
 
+        return threads
+        
+    def thread_results(self, REQUEST, b_start, b_size, s_on, s_order):
+        """ Get a thread result set."""
+
+        threads = self.get_all_threads(REQUEST, s_on, s_order)
         return createBatch(threads, b_start, b_size)
         
     def view_threads(self, REQUEST, b_start=1, b_size=20, s_on='mailDate', s_order='desc'):
