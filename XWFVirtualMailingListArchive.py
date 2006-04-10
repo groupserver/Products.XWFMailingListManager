@@ -233,34 +233,121 @@ Subject: %s
         return presentation.sendemail(email_object=email_object)
         
     def view_email(self, id, show_thread=0):
-        """ Return the email view.
-        
+        """Return the email view.
+
+        ARGUMENTS
+        "id": The interger identifier of an *email* message, which is
+          used as the basis of the search. The "thread" is the list of
+          all messages with the same subject as the message "id".
+        "show_thread": Whether to show all the thread details or not,
+          as a boolean (defaults to False).
+
+        RETURNS
+          An XML Presentation instance for the thread, with three
+          arguments passed in as part of the "options" dictionary:
+           * "result_set", the list of email messages,
+           * "previous", the temporally-previous thread, as a 2-tuple
+             of thread ID and thread name, and
+           * "next", the temporally-next thread, as a 2-tuple
+             of thread ID and thread name.
+             
+        SIDE EFFECTS
+          None
         """
         from DocumentTemplate import sequence
         presentation = self.Presentation.Tofu.MailingListManager.xml
-        
+
         email_object = self.get_email(id)
         
         if show_thread:
+            q_dict = {'compressedTopic': '%s' % email_object.compressedSubject}
             result_set = map(lambda x: x.getObject(),
-                             self.find_email(query={'compressedTopic': '%s' % email_object.compressedSubject}))
+                             self.find_email(query=q_dict))
             
             # We probably did really well with the exact phrase
             #   search, but we need to be bang on 
             result_set = filter(lambda x: x and x.compressedSubject.lower() == 
-                                                email_object.compressedSubject.lower(), result_set)
-            result_set = sequence.sort(result_set, (('mailDate', 'cmp', 'asc'),
-                                                    ('mailSubject', 'nocase', 'asc')))
+                                email_object.compressedSubject.lower(),
+                                result_set)
+            result_set = sequence.sort(result_set, (('mailDate',
+                                                     'cmp', 'asc'), 
+                                                    ('mailSubject',
+                                                     'nocase',
+                                                     'asc')))
+            # Get the previous and next threads
+            subjectQuery = {'mailSubject' : email_object.mailSubject}
+            previous, next = \
+                      self.get_previous_next_threads(subjectQuery,
+                                                     s_on='mailDate',
+                                                     s_order='asc')
         else:
             result_set = (email_object,)
+            subjectQuery = {'mailSubject' : email_object.mailSubject}
+            previous, next = \
+                      self.get_previous_next_threads(subjectQuery,
+                                                     s_on='mailDate',
+                                                     s_order='asc')
         
-        return presentation.email(result_set=result_set)
+        return presentation.email(result_set=result_set,
+                                  previous=previous, next=next)
+
+    def get_previous_next_threads(self, REQUEST, s_on, s_order):
+        """Get the threads that are temporally before and after the
+        current thread
+
+        ARGUMENTS
+          * "REQUEST" the request dictionary, which is used as a query
+            dictionary.
+          * "s_on" what to sort on: 'mailDate', 'mailSubject' or
+            'mailCount'.
+          * "s_order" the sort order for the list, where 'asc' is
+            ascending.
+
+        RETURNS
+          A 2-tuple of the previous and next threads, or None if the
+          thread do not exist. Each thread is a 2-tuple of the thread
+          ID and the thread subject.
+          
+        SIDE EFFECTS
+          None.
+        """
+        previous = None
+        next = None
+
+        # Get all the thread names.
+        threads = self.get_all_threads({}, s_on, s_order)
+        threadNames = map(lambda thread: thread[1][0]['mailSubject'],
+                          threads)
+
+        # Find the current thread
+        currentThreadName = REQUEST['mailSubject']
+
+        # If the current thread is not in the list of threads, then we
+        #   have problems, but I am a defensive coder.
+        if currentThreadName in threadNames:
+            # Get the next and previous threads.
+            currentThreadIndex = threadNames.index(currentThreadName)
+
+            previousIndex = currentThreadIndex - 1
+            if previousIndex >= 0:
+                previousSubject = threads[previousIndex][1][0]['mailSubject']
+                previousId = threads[previousIndex][1][0]['id']
+                previous = (previousId, previousSubject)
+                
+            nextIndex = currentThreadIndex + 1
+            if nextIndex < len(threads):
+                nextSubject = threads[nextIndex][1][0]['mailSubject']
+                nextId = threads[nextIndex][1][0]['id']
+                next = (nextId, nextSubject)
+
+        return (previous, next)
 
     def get_all_threads(self, REQUEST, s_on, s_order):
         """Get all the threads associated with the email archive
 
         ARGUMENTS
-          * "REQUEST" The HTTP request object.
+          * "REQUEST" The HTTP request object, which is used as a
+            query dictionary.
           * "s_on" What to sort on: 'mailDate', 'mailSubject' or
             'mailCount'.
           * "s_order" The sort order for the list, where 'asc' is
@@ -281,7 +368,7 @@ Subject: %s
             else:
                 return 0
                 
-            if not a > b:
+            if not a > b: 
                 return s_order == 'asc' and -1 or 1
             elif not a < b:
                 return s_order == 'asc' and 1 or -1
@@ -326,21 +413,25 @@ Subject: %s
         threads = self.get_all_threads(REQUEST, s_on, s_order)
         return createBatch(threads, b_start, b_size)
         
-    def view_threads(self, REQUEST, b_start=1, b_size=20, s_on='mailDate', s_order='desc'):
+    def view_threads(self, REQUEST, b_start=1, b_size=20,
+                     s_on='mailDate', s_order='desc'):
         """ Return the threaded view.
         
         """
         presentation = self.Presentation.Tofu.MailingListManager.xml
         presenter = getattr(presentation, 'threaded')
 	
-	(b_start, b_end, b_size, 
-	 result_size, result_set) = self.thread_results(REQUEST, b_start, b_size, s_on, s_order)
+        (b_start, b_end, b_size, 
+         result_size, result_set) = self.thread_results(REQUEST, b_start,
+                                                        b_size, s_on,
+                                                        s_order)
 	
         return presenter(result_set=result_set,
                          b_start=b_start+1, b_size=b_size, b_end=b_end,
                          result_size=result_size)
 
-    def view_thread_rss(self, REQUEST, b_start=1, b_size=20, s_on='mailDate', s_order='desc'):
+    def view_thread_rss(self, REQUEST, b_start=1, b_size=20,
+                        s_on='mailDate', s_order='desc'):
         """ Return the threaded view.
         
         """
@@ -348,7 +439,10 @@ Subject: %s
         presenter = getattr(presentation, 'threaded.rss')
 
         (b_start, b_end, b_size, 
-	 result_size, result_set) = self.thread_results(REQUEST, b_start, b_size, s_on, s_order)
+         result_size, result_set) = self.thread_results(REQUEST,
+                                                        b_start,
+                                                        b_size, s_on,
+                                                        s_order)
 	
         return presenter(result_set=result_set,
                          b_start=b_start+1, b_size=b_size, b_end=b_end,
@@ -363,7 +457,8 @@ Subject: %s
         return presentation.search()
 
     security.declarePublic('view_results')
-    def view_results(self, REQUEST, b_start=1, b_size=20, s_on='mailDate', s_order='desc'):
+    def view_results(self, REQUEST, b_start=1, b_size=20,
+                     s_on='mailDate', s_order='desc'):
         """ Return the results view.
         
             Optionally specify the start and end point of the result set,
@@ -376,16 +471,22 @@ Subject: %s
         result_set = self.find_email(REQUEST)
         
         if s_on == 'mailDate':
-            result_set = sequence.sort(result_set, (('mailDate', 'cmp', s_order),
-                                                    ('mailSubject', 'nocase', s_order)))
+            result_set = sequence.sort(result_set, (('mailDate',
+                                                     'cmp', s_order),
+                                                    ('mailSubject',
+                                                     'nocase',
+                                                     s_order)))
         else:
             result_set = sequence.sort(result_set, ((s_on, 'nocase', s_order),
-                                                    ('mailDate', 'cmp', s_order)))
+                                                    ('mailDate',
+                                                     'cmp', s_order)))
         
-        (b_start, b_end, b_size, result_size, result_set) = createBatch(result_set, b_start, b_size)
+        (b_start, b_end, b_size, result_size,
+         result_set) = createBatch(result_set, b_start, b_size)
         
         return presentation.results(result_set=result_set,
-                                    b_start=b_start+1, b_size=b_size, b_end=b_end,
+                                    b_start=b_start+1, b_size=b_size,
+                                    b_end=b_end,
                                     result_size=result_size)        
         
     security.declareProtected('Upgrade objects', 'upgrade')
