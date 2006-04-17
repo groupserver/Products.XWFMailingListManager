@@ -553,7 +553,7 @@ class XWFMailingList(MailBoxer):
                 message = 'Blocked user: %s from posting' % user.getId()
                 LOG('MailBoxer', PROBLEM, message)
                 user.send_notification('post_blocked', self.listId(),
-                                       ndict={'email': mailString})
+                                       n_dict={'email': mailString})
                 return message
             
             for required_property in required_properties:
@@ -566,7 +566,7 @@ class XWFMailingList(MailBoxer):
                     message = 'Blocked user because of missing user properties: %s' % user.getId()
                     LOG('MailBoxer', PROBLEM, message)
                     user.send_notification('missing_properties', self.listId(),
-                                           ndict={'email': mailString})
+                                           n_dict={'email': mailString})
                     return message
     
     def requestMail(self, REQUEST):
