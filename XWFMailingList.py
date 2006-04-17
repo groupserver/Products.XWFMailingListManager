@@ -544,8 +544,10 @@ class XWFMailingList(MailBoxer):
                 return message
         
         # GroupServer specific checks
-        blocked_members = self.getProperty('blocked_members')
-        if blocked_members:
+        blocked_members = filter(None, self.getProperty('blocked_members', []))
+        required_properties = filter(None, self.getProperty('required_properties', []))
+        
+        if blocked_members or required_properties:
             user = self.acl_users.get_userByEmail(email)
             if user and user.getId() in blocked_members:
                 message = 'Blocked user: %s from posting' % user.getId()
@@ -553,7 +555,20 @@ class XWFMailingList(MailBoxer):
                 user.send_notification('post_blocked', self.listId(),
                                        ndict={'email': mailString})
                 return message
-                
+            
+            for required_property in required_properties:
+                # we just test for existence, and being set.
+                # for backward compatibility we test for the string being
+                # set to the string 'None' too.
+                prop_val = str(user.getProperty(required_property, None))
+                prop_val = prop_val.strip()
+                if not prop_val or prop_val == 'None':
+                    message = 'Blocked user because of missing user properties: %s' % user.getId()
+                    LOG('MailBoxer', PROBLEM, message)
+                    user.send_notification('missing_properties', self.listId(),
+                                           ndict={'email': mailString})
+                    return message
+    
     def requestMail(self, REQUEST):
         # Handles un-/subscribe-requests.
 
