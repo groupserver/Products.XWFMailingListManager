@@ -518,7 +518,8 @@ class XWFMailingList(MailBoxer):
                 user = self.acl_users.get_userByEmail(email)
                 if user:
                     user.send_notification('sender_limit_exceeded', self.listId(),
-                                            n_dict={'expiry_time': DateTime(earliest+senderinterval)})
+                                            n_dict={'expiry_time': DateTime(earliest+senderinterval),
+                                                    'email': mailString})
                     message = ('Sender %s has sent %s mails in %s seconds' %
                                               (sender, count, senderinterval))
                 LOG('MailBoxer', PROBLEM, message)
@@ -549,7 +550,8 @@ class XWFMailingList(MailBoxer):
             if user and user.getId() in blocked_members:
                 message = 'Blocked user: %s from posting' % user.getId()
                 LOG('MailBoxer', PROBLEM, message)
-                user.send_notification('post_blocked', self.listId())
+                user.send_notification('post_blocked', self.listId(),
+                                       ndict={'email': mailString})
                 return message
                 
     def requestMail(self, REQUEST):
@@ -789,7 +791,8 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context, mail=mail, body=body)
+            reply_text = reply(REQUEST, list_object=context,
+                               mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
             pass
