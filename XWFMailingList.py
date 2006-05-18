@@ -142,6 +142,20 @@ class XWFMailingList(MailBoxer):
                 users.append(user)
                 
         return users
+
+    security.declareProtected('Manage properties','get_memberUserCount')
+    def get_memberUserCount(self):
+        """ Get a count of the number of users corresponding to the
+            membership list, assuming we can.
+        
+        """
+        member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
+        uids = []
+        for gid in member_groups:
+            group = self.acl_users.getGroupById(gid)
+            uids += group.getUsers()
+                
+        return len(uids)
     
     security.declareProtected('Manage properties','get_moderatedUserObjects')
     def get_moderatedUserObjects(self):
@@ -569,6 +583,13 @@ class XWFMailingList(MailBoxer):
                                            n_dict={'email': mailString})
                     return message
     
+        # look to see if we have a custom_mailcheck hook. If so, call it.
+        # custom_mailcheck should return True if the message is to be blocked
+        custom_mailcheck = getattr(context, 'custom_mailcheck', None)
+        if custom_mailcheck:
+            if custom_mailcheck(mailinglist=self, sender=email, message=message):
+                return message
+
     def requestMail(self, REQUEST):
         # Handles un-/subscribe-requests.
 
