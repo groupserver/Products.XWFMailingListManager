@@ -585,7 +585,7 @@ class XWFMailingList(MailBoxer):
     
         # look to see if we have a custom_mailcheck hook. If so, call it.
         # custom_mailcheck should return True if the message is to be blocked
-        custom_mailcheck = getattr(context, 'custom_mailcheck', None)
+        custom_mailcheck = getattr(self, 'custom_mailcheck', None)
         if custom_mailcheck:
             if custom_mailcheck(mailinglist=self, sender=email, message=message):
                 return message
