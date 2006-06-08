@@ -333,7 +333,7 @@ class XWFMailingList(MailBoxer):
         ct = header.get('content-type',None)
         encoding = 'ascii'
         if ct:
-            encoding_match = re.search('charset=[\'\"]?(.*?)[\'\"].*?;', ct)
+            encoding_match = re.search('charset=[\'\"]?(.*?)[\'\"]?;', ct)            
             encoding = encoding_match and encoding_match.groups()[0] or 'ascii'
         
         convert_encoding_to_default(mailString, encoding)
