@@ -458,11 +458,12 @@ Subject: %s
 
     security.declarePublic('view_results')
     def view_results(self, REQUEST, b_start=1, b_size=20,
-                     s_on='mailDate', s_order='desc'):
+                     s_on='mailDate', s_order='desc',summary=1):
         """ Return the results view.
         
             Optionally specify the start and end point of the result set,
-            term to sort on, and the sort order.
+            term to sort on, and the sort order. Finally, a flag to indicate
+            if a summary of the results should be shown, or not.
         
         """ 
         from DocumentTemplate import sequence
@@ -487,7 +488,8 @@ Subject: %s
         return presentation.results(result_set=result_set,
                                     b_start=b_start+1, b_size=b_size,
                                     b_end=b_end,
-                                    result_size=result_size)        
+                                    result_size=result_size,
+                                    resultsummary=summary)
         
     security.declareProtected('Upgrade objects', 'upgrade')
     security.setPermissionDefault('Upgrade objects', ('Manager', 'Owner'))
