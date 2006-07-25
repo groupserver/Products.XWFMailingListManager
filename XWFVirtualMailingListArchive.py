@@ -456,9 +456,35 @@ Subject: %s
         
         return presentation.search()
 
+    security.declarePublic('post_results')
+    def post_results(self, REQUEST, b_start, b_size, s_on, s_order):
+        """ Get a post result set."""
+
+        threads = self.get_all_threads(REQUEST, s_on, s_order)
+        return createBatch(threads, b_start, b_size)
+
+    def get_all_posts(self, REQUEST, s_on, s_order):
+        from DocumentTemplate import sequence
+        presentation = self.Presentation.Tofu.MailingListManager.xml
+        
+        result_set = self.find_email(REQUEST)
+        
+        if s_on == 'mailDate':
+            result_set = sequence.sort(result_set, (('mailDate',
+                                                     'cmp', s_order),
+                                                    ('mailSubject',
+                                                     'nocase',
+                                                     s_order)))
+        else:
+            result_set = sequence.sort(result_set, ((s_on, 'nocase', s_order),
+                                                    ('mailDate',
+                                                     'cmp', s_order)))
+        
+        return createBatch(result_set, b_start, b_size)
+
     security.declarePublic('view_results')
     def view_results(self, REQUEST, b_start=1, b_size=20,
-                     s_on='mailDate', s_order='desc',summary=1):
+                     s_on='mailDate', s_order='desc', summary=1):
         """ Return the results view.
         
             Optionally specify the start and end point of the result set,
