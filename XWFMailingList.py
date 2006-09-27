@@ -374,10 +374,15 @@ class XWFMailingList(MailBoxer):
         
         self.addMailBoxerMail(mailFolder, id, title)
         mailObject = getattr(mailFolder, id)
+
+        LOG('MailBoxer', INFO,  'mail string is %s long' % (len(mailString)))
         
         # unpack attachments
         (TextBody, ContentType, HtmlBody, Attachments) = self.unpackMail(
                                                               mailString)
+
+        LOG('MailBoxer', INFO,  'found %s attachments' % (len(Attachments)))
+
         # ContentType is only set for the TextBody
         if ContentType:
             mailBody = TextBody
@@ -393,7 +398,7 @@ class XWFMailingList(MailBoxer):
         self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
         self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'text')
         self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'string')
-        
+
         types = {'date': ('date', convert_date),
                  'from': ('lines', convert_addrs),
                  'to': ('lines', convert_addrs),
@@ -411,9 +416,21 @@ class XWFMailingList(MailBoxer):
         
         sender_id = self.get_mailUserId(mailObject.getProperty('from', []))
         self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'string')
-        
-        self.catalogMailBoxerMail(mailObject)
 
+        ids = []
+        for file in Attachments:
+            LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (file['filename'], file['maintype']))
+            id = self.addMailBoxerFile(mailObject,
+                                  None,
+                                  file['filename'],
+                                  file['filebody'], 
+                                  file['maintype'] + '/' + file['subtype'])
+            ids.append(id)
+        
+        self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'string')
+                
+        self.catalogMailBoxerMail(mailObject)
+        
         return mailObject
     
     def is_senderBlocked(self, user_id):
@@ -1058,6 +1075,25 @@ class XWFMailingList(MailBoxer):
                                    title=title, mail=mail, body=body)
         else:
             return ""
+
+    def addMailBoxerFile(self, archiveObject, id, title, data, content_type):
+        """ Adds an attachment as File.
+
+            MailBoxerFile should be derived
+            from plain-Zope-File to store title (=>filename),
+        """
+        # TODO: group ID should be more robust
+        group_id = self.getId()
+        storage = self.FileLibrary2.get_fileStorage()
+        id = storage.add_file(data)
+        file = storage.get_file(id)
+        topic = archiveObject.getProperty('mailSubject', '')
+        creator = archiveObject.getProperty('mailUserId', '')
+        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'],
+                                     group_ids=[group_id], dc_creator=creator,
+                                     topic=topic)
+
+        return id
     
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt',
