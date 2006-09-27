@@ -375,13 +375,9 @@ class XWFMailingList(MailBoxer):
         self.addMailBoxerMail(mailFolder, id, title)
         mailObject = getattr(mailFolder, id)
 
-        LOG('MailBoxer', INFO,  'mail string is %s long' % (len(mailString)))
-        
         # unpack attachments
         (TextBody, ContentType, HtmlBody, Attachments) = self.unpackMail(
                                                               mailString)
-
-        LOG('MailBoxer', INFO,  'found %s attachments' % (len(Attachments)))
 
         # ContentType is only set for the TextBody
         if ContentType:
@@ -420,6 +416,10 @@ class XWFMailingList(MailBoxer):
         ids = []
         for file in Attachments:
             LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (file['filename'], file['maintype']))
+            if HtmlBody == file['filebody']:
+                # We might want to do something with the HTML body some day
+                continue
+
             id = self.addMailBoxerFile(mailObject,
                                   None,
                                   file['filename'],
@@ -427,7 +427,9 @@ class XWFMailingList(MailBoxer):
                                   file['maintype'] + '/' + file['subtype'])
             ids.append(id)
         
-        self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'string')
+        if ids:            
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'string')
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', len(mailBody.replace('\r', '')), 'string')
                 
         self.catalogMailBoxerMail(mailObject)
         
@@ -669,7 +671,10 @@ class XWFMailingList(MailBoxer):
                         group_object = self.Scripts.get.group_by_id(self.getId())
                         #division_id = group_object.get_division_id()
                         division = group_object.Scripts.get.division_object()
-                        div_mem = self.Scripts.get.division_membership(division.getId())
+                        div_groups = division.groups_with_local_role('DivisionMember')
+                        div_mem = None
+                        if len(div_groups) == 1:
+                            div_mem = div_groups[0]
                         if div_mem:
                             v_groups = ['%s_member' % self.getId(), div_mem]
                         else:
@@ -1092,6 +1097,8 @@ class XWFMailingList(MailBoxer):
         file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'],
                                      group_ids=[group_id], dc_creator=creator,
                                      topic=topic)
+
+        file.reindex_file()
 
         return id
     
