@@ -251,12 +251,15 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
                 #logger.error('Spooled email had archive_id, but did not exist in archive')
                 continue
 
-            group.sendMail(mailString)
-            spoolfile.close()
-            os.remove(spoolfilepath)
-            # sleep a little
-            time.sleep(0.5)
-
+            try:
+                group.sendMail(mailString)
+                spoolfile.close()
+                os.remove(spoolfilepath)
+                # sleep a little
+                time.sleep(0.5)
+            except:
+                pass
+                
     security.declareProtected('Upgrade objects', 'upgrade')
     security.setPermissionDefault('Upgrade objects', ('Manager', 'Owner'))
     def upgrade(self):
