@@ -415,17 +415,19 @@ class XWFMailingList(MailBoxer):
 
         ids = []
         for file in Attachments:
-            LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (file['filename'], file['maintype']))
             if HtmlBody == file['filebody']:
                 # We might want to do something with the HTML body some day
-                continue
-
-            id = self.addMailBoxerFile(mailObject,
+                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (file['filename'], file['maintype']))
+            elif file['content-id']:
+                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (file['filename'], file['maintype']))
+            else:
+                LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (file['filename'], file['maintype']))
+                id = self.addMailBoxerFile(mailObject,
                                   None,
                                   file['filename'],
                                   file['filebody'], 
                                   file['maintype'] + '/' + file['subtype'])
-            ids.append(id)
+                ids.append(id)
         
         if ids:            
             self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'string')
