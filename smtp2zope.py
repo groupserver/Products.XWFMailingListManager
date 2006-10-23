@@ -44,7 +44,7 @@ from stat import ST_NLINK, ST_MTIME
 AUTOMATIC = 1
 
 # Default max size of emails, for use with AUTOMATIC
-DEFAULT_MAX_SIZE = 20000
+DEFAULT_MAX_SIZE = 200000000
 
 # If you wish to use HTTP Basic Authentication, set a user id and password here.
 # Alternatively you can call the URL like:
@@ -63,7 +63,7 @@ AUTHORIZATION='username:password'
 # If attachments are to be stripped, MailBoxerTools.py must also be available
 # in your PYTHONPATH. If MailBoxerTools.py is not available, this will be set
 # back to 0.
-STRIP_ATTACHMENTS = 1 
+STRIP_ATTACHMENTS = 0
 
 # Notify Zope-side MailBoxer of events (such as attachments that have been
 # stripped). Messages will still be logged to the syslog (if available).
@@ -378,21 +378,34 @@ def eventNotification(url, event_codes, mailString):
         url = getAuthorizedURL(url, AUTHORIZATION)
         server = xmlrpclib.ServerProxy(url)
         headers, body = MailBoxerTools.splitMail(mailString)
-        server.manage_event(event_codes, headers)
+        try:
+            server.manage_event(event_codes, headers)
+        except Exception, e:
+            log_error('A problem, "%s", occurred uploading email to server %s (doing event notification)' % (e, callURL))
+            sys.exit(EXIT_NOPERM)
     
 def getListInfo(url, mailto):
     url = getAuthorizedURL(url, AUTHORIZATION)
     server = xmlrpclib.ServerProxy(url)
-    properties = server.get_listPropertiesFromMailto(mailto)
+    try:
+        properties = server.get_listPropertiesFromMailto(mailto)
+    except Exception, e:
+        # Server down? EXIT_TEMPFAIL causes the MTA to try again later.
+        log_error('A problem, "%s", occurred uploading email to server %s (getting list properties)' % (e, callURL))
+        sys.exit(EXIT_TEMPFAIL)
     
     return properties
 
 def handleBounce(url, group_id, email):
     url = getAuthorizedURL(url, AUTHORIZATION)
     server = xmlrpclib.ServerProxy(url)
-    
-    return server.process_bounces(group_id, email)
 
+    try:
+        return server.process_bounces(group_id, email)
+    except Exception, e:
+        log_error('A problem, "%s", occurred uploading email to server %s (doing bounce handling)' % (e, callURL))
+        sys.exit(EXIT_NOPERM)
+    
 ##
 # Main part of submitting an email to a http-server.
 # All requests will be serialized with locks.
