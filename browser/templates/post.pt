@@ -80,6 +80,51 @@
     <tal:block metal:fill-slot="style">
       <link rel="stylesheet" title="Popup-Help Stylesheet" type="text/css" 
         href="++resource++help.css"/>
+      <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
+        href="++resource++post.css"/>
+      <style type="text/css">
+        #singlePostTopicNavigation .label {
+          font-size: 12px;
+          font-weight: bold;
+          color: #6c911d;
+        }
+        #singlePostTopicNavigation ul li {
+          display: inline;
+          margin: 0px 30px 0px 0px;
+          padding: 5px 0px 0px 0px;
+          font-size: 11px;
+        }
+        #singlePostTopicNavigation a {
+          padding: 5px 5px 5px 30px;
+          background-repeat: no-repeat;
+          background-position: left center;
+        }
+        #singlePostTopicNavigation a:hover {
+          background-color: #eff0ed;
+        }
+        #singlePostTopicNavigation .first a {
+          background-image: url('++resource++postImages/arrow_left_bar.png');
+        }
+        #singlePostTopicNavigation .prev a {
+          background-image: url('++resource++postImages/arrow_left.png');
+        }
+        #singlePostTopicNavigation .next a, #singlePostTopicNavigation .last a {
+          padding: 5px 30px 5px 5px;
+          background-position: right center;
+        }
+        #singlePostTopicNavigation .next a {
+          background-image: url('++resource++postImages/arrow_right.png');
+        }
+        #singlePostTopicNavigation .last a {
+          background-image: url('++resource++postImages/arrow_right_bar.png');
+        }
+        #singlePostTopicNavigation .topicLink {
+          display: block;
+        }
+        #singlePostTopicNavigation .topicLink a {
+          background-image: url('++resource++postImages/arrow_up.png');
+        }
+      </style>
     </tal:block>
   </head>
   
@@ -129,10 +174,10 @@
         
         <tal:block tal:define="email python:view.get_email()">
           <h1>Post in
-            <span tal:content="email/mailSubject">Topic</span></h1>
+            <cite tal:content="email/mailSubject">Topic</cite></h1>
         
-          <div class="xhtml2-nl" id="single-post-topic-navigation">
-            <p class="xhtml2-label">Topic Navigation</p>
+          <div class="xhtml2-nl" id="singlePostTopicNavigation">
+            <p class="label">Topic Navigation</p>
             <ul>
               <li class="first">
                 <a tal:condition="prev"
@@ -140,24 +185,26 @@
                   title string:First post in ${email/mailSubject};">First post</a>
                 <span tal:condition="not:prev">First post</span>
               </li>
-              <li>
+              <li class="prev">
                 <a tal:condition="prev"
                   tal:attributes="href string:${postURLPrefix}${prev/id};
                   title string:Previous post in ${email/mailSubject};">Previous post</a>
                 <span tal:condition="not:prev">Previous post</span>
               </li>
-              <li>All posts</li>
-              <li>
+              <li class="next">
                 <a tal:condition="next"
                   tal:attributes="href string:${postURLPrefix}${next/id};
                   title string:Next post in ${email/mailSubject};">Next post</a>
                 <span tal:condition="not:next">Next post</span>
               </li>
-              <li>
+              <li class="last">
                 <a tal:condition="next"
                   tal:attributes="href string:${postURLPrefix}${last/id};
                   title string:Last post in ${email/mailSubject};">Last post</a>
-                <span tal:condition="not:next">Next post</span>                
+                <span tal:condition="not:next">Last post</span>                
+              </li>
+              <li class="topicLink"><a href="#">Full topic 
+                  <cite class="topic" tal:content="email/mailSubject">topic name</cite></a>
               </li>
             </ul>
           </div>

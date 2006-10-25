@@ -26,5 +26,12 @@
   <!-- A marker interface -->
   <interface interface=".interfaces.IGSMessagesFolder"
     type="zope.app.content.interfaces.IContentType" />
-      
+  
+  <browser:resource name="post.css"
+    file="browser/stylesheets/post.css" 
+    permission="zope2.View" />
+  
+  <browser:resourceDirectory name="postImages"
+    directory="browser/images/postImages/" permission="zope2.View" />
+  
 </configure>
