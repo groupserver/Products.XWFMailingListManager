@@ -128,6 +128,25 @@ class GSPostView(Products.Five.BrowserView):
           retval = self.topic[-1]
           return retval
 
+      def user_authored(self):
+          '''Did the user write the email message?
+          
+          ARGUMENTS
+              None.
+          
+          RETURNS
+              A boolean that is "True" if the current user authored the
+              email message, "False" otherwise.
+              
+          SIDE EFFECTS
+              None.'''
+          assert self.email
+          assert self.user
+          retval = False
+          retval = self.context.user.getId() == self.email['mailUserId']
+          assert retval in (True, False)
+          return retval
+
       def process_form(self):
           pass
 

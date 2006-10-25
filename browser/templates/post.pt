@@ -6,8 +6,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   metal:use-macro="context/@@groupserver_layout/page">
   <head>
-    
-  	<title metal:fill-slot="title">
+
+    <!--Todo: add the division name.-->
+  	<title metal:fill-slot="title" 
+      tal:content="python:view.get_email()['mailSubject']">
       Standard Template for a Single Post
     </title>
     
@@ -18,33 +20,38 @@
     <meta name="date" content="2006-10-25"/>
     
     <tal:block metal:fill-slot="metadata" 
-      tal:define="topicName python:view.get_email()['mailSubject'];
-      postURLPrefix string:post.html?id=">
+      tal:define="global topicName python:view.get_email()['mailSubject'];
+      global postURLPrefix string:post.html?id=">
       <!-- The documents related to this post -->
       <link rel="next" 
-        tal:define="next python:view.get_next_email();"
+        tal:define="global next python:view.get_next_email();"
         tal:condition="next"
         tal:attributes="title python:'Next post in &#8220;%s&#8221;' % topicName;
         href python:'%s%s' % (postURLPrefix, next['id']);">&#160;</link>
       <link rel="prev" 
-        tal:define="prev python:view.get_previous_email();"
+        tal:define="global prev python:view.get_previous_email();"
         tal:condition="prev"
         tal:attributes="title python:'Previous post in &#8220;%s&#8221;' % topicName;
         href python:'%s%s' % (postURLPrefix, prev['id']);">&#160;</link>
+      <link rel="first"
+        tal:condition="prev"
+        tal:define="global first python:view.get_first_email()"
+        tal:attributes="title python:'First post in &#8220;%s&#8221;' % topicName;
+        href python:'%s%s' % (postURLPrefix, first['id']);">&#160;</link>
+      <link rel="last"
+        tal:condition="next"
+        tal:define="global last python:view.get_last_email()"
+        tal:attributes="title python:'Latest post in &#8220;%s&#8221;' % topicName;
+        href python:'%s%s' % (postURLPrefix, last['id']);">&#160;</link>
       <tal:block 
         tal:define="title python:'All posts in &#8220;%s&#8221;' % topicName;
-        url python:view.get_first_email()['id']">
+        url first">
         <link rel="index" 
           tal:attributes="title title; href url">&#160;</link>
         <link rel="up" 
           tal:attributes="title title; href url">&#160;</link>
       </tal:block>
-      <link rel="first"
-        tal:attributes="title python:'First post to &#8220;%s&#8221;' % topicName;
-        href python:'%s%s' % (postURLPrefix, view.get_first_email()['id']);">&#160;</link>
-      <link rel="last"
-        tal:attributes="title python:'Latest post to &#8220;%s&#8221;' % topicName;
-        href python:'%s%s' % (postURLPrefix, view.get_last_email()['id']);">&#160;</link>
+      
       <link rel="bookmark" title="Group Homepage" href="">&#160;</link>
       <link rel="bookmark" title="Division Homepage" href="/">&#160;</link>
     </tal:block>
@@ -120,9 +127,66 @@
         <div id="replacedHelpPane" 
           style="width: 0px; height 0px;">&#160;</div>
         
-        <p>
-          This should never be seen.
-        </p>
+        <tal:block tal:define="email python:view.get_email()">
+          <h1>Post in
+            <span tal:content="email/mailSubject">Topic</span></h1>
+        
+          <div class="xhtml2-nl" id="single-post-topic-navigation">
+            <p class="xhtml2-label">Topic Navigation</p>
+            <ul>
+              <li class="first">
+                <a tal:condition="prev"
+                  tal:attributes="href string:${postURLPrefix}${first/id};
+                  title string:First post in ${email/mailSubject};">First post</a>
+                <span tal:condition="not:prev">First post</span>
+              </li>
+              <li>
+                <a tal:condition="prev"
+                  tal:attributes="href string:${postURLPrefix}${prev/id};
+                  title string:Previous post in ${email/mailSubject};">Previous post</a>
+                <span tal:condition="not:prev">Previous post</span>
+              </li>
+              <li>All posts</li>
+              <li>
+                <a tal:condition="next"
+                  tal:attributes="href string:${postURLPrefix}${next/id};
+                  title string:Next post in ${email/mailSubject};">Next post</a>
+                <span tal:condition="not:next">Next post</span>
+              </li>
+              <li>
+                <a tal:condition="next"
+                  tal:attributes="href string:${postURLPrefix}${last/id};
+                  title string:Last post in ${email/mailSubject};">Last post</a>
+                <span tal:condition="not:next">Next post</span>                
+              </li>
+            </ul>
+          </div>
+          
+          <div 
+            tal:define="authored python:False and view.user_authored();
+            class python:authored and 'emaildetails-self-odd' or 'emaildetails-odd'"
+            tal:attributes="class class">
+            
+            <p class="email-metadata" 
+              tal:attributes="id email/id">
+              <span class="author">
+                <strong>From:</strong>
+                <span class="name" tal:content="python:view.context.Scripts.get.user_realnames(email['mailUserId'])">Me!</span>
+              </span>
+              <span class="posted">
+                <strong>Date:</strong>
+                <span class="date" 
+                  tal:content="email/mailDate">Today, Tomorrow, Timaru</span>
+              </span>
+              <a class="email-link"
+                tal:attributes="href python:'/r/post/%s' % email['id'];"
+                title="A short link to this post">Short link</a>
+            </p><!--email-metadata-->
+            
+            <pre class="email-body"
+              tal:content="email/mailBody">This should not be seen</pre>
+          </div><!--email-details-->
+        </tal:block>
 
       </form><!-- The One True XFrom-->
     </tal:block>
