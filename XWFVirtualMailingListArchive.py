@@ -198,7 +198,8 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
             message_id = orig_email.getProperty('message-id', '')
             
         name = '%s %s' % (user.preferredName, user.lastName)
-        
+
+
         headers = """From: %s <%s>
 To: %s <%s>
 Subject: %s

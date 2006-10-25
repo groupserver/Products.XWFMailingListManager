@@ -1,7 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <configure xmlns="http://namespaces.zope.org/zope"
-           xmlns:five="http://namespaces.zope.org/five">
-    <five:deprecatedManageAddDelete
-           class="Products.XWFMailingListManager.XWFMailingListManager.XWFMailingListManager" />
-    <five:deprecatedManageAddDelete
-           class="Products.XWFMailingListManager.XWFVirtualMailingListArchive.XWFVirtualMailingListArchive" />
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:rdb="http://namespaces.zope.org/rdb"
+  xmlns:sqlos="http://namespaces.sqlobject.org/sqlos"
+  xmlns:five="http://namespaces.zope.org/five">
+  
+  <five:deprecatedManageAddDelete
+    class="Products.XWFMailingListManager.XWFMailingListManager.XWFMailingListManager" />
+  <five:deprecatedManageAddDelete
+    class="Products.XWFMailingListManager.XWFVirtualMailingListArchive.XWFVirtualMailingListArchive" />
+  
+  <!-- declare a marker interface on the Folder class to allow us 
+    to add marker Interfaces, views and adaptation -->
+  <five:implements class="OFS.Folder.Folder"
+    interface="zope.app.folder.interfaces.IFolder" />
+  
+  <!-- make it known to Five -->
+  <five:traversable class="OFS.Folder.Folder" />
+  
+  <!--View of the index-pages -->
+  <browser:page for=".interfaces.IGSMessagesFolder" name="post.html"
+    class=".view.GSPostView"
+    template="browser/templates/post.pt" permission="zope2.View" />
+  
+  <!-- A marker interface -->
+  <interface interface=".interfaces.IGSMessagesFolder"
+    type="zope.app.content.interfaces.IContentType" />
+      
 </configure>
