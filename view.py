@@ -68,20 +68,16 @@ class GSPostView(Products.Five.BrowserView):
           
           # Mostly taken from XWFVirtualMailingListArchive.view_email
           
-          query = {}
-          query['compressedTopic'] = self.email.compressedSubject
-          self.topic = map(lambda e: e.getObject(), 
-                           self.archive.find_email(query))
-          # We probabily did really well with the exact-prase search, but
-          #   we need to be bang on
-          subj = self.email.compressedSubject.lower()
-          f = lambda e: e and e.compressedSubject.lower() == subj  
-          self.topic = filter(f, self.topic)
+          query = {'compressedTopic': '%s' % self.email.compressedSubject}
+          result = self.archive.find_email(query)
+          assert result
           
+          self.topic = map(lambda x: x.getObject(), result)
+
           sortOrder = (('mailDate', 'cmp', 'asc'), 
                        ('mailSubject', 'nocase', 'asc'))
           DocumentTemplate.sequence.sort(self.topic, sortOrder)          
-          
+  
           assert self.topic
           assert self.topic.append
           assert len(self.topic) > 0

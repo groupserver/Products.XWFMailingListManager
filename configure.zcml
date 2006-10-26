@@ -27,7 +27,7 @@
   <interface interface=".interfaces.IGSMessagesFolder"
     type="zope.app.content.interfaces.IContentType" />
   
-  <browser:resource name="post.css"
+  <browser:resource name="singlePost.css"
     file="browser/stylesheets/post.css" 
     permission="zope2.View" />
   

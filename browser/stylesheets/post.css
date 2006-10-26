@@ -1,14 +1,42 @@
 /* Stylesheet for the single-post view of a topic */
-#singlePostTopicNavigation {
-  background-color: red;
+#singlePostTopicNavigation .label {
+    font-size: 12px; 
+    font-weight: bold;
+    color: #6c911d;
 }
-#singlePostTopicNavigation li {
-  display: inline;
-  margin: 0px;
-  padding: 0 18px 0 18px;
-  font-size: 11px;
-  font-weight: bold;
+#singlePostTopicNavigation ul li {
+    display: inline;
+    margin: 0px 30px 0px 0px;
+    padding: 5px 0px 0px 0px;
+    font-size: 11px;
 }
-#singlePostTopicNavigation li.topicLink {
-  display: block;
+#singlePostTopicNavigation a {
+    padding: 5px 5px 5px 30px;
+    background-repeat: no-repeat;
+    background-position: left center;
+}
+#singlePostTopicNavigation a:hover {
+    background-color: #eff0ed;
+}
+#singlePostTopicNavigation .first a {
+    background-image: url('++resource++postImages/arrow_left_bar.png');
+}
+#singlePostTopicNavigation .prev a {
+    background-image: url('++resource++postImages/arrow_left.png');
+}
+#singlePostTopicNavigation .next a, #singlePostTopicNavigation .last a {
+    padding: 5px 30px 5px 5px;
+    background-position: right center;
+}
+#singlePostTopicNavigation .next a {
+    background-image: url('++resource++postImages/arrow_right.png');
+}
+#singlePostTopicNavigation .last a {
+    background-image: url('++resource++postImages/arrow_right_bar.png');
+}
+#singlePostTopicNavigation .topicLink {
+    display: block;
+}
+#singlePostTopicNavigation .topicLink a {
+    background-image: url('++resource++postImages/arrow_up.png');
 }

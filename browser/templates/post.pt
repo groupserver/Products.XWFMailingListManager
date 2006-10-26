@@ -78,53 +78,13 @@
     </tal:block>
     
     <tal:block metal:fill-slot="style">
+
       <link rel="stylesheet" title="Popup-Help Stylesheet" type="text/css" 
-        href="++resource++help.css"/>
+        href="++resource++help.css">&#160;</link>
+
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
-        href="++resource++post.css"/>
-      <style type="text/css">
-        #singlePostTopicNavigation .label {
-          font-size: 12px;
-          font-weight: bold;
-          color: #6c911d;
-        }
-        #singlePostTopicNavigation ul li {
-          display: inline;
-          margin: 0px 30px 0px 0px;
-          padding: 5px 0px 0px 0px;
-          font-size: 11px;
-        }
-        #singlePostTopicNavigation a {
-          padding: 5px 5px 5px 30px;
-          background-repeat: no-repeat;
-          background-position: left center;
-        }
-        #singlePostTopicNavigation a:hover {
-          background-color: #eff0ed;
-        }
-        #singlePostTopicNavigation .first a {
-          background-image: url('++resource++postImages/arrow_left_bar.png');
-        }
-        #singlePostTopicNavigation .prev a {
-          background-image: url('++resource++postImages/arrow_left.png');
-        }
-        #singlePostTopicNavigation .next a, #singlePostTopicNavigation .last a {
-          padding: 5px 30px 5px 5px;
-          background-position: right center;
-        }
-        #singlePostTopicNavigation .next a {
-          background-image: url('++resource++postImages/arrow_right.png');
-        }
-        #singlePostTopicNavigation .last a {
-          background-image: url('++resource++postImages/arrow_right_bar.png');
-        }
-        #singlePostTopicNavigation .topicLink {
-          display: block;
-        }
-        #singlePostTopicNavigation .topicLink a {
-          background-image: url('++resource++postImages/arrow_up.png');
-        }
-      </style>
+        href="++resource++singlePost.css">&#160;</link>
+
     </tal:block>
   </head>
   
