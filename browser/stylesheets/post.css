@@ -19,24 +19,28 @@
     background-color: #eff0ed;
 }
 #singlePostTopicNavigation .first a {
-    background-image: url('++resource++postImages/arrow_left_bar.png');
+    background-image: url('/++resource++postImages/arrow_left_bar.png');
 }
 #singlePostTopicNavigation .prev a {
-    background-image: url('++resource++postImages/arrow_left.png');
+    background-image: url('/++resource++postImages/arrow_left.png');
 }
 #singlePostTopicNavigation .next a, #singlePostTopicNavigation .last a {
     padding: 5px 30px 5px 5px;
     background-position: right center;
 }
 #singlePostTopicNavigation .next a {
-    background-image: url('++resource++postImages/arrow_right.png');
+    background-image: url('/++resource++postImages/arrow_right.png');
 }
 #singlePostTopicNavigation .last a {
-    background-image: url('++resource++postImages/arrow_right_bar.png');
+    background-image: url('/++resource++postImages/arrow_right_bar.png');
 }
 #singlePostTopicNavigation .topicLink {
     display: block;
 }
 #singlePostTopicNavigation .topicLink a {
-    background-image: url('++resource++postImages/arrow_up.png');
+    background-image: url('/++resource++postImages/arrow_up.png');
+}
+
+.email-metadata .author, .email-metadata .posted {
+  padding-right: 30px;
 }

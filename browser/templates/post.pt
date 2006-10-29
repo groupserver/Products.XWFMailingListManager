@@ -8,9 +8,11 @@
   <head>
 
     <!--Todo: add the division name.-->
-  	<title metal:fill-slot="title" 
-      tal:content="python:view.get_email()['mailSubject']">
-      Standard Template for a Single Post
+  	<title metal:fill-slot="title">
+      Post in
+      <span tal:replace="python:view.get_email()['mailSubject']">
+        Standard Template for a Single Post
+      </span>
     </title>
     
     <meta name="title" content="Standard Template for a Single Post"/>
@@ -72,18 +74,18 @@
       <script type="text/javascript" 
         src="/Presentation/Tofu/XForms/js/xforms.js">&#160;</script>
       <script type="text/javascript"
-        src="++resource++dojo/dojo.js">&#160;</script>
+        src="/++resource++dojo/dojo.js">&#160;</script>
       <script type="text/javascript" defer="defer"
-        src="++resource++help.js">&#160;</script>
+        src="/++resource++help.js">&#160;</script>
     </tal:block>
     
     <tal:block metal:fill-slot="style">
 
-      <link rel="stylesheet" title="Popup-Help Stylesheet" type="text/css" 
-        href="++resource++help.css">&#160;</link>
-
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
-        href="++resource++singlePost.css">&#160;</link>
+        href="/++resource++singlePost.css">&#160;</link>
+
+      <link rel="stylesheet" title="Popup-Help Stylesheet" type="text/css" 
+        href="/++resource++help.css">&#160;</link>
 
     </tal:block>
   </head>
@@ -169,30 +171,11 @@
             </ul>
           </div>
           
-          <div 
-            tal:define="authored python:False and view.user_authored();
-            class python:authored and 'emaildetails-self-odd' or 'emaildetails-odd'"
-            tal:attributes="class class">
-            
-            <p class="email-metadata" 
-              tal:attributes="id email/id">
-              <span class="author">
-                <strong>From:</strong>
-                <span class="name" tal:content="python:view.context.Scripts.get.user_realnames(email['mailUserId'])">Me!</span>
-              </span>
-              <span class="posted">
-                <strong>Date:</strong>
-                <span class="date" 
-                  tal:content="email/mailDate">Today, Tomorrow, Timaru</span>
-              </span>
-              <a class="email-link"
-                tal:attributes="href python:'/r/post/%s' % email['id'];"
-                title="A short link to this post">Short link</a>
-            </p><!--email-metadata-->
-            
-            <pre class="email-body"
-              tal:content="email/mailBody">This should not be seen</pre>
-          </div><!--email-details-->
+          <p tal:define="post email"
+            tal:replace="structure provider:groupserver.Post">
+            The email message is rendered by the Post content provider,
+            not by this page.
+          </p>
         </tal:block>
 
       </form><!-- The One True XFrom-->
