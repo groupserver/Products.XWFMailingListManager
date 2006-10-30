@@ -25,7 +25,7 @@
           tal:content="post/mailDate">Today, Tomorrow, Timaru</span>
         </span>
       <a class="email-link"
-        tal:attributes="href string:'/r/post/${post/id};"
+        tal:attributes="href string:post.html?id=${post/id};"
         title="A short link to this post">Short link</a>
       </p><!--email-metadata-->
     <div tal:condition="authorImage" class="userimage">

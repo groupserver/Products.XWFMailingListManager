@@ -9,8 +9,8 @@
 
     <!--Todo: add the division name.-->
   	<title metal:fill-slot="title">
-      Post in
-      <span tal:replace="python:view.get_email()['mailSubject']">
+      All posts in
+      <span tal:replace="python:view.get_topic_name()">
         Standard Template for a Single Post
       </span>
     </title>
@@ -23,8 +23,19 @@
     
     <tal:block metal:fill-slot="metadata" 
       tal:define="global topicName python:view.get_email()['mailSubject'];
-      global postURLPrefix string:post.html?id=">
+      global postURLPrefix string:post.html?id=;
+      global topicURLPrefix string:topic.html?id=;">
       <!-- The documents related to this post -->
+      
+      <link tal:define="global prev python:view.get_previous_topic()" 
+        tal:condition="python:prev and prev[0]" rel="prev" title="Previous topic" href="wibble"
+        tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]); 
+        title python:'Previous topic: %s' % prev[1];">&#160;</link>
+
+      <link tal:define="global next python:view.get_next_topic()" 
+        tal:condition="python:next and next[0]" rel="next" title="Next topic" href="wibble"
+        tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]); 
+        title python:'Next topic: %s' % next[1];">&#160;</link>
       
       <link rel="bookmark" title="Group Homepage" href="">&#160;</link>
       <link rel="bookmark" title="Division Homepage" href="/">&#160;</link>
@@ -105,17 +116,37 @@
         <div id="replacedHelpPane" 
           style="width: 0px; height 0px;">&#160;</div>
         
-        <h1>All posts made in
-          <cite>Topic</cite></h1>
+        <h1>All posts in
+          <cite tal:content="python:view.get_topic_name()">This Topic</cite></h1>
         
-        <div class="emailwrap" 
-          tal:repeat="post python:view.get_topic()">
-          <p tal:content="post/id">Email Id</p>
+        <div class="xhtml2-nl">
+          <p class="label">Topic Navigation</p>
+          <ul>
+            <li class="prev">
+              Previous topic<span tal:condition="python:prev and prev[0]">:
+                <cite>
+                  <a href="foo"
+                    tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);" 
+                    tal:content="python:prev[1]">Topic Name</a>
+                </cite></span>
+              </li>
+            <li class="next">
+              Next topic<span tal:condition="python:next and next[0]">:
+                <cite>
+                  <a href="foo"
+                    tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);" 
+                    tal:content="python:next[1]">Topic Name</a>
+                </cite></span>
+            </li>
+          </ul>
+        </div>
+        
+        <tal:block tal:repeat="post python:view.get_topic()">
           <p tal:replace="structure provider:groupserver.Post">
             The email message is rendered by the Post content provider,
             not by this page.
           </p>
-        </div>
+        </tal:block>
       </form><!-- The One True XFrom-->
     </tal:block>
   </body>

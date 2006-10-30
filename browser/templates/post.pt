@@ -46,12 +46,9 @@
         tal:attributes="title python:'Latest post in &#8220;%s&#8221;' % topicName;
         href python:'%s%s' % (postURLPrefix, last['id']);">&#160;</link>
       <tal:block 
-        tal:define="title python:'All posts in &#8220;%s&#8221;' % topicName;
-        url first">
+        tal:define="title python:'All posts in &#8220;%s&#8221;' % topicName;">
         <link rel="index" 
-          tal:attributes="title title; href url">&#160;</link>
-        <link rel="up" 
-          tal:attributes="title title; href url">&#160;</link>
+          tal:attributes="title title;">&#160;</link>
       </tal:block>
       
       <link rel="bookmark" title="Group Homepage" href="">&#160;</link>
@@ -165,8 +162,12 @@
                   title string:Last post in ${email/mailSubject};">Last post</a>
                 <span tal:condition="not:next">Last post</span>                
               </li>
-              <li class="topicLink"><a href="#">Full topic 
-                  <cite class="topic" tal:content="email/mailSubject">topic name</cite></a>
+              <li class="topicLink">
+                <a href="#" 
+                  tal:attributes="href string:topic.html?id=${last/id}">
+                  All posts in
+                <cite class="topic" 
+                    tal:content="email/mailSubject">topic name</cite></a>
               </li>
             </ul>
           </div>
