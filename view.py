@@ -13,8 +13,9 @@ import DocumentTemplate
 
 import Products.GSContent
 
-class GSPostView(Products.Five.BrowserView):
-      
+class GSTopicView(Products.Five.BrowserView):
+      """View of a GroupServer Topic"""
+
       def __init__(self, context, request):
           # Preconditions
           assert context
@@ -93,6 +94,24 @@ class GSPostView(Products.Five.BrowserView):
           assert self.topic.append
           return self.topic
 
+      def process_form(self):
+          pass
+
+class GSPostView(GSTopicView):
+      """A view of a single post in a topic.
+      
+      A view of a single post shares much in common with a view of an 
+      entire topic, which is why it inherits from "GSTopicView". The main
+      semantic difference is the ID specifies post to display, rather than
+      the first post in the topic.   
+      """      
+      def __init__(self, context, request):
+          # Preconditions
+          assert context
+          assert request
+           
+          GSTopicView.__init__(self, context, request)
+
       # Next and previous email messages
       def get_previous_email(self):
           assert self.topic
@@ -130,9 +149,6 @@ class GSPostView(Products.Five.BrowserView):
           retval = self.topic[-1]
           return retval
           
-      def process_form(self):
-          pass
-
 # <zope-3 weirdness="high">
 
 class IGSPostContentProvider(zope.interface.Interface):
@@ -248,7 +264,7 @@ class GSPostContentProvider(object):
       #########################################
       
       def user_authored(self):
-          '''Did the user write the email message?
+          """Did the user write the email message?
           
           ARGUMENTS
               None.
@@ -258,7 +274,7 @@ class GSPostContentProvider(object):
               email message, "False" otherwise.
               
           SIDE EFFECTS
-              None.'''
+              None."""
           assert self.post
           assert self.request
           
@@ -269,14 +285,14 @@ class GSPostContentProvider(object):
           return retval
 
       def author_exists(self):
-          '''Does the author of the post exist?
+          """Does the author of the post exist?
           
           RETURNS
              True if the author of the post exists on the system, False
              otherwise.
               
           SIDE EFFECTS
-              None.'''
+              None."""
       
           assert self.post
           retval = False

@@ -22,6 +22,10 @@
   <browser:page for=".interfaces.IGSMessagesFolder" name="post.html"
     class=".view.GSPostView"
     template="browser/templates/post.pt" permission="zope2.View" />
+  <browser:page for=".interfaces.IGSMessagesFolder" name="topic.html"
+    class=".view.GSTopicView"
+    template="browser/templates/topic.pt" permission="zope2.View" />
+  
   
   <!-- A marker interface -->
   <interface interface=".interfaces.IGSMessagesFolder"
