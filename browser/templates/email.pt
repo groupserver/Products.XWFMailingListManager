@@ -47,7 +47,10 @@
         tal:condition="options/postRemainder">
         <a href="#" title="Show the email footer"
           tal:define="fn string:showHideInline('${remId}','${discloseId}')"
-          tal:attributes="href string:javascript:${fn}; id discloseId;">&#9654;</a>
+          tal:attributes="href string:javascript:${fn}; id discloseId;">
+          <img alt="&#9654;"
+            src="/++resource++postImages/disclosure-arrow-hidden.gif">
+        </a>
       </div><!--emailshowremander-->
       <pre class="emailRemainderHidden" 
         tal:condition="options/postRemainder"
