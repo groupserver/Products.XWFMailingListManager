@@ -44,3 +44,16 @@
 .email-metadata .author, .email-metadata .posted {
   padding-right: 30px;
 }
+
+#content .emailshowremainder a {
+  display: block;
+  width: 100%;
+  text-decoration: none;
+}
+.emailRemainderHidden {
+  display: none;
+}
+
+.emailRemainderShown {
+  display: block;
+}

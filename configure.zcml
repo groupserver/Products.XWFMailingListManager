@@ -37,5 +37,9 @@
   
   <browser:resourceDirectory name="postImages"
     directory="browser/images/postImages/" permission="zope2.View" />
-  
+
+  <browser:resource name="post.js"
+    file="browser/javascript/showHideInlineElements.js" 
+    permission="zope2.View" />
+
 </configure>

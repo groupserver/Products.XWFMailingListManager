@@ -3,7 +3,9 @@
   authorName python:options['authorName'];
   authorExists python:options['authorExists'];
   authored python:options['authored'];
-  authorImage python:options['authorImage'];">
+  authorImage python:options['authorImage'];
+  postIntro options/postIntro;
+  postRemainder options/postRemainder">
   <div 
     tal:define="class python:authored and 'emaildetails-self-odd' or 'emaildetails-odd'"
     tal:attributes="class class">
@@ -33,9 +35,27 @@
         <img tal:attributes="src authorImage; alt string:Photo of ${authorName}"/>
       </a>
     </div><!--authorImage-->
-    <pre class="email-body"
-      tal:content="post/mailBody">
-      This should not be seen
+    <pre class="email-body">
+      <p tal:replace="structure options/postIntro">
+        This is the body of the document.
+      </p>
     </pre><!--email-body-->
+    <div class="email-remainder"
+      tal:define="remId string:emailRemainder${post/id}; 
+      discloseId string:emailDiscloseButton${post/id}">
+      <div class="emailshowremainder" 
+        tal:condition="options/postRemainder">
+        <a href="#" title="Show the email footer"
+          tal:define="fn string:showHideInline('${remId}','${discloseId}')"
+          tal:attributes="href string:javascript:${fn}; id discloseId;">&#9654;</a>
+      </div><!--emailshowremander-->
+      <pre class="emailRemainderHidden" 
+        tal:condition="options/postRemainder"
+        tal:attributes="id remId"
+        tal:content="structure options/postRemainder">
+        This is the remainder of the email, with such things as the 
+        footer.
+      </pre><!--emailRemainderHidden-->
+    </div><!--email-remainder-->
   </div><!--email-details-->
 </tal:block>
