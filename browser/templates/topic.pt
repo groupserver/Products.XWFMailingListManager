@@ -142,13 +142,15 @@
             </li>
           </ul>
         </div>
-        
-        <tal:block tal:repeat="post python:view.get_topic()">
-          <p tal:replace="structure provider:groupserver.Post">
-            The email message is rendered by the Post content provider,
-            not by this page.
-          </p>
-        </tal:block>
+        <div class="postList">
+          <tal:block tal:repeat="post python:view.get_topic()">
+            <p tal:define="position repeat/post/number;"
+              tal:replace="structure provider:groupserver.Post">
+              The email message is rendered by the Post content provider,
+              not by this page.
+            </p>
+          </tal:block>
+        </div><!--postList-->
       </form><!-- The One True XForm-->
     </tal:block>
   </body>

@@ -6,9 +6,7 @@
   authorImage python:options['authorImage'];
   postIntro options/postIntro;
   postRemainder options/postRemainder">
-  <div 
-    tal:define="class python:authored and 'emaildetails-self-odd' or 'emaildetails-odd'"
-    tal:attributes="class class">
+  <div tal:attributes="class options/cssClass">
     
     <p class="email-metadata" 
       tal:attributes="id post/id">

@@ -41,8 +41,27 @@
     background-image: url('/++resource++postImages/arrow_up.png');
 }
 
+pre.email-body {
+  margin: 0px;
+}
+
+div.userimage {
+    margin: 0px;
+    padding: 0px 15px 15px 0px;
+}
+
 .email-metadata .author, .email-metadata .posted {
   padding-right: 30px;
+}
+
+.postList .emaildetails-odd, .postList .emaildetails-self-odd,
+.postList .emaildetials-even, .postList .emaildetails-self-even
+{
+    padding: 15px 30px 15px 30px;
+}
+
+#content .emailshowremainder {
+    clear: both;
 }
 
 #content .emailshowremainder a {

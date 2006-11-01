@@ -220,6 +220,14 @@ class IGSPostContentProvider(zope.interface.Interface):
                                description=u"The email instance to display",
                                required=True, 
                                readonly=False)
+      position = zope.schema.Int(title=u"Position of the Post",
+                                 description=u"""The position of the post
+                                 in the topic. This is mostly used for
+                                 determining the background colour of the
+                                 post.""",
+                                 required=False,
+                                 
+                                 min=1, default=1)
 zope.interface.directlyProvides(IGSPostContentProvider, 
                                 zope.contentprovider.interfaces.ITALNamespaceData)
 
@@ -303,6 +311,8 @@ class GSPostContentProvider(object):
           ir = self.get_email_intro_and_remainder()
           self.postIntro, self.postRemainder = ir
           
+          self.cssClass = self.get_cssClass()
+           
           assert self.__updated
           
       def render(self):
@@ -322,12 +332,13 @@ class GSPostContentProvider(object):
                                    authored=self.authored,
                                    postIntro=self.postIntro,
                                    postRemainder=self.postRemainder,
+                                   cssClass=self.cssClass,
                                    post=self.post)
 
       #########################################
       # Non-standard methods below this point #
       #########################################
-      
+          
       def __markup_text(self, messageText):
           """Mark up the plain text
           
@@ -497,7 +508,7 @@ class GSPostContentProvider(object):
           
           intro = '\n'.join(rintro)
           body = '\n'.join(body)
-          retval = (intro, body)
+          retval = (intro.strip(), body.strip())
           
           assert retval
           assert len(retval) == 2
@@ -578,6 +589,23 @@ class GSPostContentProvider(object):
           retval = self.__split_message(self.get_mail_body())
           return retval
       
+      def get_cssClass(self):
+          retval = ''
+          even = (self.position % 2) == 0
+          if even:
+              if self.authored:
+                  retval = 'emaildetails-self-even'
+              else:
+                  retval = 'emaildetials-even'
+          else:
+              if self.authored:
+                  retval = 'emaildetails-self-odd'
+              else:
+                  retval = 'emaildetails-odd'
+                  
+          assert retval
+          return retval
+
       def user_authored(self):
           """Did the user write the email message?
           

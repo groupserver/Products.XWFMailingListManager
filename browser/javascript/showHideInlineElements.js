@@ -14,8 +14,6 @@ function showHideInline(remainderId, discloseButtonId)
                                       "Show the email footer");
         img.setAttribute("src",
                          '/++resource++postImages/disclosure-arrow-hidden.gif');
-        //discloseElement.replaceChild(document.createTextNode(hiddenArrow),
-        //                             discloseElement.childNodes[0]);
     }
     else
     {
@@ -24,7 +22,5 @@ function showHideInline(remainderId, discloseButtonId)
                                       "Hide the email footer");
         img.setAttribute("src",
                          '/++resource++postImages/disclosure-arrow-shown.gif');
-        //discloseElement.replaceChild(document.createTextNode(shownArrow),
-        //                             discloseElement.childNodes[0]);
     }
 }
