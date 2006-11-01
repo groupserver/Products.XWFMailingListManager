@@ -1,0 +1,26 @@
+<table id="results">
+  <thead>
+    <tr>
+      <th class="file">File</th>
+      <th class="author">From</th>
+      <th class="date">Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr tal:repeat="entry options/entries">
+      <td class="file" tal:content="structure entry/files"></td>
+      <td class="author">
+        <a tal:condition="not:entry/user" 
+          tal:attributes="href entry/href" 
+          tal:content="structure entry/name">Me!</a>
+        <a tal:condition="entry/user" 
+          tal:attributes="href entry/href">
+          <span class="emailname-self"
+            tal:content="structure entry/name">Me!</span></a>
+      </td>
+      <td class="date" tal:content="structure entry/date">
+        Today, Tomorrow, Timaru
+      </td>
+    </tr>
+  </tbody>
+</table>

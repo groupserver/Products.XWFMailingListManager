@@ -142,6 +142,10 @@
             </li>
           </ul>
         </div>
+        
+        <p tal:define="topic python:view.get_topic()"
+          tal:replace="structure provider:groupserver.TopicIndex"/>
+        
         <div class="postList">
           <tal:block tal:repeat="post python:view.get_topic()">
             <p tal:define="position repeat/post/number;"

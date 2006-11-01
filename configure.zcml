@@ -31,6 +31,23 @@
   <interface interface=".interfaces.IGSMessagesFolder"
     type="zope.app.content.interfaces.IContentType" />
   
+  <!--Interfaces-->
+  <interface interface=".interfaces.IGSPostContentProvider"
+    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
+  
+  <interface interface=".interfaces.IGSTopicIndexContentProvider"
+    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
+
+  <!--adapter factory=".view.GSPostContentProvider"
+    provides=".interfaces.IGSPostContentProvider"
+    name="groupserver.Post"/>
+
+  <adapter factory=".view.GSTopicIndexContentProvider"
+    provides=".interfaces.IGSTopicIndexContentProvider"
+    name="groupserver.TopicIndex"/-->
+  
+  
+  <!--Resources-->
   <browser:resource name="singlePost.css"
     file="browser/stylesheets/post.css" 
     permission="zope2.View" />

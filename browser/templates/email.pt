@@ -6,10 +6,8 @@
   authorImage python:options['authorImage'];
   postIntro options/postIntro;
   postRemainder options/postRemainder">
-  <div tal:attributes="class options/cssClass">
-    
-    <p class="email-metadata" 
-      tal:attributes="id post/id">
+  <div tal:attributes="class options/cssClass; id post/id">
+    <p class="email-metadata">
       <span class="author">
         <strong>From:</strong>
         <a tal:condition="authorExists" class="name"
