@@ -33,9 +33,13 @@
         title python:'Previous topic: %s' % prev[1];">&#160;</link>
 
       <link tal:define="global next python:view.get_next_topic()" 
-        tal:condition="python:next and next[0]" rel="next" title="Next topic" href="wibble"
+        tal:condition="python:next and next[0]" 
+        rel="next" title="Next topic" href="wibble"
         tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]); 
         title python:'Next topic: %s' % next[1];">&#160;</link>
+      
+      <link rel="up" title="Summary of topics" 
+        href="topics.html">&#160;</link>
       
       <link rel="bookmark" title="Group Homepage" href="">&#160;</link>
       <link rel="bookmark" title="Division Homepage" href="/">&#160;</link>
@@ -125,20 +129,23 @@
           <p class="label">Topic Navigation</p>
           <ul>
             <li class="prev">
-              Previous topic<span tal:condition="python:prev and prev[0]">:
-                <cite>
-                  <a href="foo"
-                    tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);" 
-                    tal:content="python:prev[1]">Topic Name</a>
-                </cite></span>
-              </li>
+              <span 
+                tal:condition="python:not(prev and prev[0])">Previous 
+                topic</span>
+              <a href="foo" tal:condition="python:prev and prev[0]"
+                tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);">
+                Previous topic: <cite tal:content="python:prev[1]">Topic Name</cite>
+              </a>
+            </li>
             <li class="next">
-              Next topic<span tal:condition="python:next and next[0]">:
-                <cite>
-                  <a href="foo"
-                    tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);" 
-                    tal:content="python:next[1]">Topic Name</a>
-                </cite></span>
+              <a href="foo"
+                tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);"
+                tal:condition="python:next and next[0]">Next topic: 
+                <cite tal:content="python:next[1]">Topic Name</cite></a>
+              <span tal:condition="python:not(next and next[0])">Next topic</span>
+            </li>
+            <li class="topics">
+              <a href="topics.html">Summary of topics</a> 
             </li>
           </ul>
         </div>

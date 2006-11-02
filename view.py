@@ -58,7 +58,9 @@ class GSTopicSummaryView(Products.Five.BrowserView):
 
           self.set_archive(self.context.messages)
           self.__set_group_info(GSGroupInfo(self.context))
-      
+          self.__init_start_and_end()
+          self.__init_threads()
+                
       def __set_group_info(self, groupInfo):
           assert groupInfo
           assert not self.__groupInfo
@@ -81,8 +83,23 @@ class GSTopicSummaryView(Products.Five.BrowserView):
           """Get the email message archive."""
           assert self.archive
           return self.archive
+          
+      def __init_start_and_end(self):
+          assert self.request
+          self.start = int(self.request.form.get('start', 0))
+          if self.start < 0:
+              self.start = 0
+          self.end = int(self.request.form.get('end', 20))
+          if self.start > self.end:
+              self.end = self.start + 1
+              
+          assert self.start >= 0
+          assert self.end
+          assert self.start < self.end
 
-      def get_topics(self, start=0, end=20):
+      def __init_threads(self):
+          assert self.start >= 0
+          assert self.end >= self.start
           query = {}
           resultSet = self.archive.find_email(query)
           resultSet = DocumentTemplate.sequence.sort(resultSet,
@@ -108,10 +125,56 @@ class GSTopicSummaryView(Products.Five.BrowserView):
                   threads[-1]['length'] = threads[-1]['length'] + 1
           threads.sort(self.__thread_sorter)
           threads.reverse()
-          retval = threads[start:end]
+          
+          self.threads = threads
+          assert self.threads
+      
+      def get_summary_length(self):
+          assert self.start >= 0
+          assert self.end
+          
+          retval = self.end - self.start
+          
           assert retval
+          assert retval > 0
+          return retval
+      
+      def get_previous_summary_url(self):
+          newStart = self.start - self.get_summary_length()
+          if newStart < 0:
+              newStart = 0
+          newEnd = newStart + self.get_summary_length()
+          
+          if newStart != self.start and newStart:
+              retval = 'topics.html?start=%d&end=%d' % (newStart, newEnd)
+          elif newStart != self.start and not newStart:
+              retval = 'topics.html'
+          else:
+              retval = ''
+          return retval
+      
+      def get_next_summary_url(self):
+          newStart = self.end
+          newEnd = newStart + self.get_summary_length()
+          if newStart < len(self.threads):
+              retval = 'topics.html?start=%d&end=%d' % (newStart, newEnd)
+          else:
+              retval = ''
+          return retval
+      
+      def get_last_summary_url(self):
+          newStart = len(self.threads) - self.get_summary_length()
+          newEnd = len(self.threads)
+          return 'topics.html?start=%d&end=%d' % (newStart, newEnd)
+          
+      def get_topics(self):
+          assert self.threads
+          if len(self.threads) > self.start:
+              retval = self.threads[self.start:self.end]
+          else:
+              retval = []
           assert retval.append
-          assert len(retval) == (end-start)
+          assert len(retval) <= self.get_summary_length()
           return retval
           
       def __thread_sorter(self, a, b):
@@ -148,7 +211,6 @@ class GSBaseMessageView(Products.Five.BrowserView):
           self.set_emailId(self.context.REQUEST.form.get('id', None))
           self.init_email()
           self.init_topic()
-          
           # Postconditions
           assert self.archive
           assert self.emailId

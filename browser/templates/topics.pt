@@ -22,7 +22,25 @@
     <tal:block metal:fill-slot="metadata" 
       tal:define="global topicURLPrefix string:topic.html?id=;">
       <!-- The documents related to this post -->
-            
+
+      <link rel="previous" title="Previous topics" href=""
+        tal:define="global previousURL python:view.get_previous_summary_url()"
+        tal:condition="previousURL"
+        tal:attributes="href previousURL;">&#160;</link>
+
+      <link rel="next" title="Next topics" href=""
+        tal:define="global nextURL python:view.get_next_summary_url()"
+        tal:condition="nextURL"
+        tal:attributes="href nextURL;">&#160;</link>
+
+      <link rel="first" title="Most recent topics" href="topics.html" 
+        tal:condition="previousURL"/>
+
+      <link rel="last" title="Oldest topics" href="" 
+        tal:condition="nextURL" 
+        tal:attributes="href python:view.get_last_summary_url()"/>
+      
+      
       <link rel="bookmark" title="Group Homepage" href="">&#160;</link>
       <link rel="bookmark" title="Division Homepage" href="/">&#160;</link>
     </tal:block>
@@ -103,29 +121,56 @@
           <span class="group" 
             tal:content="python:view.get_group_info().get_name()">a Group</span></h1>
 
-        <table>
+        <table id="topicsSummary">
+          <caption>Summary of topics in
+            <span class="group" 
+              tal:content="python:view.get_group_info().get_name()">a Group</span>
+          </caption>
           <thead>
             <tr>
-              <th>Topic</th>
-              <th>Posts</th>
-              <th>Latest Post</th>
+              <th class="topic">Topic</th>
+              <th class="posts">Posts</th>
+              <th class="date">Latest Post</th>
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="topic python:view.get_topics()">
-              <td class="topic" title="Topic name" 
-                tal:attributes="id topic/id;">
+            <tr tal:repeat="topic python:view.get_topics()"
+              tal:attributes="id topic/id;">
+              <td class="topic" title="Topic name">
                 <a href="#" id="foo"
-                  tal:content="topic/name"
-                  tal:attributes="href string:topic.html?id=${topic/id}">Wibble</a>
+                  tal:attributes="href string:topic.html?id=${topic/id}"
+                  tal:content="topic/name">Wibble</a>
               </td>
-              <td title="Number of posts" tal:content="topic/length">-1</td>
-              <td class="date" title="Date of last" 
+              <td class="posts" title="Number of posts" 
+                tal:content="topic/length">-1</td>
+              <td class="date" title="Date of most recent post" 
                 tal:content="topic/date">Today, Tomorrow, Timaru</td>
             </tr>
           </tbody>
         </table>
-        <!--p tal:repeat="r python:view.get_topics()" tal:content="r">Wibble</p-->
+        
+        <div class="xhtml2-nl" 
+          tal:define="len python:view.get_summary_length()">
+          <p class="label">Summary Navigation</p>
+          <ul>
+            <li class="previous">
+              <a href="#" tal:condition="previousURL" 
+                tal:attributes="href previousURL">Previous 
+                <span class="number" tal:content="len">-1</span> topics</a>
+              <span tal:condition="not:previousURL">Previous
+                <span class="number" tal:content="len">-1</span> topics
+              </span>
+            </li>
+            <li class="next">
+              <a href="#" tal:condition="nextURL"
+                tal:attributes="href nextURL">Next
+                <span class="number" tal:content="len">-1</span> topics</a>
+              <span tal:condition="not:nextURL">Next
+                <span class="number" tal:content="len">-1</span> topics
+              </span>
+            </li>
+          </ul>
+        </div>
         
       </form><!-- The One True XForm-->
     </tal:block>
