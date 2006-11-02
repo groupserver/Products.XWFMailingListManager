@@ -13,6 +13,129 @@ import DocumentTemplate, Products.XWFMailingListManager.interfaces
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
+class GSGroupInfo(object):
+    def __init__(self, context):
+        assert context
+        
+        self.context = context
+        self.groupObj = self.__get_group_object()
+
+    def __get_group_object(self):
+        assert self.context
+        retval = self.context
+        
+        while retval:
+            try:
+                if getattr(retval.aq_inner.aq_explicit, 'is_group', 0):
+                    break
+                else:
+                    retval = retval.aq_parent
+            except:
+                break
+        retval = retval.aq_inner.aq_explicit
+        assert retval 
+        assert hasattr(retval, 'is_group')
+        return retval        
+
+    def get_name(self):
+        assert self.groupObj
+        retval = self.groupObj.title_or_id()
+        return retval
+        
+    def get_id(self):
+        assert self.groupObj
+        retval = groupObj.getId()
+        return retval
+
+class GSTopicSummaryView(Products.Five.BrowserView):
+      __groupInfo = None
+      def __init__(self, context, request):
+          # Preconditions
+          assert context
+          assert request
+           
+          Products.Five.BrowserView.__init__(self, context, request)
+
+          self.set_archive(self.context.messages)
+          self.__set_group_info(GSGroupInfo(self.context))
+      
+      def __set_group_info(self, groupInfo):
+          assert groupInfo
+          assert not self.__groupInfo
+          self.__groupInfo = groupInfo
+          assert self.__groupInfo
+           
+      def get_group_info(self):
+          assert self.__groupInfo
+          retval = self.__groupInfo
+          assert retval
+          return retval
+          
+      def set_archive(self, archive):
+          """Set the email message archive to "archive"."""
+          assert archive
+          self.archive = archive
+          assert self.archive
+      
+      def get_archive(self):
+          """Get the email message archive."""
+          assert self.archive
+          return self.archive
+
+      def get_topics(self, start=0, end=20):
+          query = {}
+          resultSet = self.archive.find_email(query)
+          resultSet = DocumentTemplate.sequence.sort(resultSet,
+                                                     (('mailSubject',
+                                                       'nocase'),
+                                                      ('mailDate', 
+                                                       'cmp', 'desc')))
+          threads = []
+          currThread = None
+          currThreadResults = []
+          threads = []
+          
+          for result in resultSet:
+              subj = result.mailSubject.lower() 
+              if subj != currThread:
+                  currThread = subj
+                  threadInfo = {'id':     result.id,
+                                'name':   result.mailSubject,
+                                'date':   result.mailDate,
+                                'length': 1}
+                  threads.append(threadInfo)
+              else:
+                  threads[-1]['length'] = threads[-1]['length'] + 1
+          threads.sort(self.__thread_sorter)
+          threads.reverse()
+          retval = threads[start:end]
+          assert retval
+          assert retval.append
+          assert len(retval) == (end-start)
+          return retval
+          
+      def __thread_sorter(self, a, b):
+          assert a
+          assert a['date']
+          assert b
+          assert b['date']
+          
+          retval = 0
+          valA = a['date']
+          valB = b['date']
+          if valA < valB:
+              retval = -1
+          elif valA == valB:
+              retval = 0
+          else:
+              retval = 1
+          
+          assert retval in (-1, 0, 1)
+          return retval
+          
+      def process_form(self, *args):
+          pass
+
 class GSBaseMessageView(Products.Five.BrowserView):
       def __init__(self, context, request):
           # Preconditions
