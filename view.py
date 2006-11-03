@@ -202,6 +202,16 @@ class GSLatestPostsView(Products.Five.BrowserView, GSGroupObject):
           assert retval > 0
           return retval
 
+      def get_chunk_length(self):
+          assert self.start >= 0
+          assert self.end
+          
+          retval = self.end - self.start
+          
+          assert retval
+          assert retval > 0
+          return retval
+
       def get_posts(self):
           assert self.posts
           if len(self.posts) > self.start:
@@ -211,8 +221,35 @@ class GSLatestPostsView(Products.Five.BrowserView, GSGroupObject):
           assert retval.append
           assert len(retval) <= self.get_posts_length()
           return retval
-
          
+      def get_previous_chunk_url(self):
+          newStart = self.start - self.get_chunk_length()
+          if newStart < 0:
+              newStart = 0
+          newEnd = newStart + self.get_chunk_length()
+          
+          if newStart != self.start and newStart:
+              retval = 'posts.html?start=%d&end=%d' % (newStart, newEnd)
+          elif newStart != self.start and not newStart:
+              retval = 'posts.html'
+          else:
+              retval = ''
+          return retval
+
+      def get_next_chunk_url(self):
+          newStart = self.end
+          newEnd = newStart + self.get_chunk_length()
+          if newStart < len(self.posts):
+              retval = 'posts.html?start=%d&end=%d' % (newStart, newEnd)
+          else:
+              retval = ''
+          return retval
+
+      def get_last_chunk_url(self):
+          newStart = len(self.posts) - self.get_chunk_length()
+          newEnd = len(self.posts)
+          return 'posts.html?start=%d&end=%d' % (newStart, newEnd)
+
       def process_form(self):
           pass
 
