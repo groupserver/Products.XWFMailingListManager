@@ -23,7 +23,9 @@
     
     <tal:block metal:fill-slot="metadata" 
       tal:define="global topicName python:view.get_email()['mailSubject'];
-      global postURLPrefix string:post.html?id=">
+      global postURLPrefix string:post.html?id=;
+      groupInfo python:view.get_group_info();
+      siteInfo python:view.get_site_info();">
       <!-- The documents related to this post -->
       <link rel="next" 
         tal:define="global next python:view.get_next_email();"
@@ -47,12 +49,16 @@
         href python:'%s%s' % (postURLPrefix, last['id']);">&#160;</link>
       <tal:block 
         tal:define="title python:'All posts in &#8220;%s&#8221;' % topicName;">
-        <link rel="index" 
-          tal:attributes="title title;">&#160;</link>
+        <link rel="up" href="#" 
+          tal:attributes="title title; href python:'topic.html?id=%s'%last['id']">&#160;</link>
       </tal:block>
       
-      <link rel="bookmark" title="Group Homepage" href="">&#160;</link>
-      <link rel="bookmark" title="Division Homepage" href="/">&#160;</link>
+      <link rel="bookmark" title="Group Homepage" href="#"
+        tal:attributes="title python:'%s Homepage' % groupInfo.get_name();
+        href python:groupInfo.get_url()">&#160;</link>
+      <link rel="bookmark" title="Division Homepage" href="/"
+        tal:attributes="title python:'%s Homepage' % siteInfo.get_name();
+        href python:siteInfo.get_url();">&#160;</link>
     </tal:block>
 
     <!-- 

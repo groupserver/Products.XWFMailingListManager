@@ -13,20 +13,22 @@ import DocumentTemplate, Products.XWFMailingListManager.interfaces
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
-class GSGroupInfo(object):
+class GSSiteInfo:
     def __init__(self, context):
         assert context
         
         self.context = context
-        self.groupObj = self.__get_group_object()
-
-    def __get_group_object(self):
+        self.siteObj = self.__get_site_object()
+        self.config = self.__get_site_config()
+        
+    def __get_site_object(self):
         assert self.context
         retval = self.context
+        markerAttr = 'is_division'
         
         while retval:
             try:
-                if getattr(retval.aq_inner.aq_explicit, 'is_group', 0):
+                if getattr(retval.aq_inner.aq_explicit, markerAttr, False):
                     break
                 else:
                     retval = retval.aq_parent
@@ -34,8 +36,64 @@ class GSGroupInfo(object):
                 break
         retval = retval.aq_inner.aq_explicit
         assert retval 
-        assert hasattr(retval, 'is_group')
-        return retval        
+        assert hasattr(retval, markerAttr)
+        assert getattr(retval, markerAttr)
+        return retval
+                
+    def __get_site_config(self):
+        assert self.siteObj
+        assert self.context
+        retval = getattr(self.context, 'DivisionConfiguration', None)
+        assert retval
+        return retval
+        
+    def get_name(self):
+        assert self.config
+        
+        retval = self.config.getProperty('siteName')
+        if not retval:
+            retval = self.siteObj.title_or_id()
+            
+        assert retval
+        return retval
+        
+    def get_url(self):
+        assert self.siteObj
+        assert self.config
+        retval = ''
+        cannonicalHost = self.config.getProperty('canonicalHost', 'wibble')
+        if cannonicalHost:
+            retval = 'http://%s' % cannonicalHost
+        else:
+            retval = '/%s' % self.siteObj.absolute_url(1)
+
+        assert retval
+        return retval
+        
+class GSGroupInfo:
+    def __init__(self, context):
+        assert context
+        self.context = context
+        self.groupObj = self.__get_group_object()
+        self.siteInfo = GSSiteInfo(context)
+
+    def __get_group_object(self):
+        assert self.context
+        retval = self.context
+        markerAttr = 'is_group'
+        while retval:
+            try:
+                if getattr(retval.aq_inner.aq_explicit, markerAttr, False):
+                    break
+                else:
+                    retval = retval.aq_parent
+            except:
+                break
+        retval = retval.aq_inner.aq_explicit
+        assert retval 
+        assert hasattr(retval, markerAttr)
+        assert getattr(retval, markerAttr)
+        return retval
 
     def get_name(self):
         assert self.groupObj
@@ -44,10 +102,121 @@ class GSGroupInfo(object):
         
     def get_id(self):
         assert self.groupObj
-        retval = groupObj.getId()
+        retval = self.groupObj.getId()
+        return retval
+        
+    def get_url(self):
+        assert self.groupObj
+        assert self.siteInfo
+        siteURL = self.siteInfo.get_url()
+        retval = '%s/groups/%s' % (siteURL, self.get_id())
         return retval
 
-class GSTopicSummaryView(Products.Five.BrowserView):
+class GSSiteObject:          
+    def __init__(self, context):
+          self.__set_site_info(GSSiteInfo(context))
+
+    def __set_site_info(self, siteInfo):
+          assert siteInfo
+          self.__siteInfo = siteInfo
+          assert self.__siteInfo
+           
+    def get_site_info(self):
+          assert self.__siteInfo
+          retval = self.__siteInfo
+          assert retval
+          return retval
+
+
+class GSGroupObject(GSSiteObject):
+    def __init__(self, context):
+          GSSiteObject.__init__(self, context)
+          self.__set_group_info(GSGroupInfo(context))
+
+    def __set_group_info(self, groupInfo):
+          assert groupInfo
+          self.__groupInfo = groupInfo
+          assert self.__groupInfo
+           
+    def get_group_info(self):
+          assert self.__groupInfo
+          retval = self.__groupInfo
+          assert retval
+          return retval
+          
+class GSLatestPostsView(Products.Five.BrowserView, GSGroupObject):
+      def __init__(self, context, request):
+          # Preconditions
+          assert context
+          assert request
+           
+          Products.Five.BrowserView.__init__(self, context, request)
+          GSGroupObject.__init__(self, context)
+          self.set_archive(self.context.messages)
+          self.__init_start_and_end()
+          self.__init_posts()
+                
+      def set_archive(self, archive):
+          """Set the email message archive to "archive"."""
+          assert archive
+          self.archive = archive
+          assert self.archive
+      
+      def get_archive(self):
+          """Get the email message archive."""
+          assert self.archive
+          return self.archive
+          
+      def __init_start_and_end(self):
+          assert self.request
+          self.start = int(self.request.form.get('start', 0))
+          if self.start < 0:
+              self.start = 0
+          self.end = int(self.request.form.get('end', 20))
+          if self.start > self.end:
+              self.end = self.start + 1
+              
+          assert self.start >= 0
+          assert self.end
+          assert self.start < self.end
+
+      def __init_posts(self):
+          assert self.start >= 0
+          assert self.end >= self.start
+          query = {}
+          resultSet = self.archive.find_email(query)
+          resultSet = DocumentTemplate.sequence.sort(resultSet,
+                                                     (('mailDate', 
+                                                       'cmp', 'desc'),
+                                                      ('mailSubject',
+                                                       'nocase')))
+          self.posts = [post.getObject() for post in resultSet]
+          
+      def get_posts_length(self):
+          assert self.start >= 0
+          assert self.end
+          
+          retval = self.end - self.start
+          
+          assert retval
+          assert retval > 0
+          return retval
+
+      def get_posts(self):
+          assert self.posts
+          if len(self.posts) > self.start:
+              retval = self.posts[self.start:self.end]
+          else:
+              retval = []
+          assert retval.append
+          assert len(retval) <= self.get_posts_length()
+          return retval
+
+         
+      def process_form(self):
+          pass
+
+class GSTopicSummaryView(Products.Five.BrowserView, GSGroupObject):
       __groupInfo = None
       def __init__(self, context, request):
           # Preconditions
@@ -55,24 +224,12 @@ class GSTopicSummaryView(Products.Five.BrowserView):
           assert request
            
           Products.Five.BrowserView.__init__(self, context, request)
-
+          GSGroupObject.__init__(self, context)
+          
           self.set_archive(self.context.messages)
-          self.__set_group_info(GSGroupInfo(self.context))
           self.__init_start_and_end()
           self.__init_threads()
                 
-      def __set_group_info(self, groupInfo):
-          assert groupInfo
-          assert not self.__groupInfo
-          self.__groupInfo = groupInfo
-          assert self.__groupInfo
-           
-      def get_group_info(self):
-          assert self.__groupInfo
-          retval = self.__groupInfo
-          assert retval
-          return retval
-          
       def set_archive(self, archive):
           """Set the email message archive to "archive"."""
           assert archive
@@ -206,7 +363,7 @@ class GSBaseMessageView(Products.Five.BrowserView):
           assert request
            
           Products.Five.BrowserView.__init__(self, context, request)
-          
+                    
           self.set_archive(self.context.messages)
           self.set_emailId(self.context.REQUEST.form.get('id', None))
           self.init_email()
@@ -287,7 +444,7 @@ class GSBaseMessageView(Products.Five.BrowserView):
       def process_form(self):
           pass
 
-class GSTopicView(GSBaseMessageView):
+class GSTopicView(GSBaseMessageView, GSGroupObject):
       """View of a GroupServer Topic"""
       def __init__(self, context, request):
           # Preconditions
@@ -295,7 +452,7 @@ class GSTopicView(GSBaseMessageView):
           assert request
            
           GSBaseMessageView.__init__(self, context, request)
-
+          GSGroupObject.__init__(self, context)
           self.init_threads()
 
       def init_threads(self):
@@ -341,7 +498,7 @@ class GSTopicView(GSBaseMessageView):
           assert len(retval) == 2
           return retval
 
-class GSPostView(GSBaseMessageView):
+class GSPostView(GSBaseMessageView, GSGroupObject):
       """A view of a single post in a topic.
       
       A view of a single post shares much in common with a view of an 
@@ -355,7 +512,8 @@ class GSPostView(GSBaseMessageView):
           assert request
            
           GSBaseMessageView.__init__(self, context, request)
-
+          GSGroupObject.__init__(self, context)
+          
       # Next and previous email messages
       def get_previous_email(self):
           assert self.topic
@@ -441,10 +599,6 @@ class GSPostContentProvider(object):
           self.context = context
           self.request = request
       
-          pageTemplateFileName = "browser/templates/email.pt"
-          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-          self.pageTemplate = VPTF(pageTemplateFileName)
-      
       def update(self):
           """Update the internal state of the post content-provider.
           
@@ -489,15 +643,20 @@ class GSPostContentProvider(object):
               An HTML-snippet that represents the post."""
           if not self.__updated:
               raise interfaces.UpdateNotCalled
-          return self.pageTemplate(authorId=self.authorId, 
-                                   authorName=self.authorName,
-                                   authorExists=self.authorExists,
-                                   authorImage=self.authorImage,
-                                   authored=self.authored,
-                                   postIntro=self.postIntro,
-                                   postRemainder=self.postRemainder,
-                                   cssClass=self.cssClass,
-                                   post=self.post)
+      
+          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
+          pageTemplate = VPTF(self.pageTemplateFileName)
+
+          return pageTemplate(authorId=self.authorId, 
+                              authorName=self.authorName,
+                              authorExists=self.authorExists,
+                              authorImage=self.authorImage,
+                              authored=self.authored,
+                              postIntro=self.postIntro,
+                              postRemainder=self.postRemainder,
+                              cssClass=self.cssClass,
+                              topicName=self.topicName,
+                              post=self.post)
 
       #########################################
       # Non-standard methods below this point #
@@ -848,6 +1007,11 @@ class GSPostContentProvider(object):
 zope.component.provideAdapter(GSPostContentProvider, 
                               provides=zope.contentprovider.interfaces.IContentProvider,
                               name="groupserver.Post")
+
+zope.component.provideAdapter(GSPostContentProvider, 
+                              provides=zope.contentprovider.interfaces.IContentProvider,
+                              name="groupserver.PostAtom")
+
 
 class GSTopicIndexContentProvider(object):
       """GroupServer Topic Index Content Provider

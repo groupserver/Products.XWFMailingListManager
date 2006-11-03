@@ -30,6 +30,15 @@
   <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"
     class=".view.GSTopicSummaryView"
     template="browser/templates/topics.pt" permission="zope2.View" />
+
+  <browser:page for=".interfaces.IGSMessagesFolder" name="posts.html"
+    class=".view.GSLatestPostsView"
+    template="browser/templates/posts.pt" permission="zope2.View" />
+
+  <browser:page for=".interfaces.IGSMessagesFolder" name="posts.atom"
+    class=".view.GSLatestPostsView"
+    template="browser/templates/posts_atom.pt" permission="zope2.View" />
+  
   
   <!-- A marker interface -->
   <interface interface=".interfaces.IGSMessagesFolder"

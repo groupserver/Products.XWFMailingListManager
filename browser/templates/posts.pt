@@ -9,40 +9,22 @@
 
     <!--Todo: add the division name.-->
   	<title metal:fill-slot="title">
-      All posts in
-      <span tal:replace="python:view.get_topic_name()">
-        Standard Template for a Single Post
-      </span>
+      Latest posts in
+      <span tal:replace="python:view.get_group_info().get_name()"/>
     </title>
     
-    <meta name="title" content="Standard Template for a Single Post"/>
+    <meta name="title" content="Lastest Posts Template"/>
     <meta name="author" content="Michael JasonSmith" />
     <meta name="description" 
-      content="This template is used to render a single post to GroupServer" />
+      content="This template is used to render the list of latest posts" />
     <meta name="date" content="2006-10-25"/>
     
     <tal:block metal:fill-slot="metadata" 
-      tal:define="global topicName python:view.get_email()['mailSubject'];
-      global postURLPrefix string:post.html?id=;
+      tal:define="global postURLPrefix string:post.html?id=;
       global topicURLPrefix string:topic.html?id=;
       groupInfo python:view.get_group_info();
       siteInfo python:view.get_site_info();">
       <!-- The documents related to this post -->
-      
-      <link tal:define="global prev python:view.get_previous_topic()" 
-        tal:condition="python:prev and prev[0]" rel="prev" title="Previous topic" href="wibble"
-        tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]); 
-        title python:'Previous topic: %s' % prev[1];">&#160;</link>
-
-      <link tal:define="global next python:view.get_next_topic()" 
-        tal:condition="python:next and next[0]" 
-        rel="next" title="Next topic" href="wibble"
-        tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]); 
-        title python:'Next topic: %s' % next[1];">&#160;</link>
-      
-      <link rel="up" title="Summary of topics" 
-        href="topics.html">&#160;</link>
-      
       <link rel="bookmark" title="Group Homepage" href="#"
         tal:attributes="title python:'%s Homepage' % groupInfo.get_name();
         href python:groupInfo.get_url()">&#160;</link>
@@ -128,46 +110,20 @@
         <div id="replacedHelpPane" 
           style="width: 0px; height 0px;">&#160;</div>
         
-        <h1>All posts in
-          <cite tal:content="python:view.get_topic_name()">This Topic</cite></h1>
-        
-        <div class="xhtml2-nl">
-          <p class="label">Topic Navigation</p>
-          <ul>
-            <li class="prev">
-              <span 
-                tal:condition="python:not(prev and prev[0])">Previous 
-                topic</span>
-              <a href="foo" tal:condition="python:prev and prev[0]"
-                tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);">
-                Previous topic: <cite tal:content="python:prev[1]">Topic Name</cite>
-              </a>
-            </li>
-            <li class="next">
-              <a href="foo"
-                tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);"
-                tal:condition="python:next and next[0]">Next topic: 
-                <cite tal:content="python:next[1]">Topic Name</cite></a>
-              <span tal:condition="python:not(next and next[0])">Next topic</span>
-            </li>
-            <li class="topics">
-              <a href="topics.html">Summary of topics</a> 
-            </li>
-          </ul>
-        </div>
-        
-        <p tal:define="topic python:view.get_topic()"
-          tal:replace="structure provider:groupserver.TopicIndex"/>
+        <h1>Latest Posts in       
+          <span class="group"
+            tal:content="python:view.get_group_info().get_name()"/></h1>
         
         <div class="postList">
-          <tal:block tal:repeat="post python:view.get_topic()">
-            <p tal:define="position repeat/post/number;"
+          <tal:block tal:repeat="post python:view.get_posts()">
+            <p tal:define="position repeat/post/number;
+              topicName post/mailSubject"
               tal:replace="structure provider:groupserver.Post">
               The email message is rendered by the Post content provider,
               not by this page.
             </p>
           </tal:block>
-        </div><!--postList-->
+        </div><!--postList-->       
       </form><!-- The One True XForm-->
     </tal:block>
   </body>

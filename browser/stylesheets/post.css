@@ -60,7 +60,7 @@ div.userimage {
     padding: 15px 30px 15px 30px;
 }
 
-#content .emailshowremainder {
+.email-remainder {
     clear: both;
 }
 
@@ -75,4 +75,14 @@ div.userimage {
 
 .emailRemainderShown {
   display: block;
+}
+
+/* List of latest posts */
+
+.email-metadata .topic {
+  display: block;
+  font-weight: bold;
+  font-size: 1.4em;
+  color: #6C911D;
+  padding: 0px 0px 15px 0px;
 }

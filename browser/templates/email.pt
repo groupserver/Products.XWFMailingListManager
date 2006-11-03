@@ -8,6 +8,8 @@
   postRemainder options/postRemainder">
   <div tal:attributes="class options/cssClass; id post/id">
     <p class="email-metadata">
+      <span class="topic" tal:condition="options/topicName"
+        tal:content="options/topicName">A Topic</span>
       <span class="author">
         <strong>From:</strong>
         <a tal:condition="authorExists" class="name"

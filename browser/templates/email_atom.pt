@@ -1,0 +1,30 @@
+<entry tal:define="post python:options['post'];
+  authorId python:options['authorId']; 
+  authorName python:options['authorName'];
+  authorExists python:options['authorExists'];
+  authored python:options['authored'];
+  authorImage python:options['authorImage'];
+  postIntro options/postIntro;
+  postRemainder options/postRemainder;
+  id options/post/id">
+  <title tal:content="options/topicName">Atom-Powered Robots Run Amok</title>
+  <link href="http://example.org/2003/12/13/atom03" type="text/html"
+    tal:attributes="href post/id"/>
+  <id tal:content="string:http://onlinegroups.net/r/post/${id}">abc123</id>
+  <author>
+    <name tal:content="authorName">Me!</name>
+    <uri tal:condition="authorExists" 
+      tal:content="string:/contacts/${authorId};">http://bla/</uri>
+  </author>
+  <updated 
+    tal:content="python:post['mailDate'].strftime('%Y-%m-%dT%H:%M:%SZ')">
+    2003-12-13T18:30:02Z
+  </updated>
+  <content type="xhtml">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <pre tal:content="options/postIntro">
+        This is the body of the message.
+      </pre>
+    </div>
+  </content>
+</entry>
