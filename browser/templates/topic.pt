@@ -12,7 +12,9 @@
       All posts in
       <span tal:replace="python:view.get_topic_name()">
         Standard Template for a Single Post
-      </span>
+      </span>:
+      <span tal:replace="python:view.get_group_info().get_name()"/>:
+      <span tal:replace="python:view.get_site_info().get_name()"/>
     </title>
     
     <meta name="title" content="Standard Template for a Single Post"/>
@@ -46,9 +48,12 @@
       <link rel="bookmark" title="Group Homepage" href="#"
         tal:attributes="title python:'%s Homepage' % groupInfo.get_name();
         href python:groupInfo.get_url()">&#160;</link>
-      <link rel="bookmark" title="Division Homepage" href="/"
-        tal:attributes="title python:'%s Homepage' % siteInfo.get_name();
-        href python:siteInfo.get_url();">&#160;</link>
+      <link rel="home" 
+        tal:attributes="title python:'%s Homepage' % view.get_site_info().get_name();
+        href python:view.get_site_info().get_url()"/>
+      <link rel="help" 
+        tal:attributes="title python:'%s Help' % view.get_site_info().get_name();
+        href python:'%s/help' % view.get_site_info().get_url()"/>
     </tal:block>
 
     <!-- 
@@ -131,7 +136,7 @@
         <h1>All posts in
           <cite tal:content="python:view.get_topic_name()">This Topic</cite></h1>
         
-        <div class="xhtml2-nl">
+        <div class="messages-nl">
           <p class="label">Topic Navigation</p>
           <ul>
             <li class="prev">
@@ -151,7 +156,8 @@
               <span tal:condition="python:not(next and next[0])">Next topic</span>
             </li>
             <li class="topics">
-              <a href="topics.html">Summary of topics</a> 
+              <a href="topics.html">Latest topics in 
+              <span tal:replace="python:view.get_group_info().get_name()"/></a> 
             </li>
           </ul>
         </div>

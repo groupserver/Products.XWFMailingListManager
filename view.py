@@ -13,69 +13,12 @@ import DocumentTemplate, Products.XWFMailingListManager.interfaces
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
-class GSSiteInfo:
-    def __init__(self, context):
-        assert context
-        
-        self.context = context
-        self.siteObj = self.__get_site_object()
-        self.config = self.__get_site_config()
-        
-    def __get_site_object(self):
-        assert self.context
-        retval = self.context
-        markerAttr = 'is_division'
-        
-        while retval:
-            try:
-                if getattr(retval.aq_inner.aq_explicit, markerAttr, False):
-                    break
-                else:
-                    retval = retval.aq_parent
-            except:
-                break
-        retval = retval.aq_inner.aq_explicit
-        assert retval 
-        assert hasattr(retval, markerAttr)
-        assert getattr(retval, markerAttr)
-        return retval
-                
-    def __get_site_config(self):
-        assert self.siteObj
-        assert self.context
-        retval = getattr(self.context, 'DivisionConfiguration', None)
-        assert retval
-        return retval
-        
-    def get_name(self):
-        assert self.config
-        
-        retval = self.config.getProperty('siteName')
-        if not retval:
-            retval = self.siteObj.title_or_id()
-            
-        assert retval
-        return retval
-        
-    def get_url(self):
-        assert self.siteObj
-        assert self.config
-        retval = ''
-        cannonicalHost = self.config.getProperty('canonicalHost', 'wibble')
-        if cannonicalHost:
-            retval = 'http://%s' % cannonicalHost
-        else:
-            retval = '/%s' % self.siteObj.absolute_url(1)
-
-        assert retval
-        return retval
-        
 class GSGroupInfo:
     def __init__(self, context):
         assert context
         self.context = context
         self.groupObj = self.__get_group_object()
-        self.siteInfo = GSSiteInfo(context)
+        self.siteInfo = Products.GSContent.view.GSSiteInfo(context)
 
     def __get_group_object(self):
         assert self.context
@@ -114,7 +57,7 @@ class GSGroupInfo:
 
 class GSSiteObject:          
     def __init__(self, context):
-          self.__set_site_info(GSSiteInfo(context))
+          self.__set_site_info(Products.GSContent.view.GSSiteInfo(context))
 
     def __set_site_info(self, siteInfo):
           assert siteInfo

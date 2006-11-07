@@ -9,9 +9,8 @@
 
     <!--Todo: add the division name.-->
   	<title metal:fill-slot="title">
-      Topics in 
-      <span 
-        tal:replace="python:view.get_group_info().get_name()">a Group</span>
+      Latest Topics in <span tal:replace="python:view.get_group_info().get_name()">a Group</span>:
+      <span tal:replace="python:view.get_site_info().get_name()"/>
     </title>
     
     <meta name="title" content="Template for the Topics Summary"/>
@@ -44,12 +43,17 @@
         tal:attributes="title python:'%s Homepage' % groupInfo.get_name();
         href python:groupInfo.get_url()">&#160;</link>
       
+      <link rel="bookmark" href="posts.html" 
+        tal:attributes="title python:'Latest posts in %s' % view.get_group_info().get_name()" />
       <link rel="bookmark" title="Group Homepage" href="#"
         tal:attributes="title python:'%s Homepage' % groupInfo.get_name();
         href python:groupInfo.get_url()">&#160;</link>
-      <link rel="bookmark" title="Division Homepage" href="/"
-        tal:attributes="title python:'%s Homepage' % siteInfo.get_name();
-        href python:siteInfo.get_url();">&#160;</link>
+      <link rel="home" 
+        tal:attributes="title python:'%s Homepage' % view.get_site_info().get_name();
+        href python:view.get_site_info().get_url()"/>
+      <link rel="help" 
+        tal:attributes="title python:'%s Help' % view.get_site_info().get_name();
+        href python:'%s/help' % view.get_site_info().get_url()"/>
     </tal:block>
 
     <!-- 
@@ -74,6 +78,9 @@
     
     <tal:block metal:fill-slot="style">
 
+      <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
+        href="/++resource++singlePost.css">&#160;</link>
+      
       <link rel="stylesheet" title="Popup-Help Stylesheet" type="text/css" 
         href="/++resource++help.css">&#160;</link>
 
@@ -124,12 +131,38 @@
         <div id="replacedHelpPane" 
           style="width: 0px; height 0px;">&#160;</div>
         
-        <h1>Topics in
-          <span class="group" 
-            tal:content="python:view.get_group_info().get_name()">a Group</span></h1>
+        <h1>Latest Topics in <span class="group" tal:content="python:view.get_group_info().get_name()">a Group</span></h1>
+
+        <div class="messages-nl" 
+          tal:define="len python:view.get_summary_length()">
+          <p class="label">Latest Topics Navigation</p>
+          <ul>
+            <li class="prev">
+              <a href="#" tal:condition="previousURL" 
+                tal:attributes="href previousURL">Previous 
+                <span tal:replace="len">-1</span> topics</a>
+              <span tal:condition="not:previousURL">Previous
+                <span tal:replace="len">-1</span> topics
+              </span>
+            </li>
+            <li class="next">
+              <a href="#" tal:condition="nextURL"
+                tal:attributes="href nextURL">Next
+                <span tal:replace="len">-1</span> topics</a>
+              <span tal:condition="not:nextURL">Next
+                <span tal:replace="len">-1</span> topics
+              </span>
+            </li>
+            <li class="posts"><a href="posts.html">Latest posts in
+                <span tal:replace="python:view.get_group_info().get_name()" />
+              </a>
+            </li>
+            <li class="start"><a href="#">Start a new topic</a></li>
+          </ul>
+        </div>
 
         <table id="topicsSummary">
-          <caption>Summary of topics in
+          <caption>Latest topics in
             <span class="group" 
               tal:content="python:view.get_group_info().get_name()">a Group</span>
           </caption>
@@ -155,30 +188,6 @@
             </tr>
           </tbody>
         </table>
-        
-        <div class="xhtml2-nl" 
-          tal:define="len python:view.get_summary_length()">
-          <p class="label">Summary Navigation</p>
-          <ul>
-            <li class="previous">
-              <a href="#" tal:condition="previousURL" 
-                tal:attributes="href previousURL">Previous 
-                <span class="number" tal:content="len">-1</span> topics</a>
-              <span tal:condition="not:previousURL">Previous
-                <span class="number" tal:content="len">-1</span> topics
-              </span>
-            </li>
-            <li class="next">
-              <a href="#" tal:condition="nextURL"
-                tal:attributes="href nextURL">Next
-                <span class="number" tal:content="len">-1</span> topics</a>
-              <span tal:condition="not:nextURL">Next
-                <span class="number" tal:content="len">-1</span> topics
-              </span>
-            </li>
-          </ul>
-        </div>
-        
       </form><!-- The One True XForm-->
     </tal:block>
   </body>

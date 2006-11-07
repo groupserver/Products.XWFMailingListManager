@@ -1,46 +1,53 @@
 /* Stylesheet for the single-post view of a topic */
-#singlePostTopicNavigation .label {
+
+.messages-nl .label {
     font-size: 12px; 
     font-weight: bold;
     color: #6c911d;
 }
-#singlePostTopicNavigation ul li {
+.messages-nl ul li {
     display: inline;
     margin: 0px 30px 0px 0px;
     padding: 5px 0px 0px 0px;
     font-size: 11px;
 }
-#singlePostTopicNavigation a {
+.messages-nl a, .messages-nl span {
     padding: 5px 5px 5px 30px;
     background-repeat: no-repeat;
     background-position: left center;
 }
-#singlePostTopicNavigation a:hover {
+.messages-nl a:hover {
     background-color: #eff0ed;
 }
-#singlePostTopicNavigation .first a {
+.messages-nl .first a, .messages-nl .first span {
     background-image: url('/++resource++postImages/arrow_left_bar.png');
 }
-#singlePostTopicNavigation .prev a {
+.messages-nl .prev a, .messages-nl .prev span {
     background-image: url('/++resource++postImages/arrow_left.png');
 }
-#singlePostTopicNavigation .next a, #singlePostTopicNavigation .last a {
+.messages-nl .next a, .messages-nl .next span, 
+.messages-nl .last a, .messages-nl .last span{
     padding: 5px 30px 5px 5px;
     background-position: right center;
 }
-#singlePostTopicNavigation .next a {
+.messages-nl .next a, .messages-nl .next span {
     background-image: url('/++resource++postImages/arrow_right.png');
 }
-#singlePostTopicNavigation .last a {
+.messages-nl .last a, .messages-nl .last span {
     background-image: url('/++resource++postImages/arrow_right_bar.png');
 }
-#singlePostTopicNavigation .topicLink {
+.messages-nl .topicLink, .messages-nl .posts, .messages-nl .topics, .messages-nl .start {
+    line-height: 30px;
     display: block;
 }
-#singlePostTopicNavigation .topicLink a {
-    background-image: url('/++resource++postImages/arrow_up.png');
+
+.messages-nl .topics a, .messages-nl .posts  a, .messages-nl .start a {
+    padding-left: 0px;
 }
 
+.messages-nl .topicLink a {
+    background-image: url('/++resource++postImages/arrow_up.png');
+}
 pre.email-body {
   margin: 0px;
 }
