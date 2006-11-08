@@ -28,15 +28,15 @@
     template="browser/templates/topic.pt" permission="zope2.View" />
   
   <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"
-    class=".view.GSTopicSummaryView"
+    class=".topicSummaryView.GSTopicSummaryView"
     template="browser/templates/topics.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="posts.html"
-    class=".view.GSLatestPostsView"
+    class=".latestPostsView.GSLatestPostsView"
     template="browser/templates/posts.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="posts.atom"
-    class=".view.GSLatestPostsView"
+    class=".latestPostsView.GSLatestPostsView"
     template="browser/templates/posts_atom.pt" permission="zope2.View" />
   
   
