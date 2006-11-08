@@ -316,7 +316,7 @@ class GSTopicSummaryView(Products.Five.BrowserView, GSGroupObject):
           
       def __thread_sorter(self, a, b):
           assert a
-          assert a['date']
+          assert (a['date'], a)
           assert b
           assert b['date']
           
@@ -608,7 +608,7 @@ class GSPostContentProvider(object):
           self.authorExists = self.author_exists();
           self.authored = self.authorExists and self.user_authored();
           self.authorImage = self.get_author_image()
-          
+         
           ir = self.get_email_intro_and_remainder()
           self.postIntro, self.postRemainder = ir
           
@@ -640,7 +640,10 @@ class GSPostContentProvider(object):
                               cssClass=self.cssClass,
                               topicName=self.topicName,
                               post=self.post,
-                              context=self.context)
+                              context=self.context,
+                              siteName = self.siteInfo.get_name(),
+                              siteURL = self.siteInfo.get_url(),
+                              groupId = self.groupInfo.get_id())
 
       #########################################
       # Non-standard methods below this point #

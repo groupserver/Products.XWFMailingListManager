@@ -32,6 +32,14 @@ class IGSPostContentProvider(zope.interface.Interface):
                                   that is used to render the post.""",
                                   required=False,
                                   default=u"browser/templates/email.pt")
+      groupInfo = Field(title=u"Group Information",
+                        description=u"Information about the group",
+                        required=True,
+                        default=None)
+      siteInfo = Field(title=u"Site Information",
+                       description=u"Information about the site",
+                       required=True, 
+                       default=None)
                                  
 #zope.interface.directlyProvides(IGSPostContentProvider, 
 #                                zope.contentprovider.interfaces.ITALNamespaceData)

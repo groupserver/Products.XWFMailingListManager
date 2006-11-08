@@ -188,7 +188,9 @@
             </ul>
           </div>
           
-          <p tal:define="post email"
+          <p tal:define="post email;
+            groupInfo python:view.get_group_info();
+            siteInfo python:view.get_site_info()"
             tal:replace="structure provider:groupserver.Post">
             The email message is rendered by the Post content provider,
             not by this page.

@@ -167,7 +167,9 @@
         
         <div class="postList">
           <tal:block tal:repeat="post python:view.get_topic()">
-            <p tal:define="position repeat/post/number;"
+            <p tal:define="position repeat/post/number;
+              groupInfo python:view.get_group_info();
+              siteInfo python:view.get_site_info()"
               tal:replace="structure provider:groupserver.Post">
               The email message is rendered by the Post content provider,
               not by this page.

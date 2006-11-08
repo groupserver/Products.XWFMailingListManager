@@ -65,29 +65,34 @@
       tal:define="groupObj python:options['context'].Scripts.get.group_object();">
       <div class="fileMetadata"
         tal:repeat="fileId python:post.getProperty('x-xwfnotification-file-id', '').strip().split()">
-        
-        <p tal:content="fileId"/>
-        
         <tal:block 
           tal:define="fileObjs python:groupObj.files.find_files({'id': fileId});
           fileObj python:fileObjs and fileObjs[0].getObject() or None"
-          tal:condition="fileObjs">
-          <p tal:content="fileObjs">The following file was added to this topic.</p>
+          tal:condition="fileObj">
+          <p>The following file was added to this topic.</p>
           <ul>
-            <li>Name:
-              <img src="/favicon.ico" width="16" height="16" 
-                alt="application/octet-stream" 
-                tal:attributes="src python:;"/>
+            <li 
+              tal:define="iconName python:'%s.png'%fileObj.content_type.replace('/','-')">
+              Name: 
               <a class="file" href="/favicon.ico" 
                 type="application/octet-stream"
-                tal:attributes="href fileId">filename</a>
+                tal:attributes="href string:${options/siteURL}/groups/${options/groupId}/files/f/${fileId}/${fileObj/title_or_id}">
+                <img src="/favicon.ico" width="16" height="16" 
+                  alt="application/octet-stream" 
+                  tal:attributes="alt fileObj/content_type;
+                  src python:'/++resource++fileIcons/%s'%iconName"/>
+                <span class="filename"
+                  tal:content="python:fileObj.title_or_id()">filename</span>
+              </a>
             </li>
             <li>Type: 
-              <span class="mime">application/octet-stream</span>
+              <span class="mime"
+                tal:content="python:fileObj.content_type">application/octet-stream</span>
             </li>
             <li>
               Size:
-              <span class="size">-1B</span>
+              <span class="size"
+                tal:content="python:'%1.2fKB' % (fileObj.size/1024.0)">-1B</span>
             </li>
           </ul>
         </tal:block>
