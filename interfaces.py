@@ -43,4 +43,91 @@ class IGSTopicIndexContentProvider(zope.interface.Interface):
                   required=True, 
                   readonly=False)
 
+class IGSPostMessageContentProvider(zope.interface.Interface):
+    """A content provider for the post-topic form"""
+    startNew = Bool(title=u'Start a New Topic',
+                    description=u'Set to "True" if a new topic is started',
+                    required=False,
+                    default=True)
+    topic = Text(title=u"Topic",
+                 description=u"The topic that the new post is added to",
+                 required=False, 
+                 default=u'Enter your new topic here')
+    groupInfo = Field(title=u"Group Information",
+                     description=u"Information about the group",
+                     required=True,
+                     default=None)
+    siteInfo = Field(title=u"Site Information",
+                     description=u"Information about the site",
+                     required=True, 
+                     default=None)
+    replyToId = Text(title=u'Reply-To Post Identifier',
+                     description=u'Used when adding to a topic',
+                     required=False,
+                     default=u'')
+
 # </zope-3>
+
+        
+class IGSUserInfo(zope.interface.Interface):
+    """Information about a user"""
+
+    def exists():
+        """Does the user exist
+        
+        ARGUMENTS
+            None.
+            
+        RETURNS
+            "True" if the user exists on the system; "False" otherwise.
+        
+        SIDE EFFECTS
+            None.
+        """
+        pass
+
+    def get_id():
+        """Get the ID associated with the user
+        
+        ARGUMENTS
+            None.
+            
+        RETURNS
+            A string contianing the user's ID.
+            
+        SIDE EFFECTS
+            None.
+        """
+
+    def get_image():
+        """Get the thumbnail image associated with the user
+        
+        ARGUMENTS
+            None.
+            
+        RETURNS
+            A string containing the URL to the user's image.
+            
+        SIDE EFFECTS
+            None.
+        """
+        pass
+
+    def get_real_names(preferredNameOnly=True):
+        """Get the names associated with the user
+        
+        ARGUMENTS
+            "preferredNameOnly": If set to "True", only the user's 
+            preferred name is retured.
+            
+        RETURNS
+            A string representing the user's preferred name, if
+            "preferredNameOnly" is set to "True". Otherwise a
+            string representing the first and last names, seperated
+            by a space, is returned.
+            
+        SIDE EFFECTS
+            None. 
+        """
+        pass
+        

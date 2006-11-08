@@ -1,0 +1,12 @@
+<tal:block>
+  <input type="hidden" name ="groupId" value="aGroup"
+    tal:attributes="value options/groupId"/>
+  <input type="hidden" name="siteId" value="aSite"
+    tal:attributes="value options/siteId"/>
+  <tal:block tal:condition="not:options/startNew">
+    <input type="hidden" name="topic" value="a topic" 
+      tal:attributes="value options/topic"/>
+    <input type="hidden" name="replyToId" value="anId"
+      tal:attributes="value options/replyToId"/>
+  </tal:block>
+</tal:block>

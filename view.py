@@ -477,6 +477,9 @@ class GSTopicView(GSBaseMessageView, GSGroupObject):
       
           assert len(retval) == 2
           return retval
+          
+      def process_form(self):
+          pass
 
 class GSPostView(GSBaseMessageView, GSGroupObject):
       """A view of a single post in a topic.
@@ -636,7 +639,8 @@ class GSPostContentProvider(object):
                               postRemainder=self.postRemainder,
                               cssClass=self.cssClass,
                               topicName=self.topicName,
-                              post=self.post)
+                              post=self.post,
+                              context=self.context)
 
       #########################################
       # Non-standard methods below this point #
@@ -1087,6 +1091,114 @@ zope.component.provideAdapter(GSTopicIndexContentProvider,
                               provides=zope.contentprovider.interfaces.IContentProvider,
                               name="groupserver.TopicIndex")
 
+
+class GSPostMessageContentProvider(GSGroupObject):
+      """GroupServer Post Message Content Provider
+      """
+
+      zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSPostMessageContentProvider)
+      zope.component.adapts(zope.interface.Interface,
+                            zope.publisher.interfaces.browser.IDefaultBrowserLayer,
+                            zope.interface.Interface)
+      
+      
+      def __init__(self, context, request, view):
+          self.__parent = view
+          self.__updated = False
+          self.context = context
+          self.request = request
+          self.view = view
+
+          GSGroupObject.__init__(self, context)
+          
+      def update(self):
+          groupInfo = self.get_group_info()
+          self.groupName = groupInfo.get_name()
+          self.groupId = groupInfo.get_id()
+          self.__updated = True
+          
+      def render(self):
+          if not self.__updated:
+              raise interfaces.UpdateNotCalled
+          pageTemplateFileName = "browser/templates/postMessage.pt"
+          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
+          self.pageTemplate = VPTF(pageTemplateFileName)
+          
+          return self.pageTemplate(startNew=self.startNew,
+                                   topic=self.topic,
+                                   groupName=self.groupName,
+                                   groupId=self.groupId)
+          
+      #########################################
+      # Non standard methods below this point #
+      #########################################
+
+zope.component.provideAdapter(GSPostMessageContentProvider, 
+                              provides=zope.contentprovider.interfaces.IContentProvider,
+                              name="groupserver.PostMessage")
+
+class GSPostMessageDataContentProvider(GSPostMessageContentProvider):
+      """Form data for posting a message
+      """
+
+      zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSPostMessageContentProvider)
+      zope.component.adapts(zope.interface.Interface,
+                            zope.publisher.interfaces.browser.IDefaultBrowserLayer,
+                            zope.interface.Interface)
+      
+      
+      def __init__(self, context, request, view):
+          self.__parent = view
+          self.__updated = False
+          self.context = context
+          self.request = request
+          self.view = view
+
+          GSGroupObject.__init__(self, context)
+          
+      def update(self):
+          self.groupName = self.groupInfo.get_name()
+          self.groupId = self.groupInfo.get_id()
+          self.siteId = self.siteInfo.get_id()
+          self.__updated = True
+          
+      def render(self):
+          if not self.__updated:
+              raise interfaces.UpdateNotCalled
+          pageTemplateFileName = "browser/templates/postMessageData.pt"
+          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
+          self.pageTemplate = VPTF(pageTemplateFileName)
+          
+          return self.pageTemplate(startNew=self.startNew,
+                                   topic=self.topic,
+                                   replyToId=self.replyToId,
+                                   groupId = self.groupId,
+                                   groupName = self.groupName,
+                                   siteId = self.siteId)
+          
+      #########################################
+      # Non standard methods below this point #
+      #########################################
+
+zope.component.provideAdapter(GSPostMessageDataContentProvider, 
+                              provides=zope.contentprovider.interfaces.IContentProvider,
+                              name="groupserver.PostMessageData")
 # </zope-3 weirdness="high">
+
+class GSCurrentUserInfo:
+    """Information about the current user"""
+    zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSUserInfo)
+    
+    def __init__(self):
+        pass
+    
+    def exists(self):
+        return True
+    def get_id(self):
+        pass
+    def get_image(self):
+        pass
+    def get_real_names(self, preferredNameOnly=True):
+        pass
           
 Globals.InitializeClass( GSPostView )

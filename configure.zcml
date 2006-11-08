@@ -51,6 +51,9 @@
   <interface interface=".interfaces.IGSTopicIndexContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
 
+  <interface interface=".interfaces.IGSPostMessageContentProvider"
+    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
+
   <!--adapter factory=".view.GSPostContentProvider"
     provides=".interfaces.IGSPostContentProvider"
     name="groupserver.Post"/>

@@ -1,0 +1,54 @@
+<div id="post-message" tal:define="startNew options/startNew">
+  <!--Post a Message Content Provider-->
+  
+  <h2 tal:condition="not:startNew">Add to the topic
+    <cite class="topic" tal:content="options/topic">topicName</cite>
+    <a class="helpLink" title="Help with posting a message" 
+      href="/help/manual/#groupserver-posting-a-message-using-the-web">[?]</a></h2>
+  
+  <h2 tal:condition="startNew">Start a new Topic in
+    <span class="group" tal:content="options/groupName">A Group</span>
+  </h2>
+  
+  <div id="post-message-fields" class="formelementtext">
+    <label class="text" for="post-message">Message</label>
+    <div class="hint">The message you wish to post.</div>
+    <textarea id="post-message" class="text" name="message"
+      title="The message you wish to post."> </textarea>
+  </div>
+  <fieldset id="post-optional-fields">
+    <legend>Optional Fields</legend>
+    <div class="formelementtext" id="post-tags-fields">
+      <label class="text" for="post-tags">Tags
+        <a href="/help/manual/#groupserver-tags"
+          title="Help with tags"
+          class="helpLink">[?]</a></label> 
+      <div class="hint">The keywords that summarise your post.</div>
+      <input id="post-tags" class="text" name="tags" type="text" value=""   
+        title="The keywords that summarise your post." />
+    </div>
+    <div class="formelementtext" id="post-file-fields">
+      <label class="text" for="post-file">File
+        <a href="/help/manual/#groupserver-posting-files-using-the-web"
+          title="Help with posting files"
+          class="helpLink">[?]</a></label>
+      <div class="hint">The file you wish to post.</div>
+      <input id="post-file" class="text" name="file" type="file" value="" 
+        title="The file you wish to post." /> 
+    </div>
+  </fieldset>
+  <div class="formelementbutton">
+    <div class="hint" tal:condition="startNew">
+      Start the new topic
+    </div>
+    <div class="hint" tal:condition="not:startNew">
+      Add your post to the topic 
+      <cite class="topic" tal:content="options/topic">topicName</cite>
+    </div>
+    <input id="post-add-to-topic" class="button" name="submit" 
+      type="submit" value="Add" 
+      title="Add to the topic Marshall Day" 
+      tal:attributes="value python:startNew and 'Start' or 'Add';
+      title python:startNew and 'Start the new topic' or 'Add to the topic'"/>
+  </div>
+</div>
