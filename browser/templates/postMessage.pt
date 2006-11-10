@@ -10,12 +10,35 @@
     <span class="group" tal:content="options/groupName">A Group</span>
   </h2>
   
+  <div id="post-from-fields" class="formelementtext"
+    tal:condition="python:len(options['fromEmailAddresses'])&gt;1">
+    <label class="text" for="post-email">Email</label>
+    <div class="hint">The email address that you wish to send the 
+      post from.</div>
+    <select id="post-email" name="post+email" class="text"
+      title="The email address to send the post from.">
+      <tal:block tal:repeat="address options/fromEmailAddresses">
+        <option tal:condition="python:address!=options['preferredEmailAddress']"
+          tal:attributes="value address" tal:content="address"/>
+        <option tal:condition="python:address==options['preferredEmailAddress']" 
+          selected="selected"
+          tal:attributes="value address" tal:content="address"/>
+      </tal:block>
+    </select>
+  </div>
+  <p tal:condition="python:len(options['fromEmailAddresses'])==1" >
+    <strong>From:</strong>
+    <span class="email" 
+      tal:content="python:options['fromEmailAddresses'][0]">foo@example.com</span>
+  </p>
+  
   <div id="post-message-fields" class="formelementtext">
     <label class="text" for="post-message">Message</label>
     <div class="hint">The message you wish to post.</div>
-    <textarea id="post-message" class="text" name="message"
+    <textarea id="post-message" name="post+message" class="text" 
       title="The message you wish to post."> </textarea>
   </div>
+  
   <fieldset id="post-optional-fields">
     <legend>Optional Fields</legend>
     <div class="formelementtext" id="post-tags-fields">
@@ -24,8 +47,8 @@
           title="Help with tags"
           class="helpLink">[?]</a></label> 
       <div class="hint">The keywords that summarise your post.</div>
-      <input id="post-tags" class="text" name="tags" type="text" value=""   
-        title="The keywords that summarise your post." />
+      <input id="post-tags" name="post+tags" class="text" type="text" 
+        value="" title="The keywords that summarise your post." />
     </div>
     <div class="formelementtext" id="post-file-fields">
       <label class="text" for="post-file">File
@@ -33,7 +56,7 @@
           title="Help with posting files"
           class="helpLink">[?]</a></label>
       <div class="hint">The file you wish to post.</div>
-      <input id="post-file" class="text" name="file" type="file" value="" 
+      <input id="post-file" name="post+file" class="text" type="file" value="" 
         title="The file you wish to post." /> 
     </div>
   </fieldset>
@@ -45,8 +68,8 @@
       Add your post to the topic 
       <cite class="topic" tal:content="options/topic">topicName</cite>
     </div>
-    <input id="post-add-to-topic" class="button" name="submit" 
-      type="submit" value="Add" 
+    <input class="button" type="submit" value="Add"
+      id="__submit-post-addPost" name="__submit+post+addPost" 
       title="Add to the topic Marshall Day" 
       tal:attributes="value python:startNew and 'Start' or 'Add';
       title python:startNew and 'Start the new topic' or 'Add to the topic'"/>

@@ -235,7 +235,47 @@ class GSTopicView(GSBaseMessageView, GSGroupObject):
           return retval
           
       def process_form(self):
-          pass
+        self.context.Scripts.forms.process_form()
+        
+        form = self.context.REQUEST.form
+
+        result = {'error': True, 
+        'message': '<p>The form had errors.</p>',
+        'form': form}
+
+        if not form.get('submitted', False):
+            return {'form': form}
+
+        model, submission = form.get('__submit__').split('+')
+        model = form.get('model_override', model)
+
+        oldForms = self.context.Scripts.forms
+        
+        if hasattr(self, model):
+            cb = getattr(self.model, submission)
+            result = cb()
+        elif hasattr(oldForms.aq_explicit, model):
+            cb_container = getattr(oldForms.aq_explicit, model)
+            cb = getattr(cb_container, submission)
+            result = cb()
+        else:
+            result['error'] = True
+            m = '''<p>Could not find the form for the model <code>%s</code>, 
+              and the submission <code>%s</code>. 
+              This should not have happened, please contact
+              <a title="OnlineGroups.Net Support" 
+                href="mailto:support@onlinegroups.net" 
+                class="email">support@onlinegroups.net</a>.</p>''' \
+              % (model, submission)
+            result['message'] = m
+        
+        # Add the form to the result.    
+        result['form'] = form
+
+        assert result.has_key('error')
+        assert result.has_key('message')
+        assert result['message'].split
+        return result
 
 class GSPostView(GSBaseMessageView, GSGroupObject):
       """A view of a single post in a topic.

@@ -181,15 +181,12 @@
           groupInfo python:view.get_group_info();
           siteInfo python:view.get_site_info();
           replyToId python:view.get_topic()[-1]['id']" >
+          <tal:block
+            tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"
+            tal:replace="structure provider:groupserver.PostMessage"/>
           <p tal:replace="structure provider:groupserver.PostMessage">
             The space to allow people to write a new message
           </p>
-          <div class="formelementtext">
-            <textarea class="text">
-              <tal:block 
-                tal:replace="structure provider:groupserver.PostMessageData"/>
-            </textarea>
-          </div>
         </tal:block>
       </form><!-- The One True XForm-->
     </tal:block>

@@ -8,8 +8,27 @@
   postRemainder options/postRemainder;
   id options/post/id">
   <title tal:content="options/topicName">Atom-Powered Robots Run Amok</title>
-  <link href="http://example.org/2003/12/13/atom03" type="text/html"
-    tal:attributes="href post/id"/>
+  <link rel="alternate" type="text/html" title="Post on the Web" 
+    href="http://example.org/2003/12/13/atom03" 
+    tal:attributes="title string:Post in ${options/topicName};
+    href string:${options/siteURL}/groups/${options/groupId}/post.html?id=${id}"/>
+  <tal:block
+    tal:condition="python:hasattr(post, 'x-xwfnotification-file-id')"
+    tal:define="groupObj python:options['context'].Scripts.get.group_object();">
+    <tal:block
+      tal:repeat="fileId python:post.getProperty('x-xwfnotification-file-id', '').strip().split()">
+      <tal:block 
+        tal:define="fileObjs python:groupObj.files.find_files({'id': fileId});
+        fileObj python:fileObjs and fileObjs[0].getObject() or None"
+        tal:condition="fileObj">
+        <link rel="enclosure" 
+          tal:attributes="type fileObj/content_type;
+          title fileObj/title_or_id;
+          href string:${options/siteURL}/groups/${options/groupId}/files/f/${fileId}/${fileObj/title_or_id};
+          length fileObj/size" />
+      </tal:block>
+    </tal:block>
+  </tal:block>
   <id tal:content="string:http://onlinegroups.net/r/post/${id}">abc123</id>
   <author>
     <name tal:content="authorName">Me!</name>
@@ -22,7 +41,7 @@
   </updated>
   <content type="xhtml">
     <div xmlns="http://www.w3.org/1999/xhtml">
-      <pre tal:content="options/postIntro">
+      <pre tal:content="structure options/postIntro">
         This is the body of the message.
       </pre>
     </div>

@@ -73,6 +73,11 @@ class IGSPostMessageContentProvider(zope.interface.Interface):
                      description=u'Used when adding to a topic',
                      required=False,
                      default=u'')
+    pageTemplateFileName = Text(title=u"Page Template File Name",
+                                description=u"""The name of the ZPT file
+                                that is used to render the post.""",
+                                required=False,
+                                default=u"browser/templates/postMessage.pt")
 
 # </zope-3>
 

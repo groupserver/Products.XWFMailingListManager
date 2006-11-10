@@ -1,12 +1,36 @@
 <tal:block>
-  <input type="hidden" name ="groupId" value="aGroup"
-    tal:attributes="value options/groupId"/>
-  <input type="hidden" name="siteId" value="aSite"
-    tal:attributes="value options/siteId"/>
-  <tal:block tal:condition="not:options/startNew">
-    <input type="hidden" name="topic" value="a topic" 
-      tal:attributes="value options/topic"/>
-    <input type="hidden" name="replyToId" value="anId"
-      tal:attributes="value options/replyToId"/>
-  </tal:block>
+  <input type="hidden" name="id" 
+    value="-1" tal:attributes="value options/replyToId">
+
+    <input type="hidden" name="id" value="1">
+
+    
+    <input type="hidden" 
+      name="__models__" value="post"/>
+    <input type="hidden" 
+      name="__instance+post+submitted" 
+      value="1"/>
+    <input type="hidden"
+      name="__instance+post+submitted" 
+      value="1"/>
+    <input type="hidden" 
+      name="__submission_action+post+addPost" 
+      value=""/>
+    <input type="hidden" 
+      name="__submission_method+post+addPost" 
+      value="urlencoded-post"/>
+  
+    
+  <input type="hidden" 
+    name ="post+groupId" id="post-groupId" 
+    value="aGroup" tal:attributes="value options/groupId"/>
+  <input type="hidden" 
+    name="post+siteId" id="post-siteId" 
+    value="aSite" tal:attributes="value options/siteId"/>
+  <input type="hidden" 
+    name="post+replyToId" id="post-replyToId" 
+    value="anId" tal:attributes="value options/replyToId"/>
+  <input type="hidden" 
+    name="post+topic" id="post-topic"
+    value="a topic" tal:attributes="value options/topic"/>
 </tal:block>
