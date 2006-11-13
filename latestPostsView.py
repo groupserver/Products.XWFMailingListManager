@@ -22,8 +22,8 @@ class GSLatestPostsView(Products.Five.BrowserView,
           Products.XWFMailingListManager.view.GSGroupObject.__init__(self, 
                                                                      context)
           self.set_archive(self.context.messages)
-          self.__init_start_and_end()
-          self.__init_posts()
+          self.init_start_and_end()
+          self.init_posts()
                 
       def set_archive(self, archive):
           """Set the email message archive to "archive"."""
@@ -36,7 +36,7 @@ class GSLatestPostsView(Products.Five.BrowserView,
           assert self.archive
           return self.archive
           
-      def __init_start_and_end(self):
+      def init_start_and_end(self):
           assert self.request
           self.start = int(self.request.form.get('start', 0))
           if self.start < 0:
@@ -49,7 +49,7 @@ class GSLatestPostsView(Products.Five.BrowserView,
           assert self.end
           assert self.start < self.end
 
-      def __init_posts(self):
+      def init_posts(self):
           assert self.start >= 0
           assert self.end >= self.start
           query = {}
@@ -60,6 +60,19 @@ class GSLatestPostsView(Products.Five.BrowserView,
                                                       ('mailSubject',
                                                        'nocase')))
           self.posts = [post.getObject() for post in resultSet]
+          self.posts.sort(self.post_date_sorter)
+          #self.posts.reverse()
+
+      def post_date_storter(self, a, b):
+          if a['mailDate'] > b['mailDate']:
+              retval = 1
+          elif a['mailDate'] == b['mailDate']:
+              retval = 0
+          else:
+              retval = -1
+          assert retval in (1, 0, -1)
+          return retval
+
           
       def get_posts_length(self):
           assert self.start >= 0

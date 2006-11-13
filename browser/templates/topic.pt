@@ -163,7 +163,7 @@
         </div><!--postList-->
       
       <form method="post" action=""
-        enctype="application/x-www-form-urlencoded"
+        enctype="multipart/form-data"
         tal:define="startNew python:False; 
         topic python:view.get_topic_name();
         groupInfo python:view.get_group_info();

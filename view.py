@@ -157,10 +157,6 @@ class GSBaseMessageView(Products.Five.BrowserView):
           
           self.topic = map(lambda x: x.getObject(), result)
 
-          sortOrder = (('mailDate', 'cmp', 'asc'), 
-                       ('mailSubject', 'nocase', 'asc'))
-          DocumentTemplate.sequence.sort(self.topic, sortOrder)          
-  
           assert self.topic
           assert self.topic.append
           assert len(self.topic) > 0
@@ -202,6 +198,22 @@ class GSTopicView(GSBaseMessageView, GSGroupObject):
           assert currThreadName in self.threadNames
           self.currThreadIndex = self.threadNames.index(currThreadName)
 
+      def post_date_storter(self, a, b):
+          if a['mailDate'] > b['mailDate']:
+              retval = 1
+          elif a['mailDate'] == b['mailDate']:
+              retval = 0
+          else:
+              retval = -1
+          assert retval in (1, 0, -1)
+          return retval
+          
+      # topic
+      def init_topic(self):
+          GSBaseMessageView.init_topic(self)
+          
+          self.topic.sort(self.post_date_storter)
+          
       def get_next_topic(self):
           assert self.threads
           
