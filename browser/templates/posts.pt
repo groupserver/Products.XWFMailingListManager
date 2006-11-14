@@ -159,6 +159,11 @@
                 <span tal:replace="len">-1</span> posts
               </span>
             </li>
+            <li class="alternateATOM">
+              <a title="ATOM Feed" type="application/atom+xml"
+                tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.get_group_info().get_name()"
+                href="posts.atom">Web feed of the latest posts.</a>
+            </li>
             <li class="topics">
               <a href="topics.html">Latest of topics in
                 <span tal:replace="python:view.get_group_info().get_name()" />

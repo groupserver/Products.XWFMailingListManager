@@ -36,7 +36,8 @@
 .messages-nl .last a, .messages-nl .last span {
     background-image: url('/++resource++postImages/arrow_right_bar.png');
 }
-.messages-nl .topicLink, .messages-nl .posts, .messages-nl .topics, .messages-nl .start {
+.messages-nl .topicLink, .messages-nl .posts, .messages-nl .topics,
+.messages-nl .start, .messages-nl .alternateATOM {
     line-height: 30px;
     display: block;
 }
@@ -97,4 +98,12 @@ div.userimage {
 /* Topic-index table */
 table#results {
     padding-bottom: 30px;
+}
+
+#post-message {
+    padding-top: 30px;
+}
+
+#post-message h2 {
+    padding-top: 0px;
 }
