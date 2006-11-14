@@ -35,7 +35,7 @@ class GSTopicIndexContentProvider(object):
           self.topciId = self.view.get_emailId() 
           hr = 'topic.html?id=%s' % self.topciId
           self.entries = [{'href':  '%s#%s' % (hr, post['id']),
-                           'files': '', 
+                           'files': self.get_file_from_post(post),
                            'name':  self.get_author_realnames_from_post(post),
                            'user':  self.get_user_authored_from_post(post),
                            'date':  self.get_date_from_post(post)} 
@@ -100,6 +100,15 @@ class GSTopicIndexContentProvider(object):
           assert post
           retval = post['mailDate']
           assert retval
+          return retval
+      
+      def get_file_from_post(self, post):
+          assert post
+          retval = ''
+          if hasattr(post, 'x-xwfnotification-file-id'):
+              # Just work with the first ID
+              fileId = post['x-xwfnotification-file-id'].split()[0]
+              retval = fileId
           return retval
 zope.component.provideAdapter(GSTopicIndexContentProvider, 
                               provides=zope.contentprovider.interfaces.IContentProvider,

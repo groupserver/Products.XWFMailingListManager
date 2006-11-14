@@ -8,7 +8,10 @@
   </thead>
   <tbody>
     <tr tal:repeat="entry options/entries">
-      <td class="file" tal:content="structure entry/files"></td>
+      <td class="file">
+        <img tal:condition="entry/files"
+          alt="File attached to the post" width="16" height="16"
+          src="/++resource++fileIcons/application-octet-stream.png"/></td>
       <td class="author">
         <a tal:condition="not:entry/user" 
           tal:attributes="href entry/href" 

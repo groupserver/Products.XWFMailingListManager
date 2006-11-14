@@ -93,3 +93,8 @@ div.userimage {
   color: #6C911D;
   padding: 0px 0px 15px 0px;
 }
+
+/* Topic-index table */
+table#results {
+    padding-bottom: 30px;
+}
