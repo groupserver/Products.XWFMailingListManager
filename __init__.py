@@ -6,10 +6,12 @@
 # You MUST follow the rules in README_STYLE before checking in code
 # to the head. Code which does not follow the rules will be rejected.  
 #
-import XWFMailingListManager, XWFMailingList, XWFVirtualMailingListArchive
+import XWFMailingListManager, XWFMailingList
+import XWFVirtualMailingListArchive, XWFVirtualMailingListArchive2
 
 def initialize(context):
     # import lazily and defer initialization to the module
     XWFMailingListManager.initialize(context)
     XWFMailingList.initialize(context)
     XWFVirtualMailingListArchive.initialize(context)
+    XWFVirtualMailingListArchive2.initialize(context)

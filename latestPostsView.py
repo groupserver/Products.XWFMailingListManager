@@ -60,19 +60,6 @@ class GSLatestPostsView(Products.Five.BrowserView,
                                                       ('mailSubject',
                                                        'nocase')))
           self.posts = [post.getObject() for post in resultSet]
-          self.posts.sort(self.post_date_sorter)
-          #self.posts.reverse()
-
-      def post_date_storter(self, a, b):
-          if a['mailDate'] > b['mailDate']:
-              retval = 1
-          elif a['mailDate'] == b['mailDate']:
-              retval = 0
-          else:
-              retval = -1
-          assert retval in (1, 0, -1)
-          return retval
-
           
       def get_posts_length(self):
           assert self.start >= 0
