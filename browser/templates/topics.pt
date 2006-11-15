@@ -162,7 +162,9 @@
                 <span tal:replace="python:view.get_group_info().get_name()" />
               </a>
             </li>
-            <li class="start"><a href="#">Start a new topic</a></li>
+            <li class="start">
+              <a href="newTopic.html">Start a new topic</a>
+            </li>
           </ul>
         </div>
 

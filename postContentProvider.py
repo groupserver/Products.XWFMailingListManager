@@ -194,7 +194,7 @@ class GSPostContentProvider(object):
           
           retval = string.join(wrapped, '\n')
           
-          assert retval
+          # assert retval # Some messages may be blank
           return retval
 
       def __split_message(self, messageText, 
