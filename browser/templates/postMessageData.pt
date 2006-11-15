@@ -23,7 +23,7 @@
   <input type="hidden" 
     name="replyToId" id="replyToId" 
     value="anId" tal:attributes="value options/replyToId"/>
-  <input type="hidden" 
+  <input tal:condition="not:options/startNew" type="hidden" 
     name="topic" id="topic"
     value="a topic" tal:attributes="value options/topic"/>
 </tal:block>

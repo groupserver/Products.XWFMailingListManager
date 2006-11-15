@@ -119,33 +119,47 @@
         style="width: 0px; height 0px;">&#160;</div>
       
       <h1>All posts in
-        <cite tal:content="python:view.get_topic_name()">This Topic</cite></h1>
+        <cite tal:content="python:view.get_topic_name()">This Topic</cite>
+        <a href="#" title="A short link to this topic" class="shortLink"
+          tal:define="siteUrl python:view.get_site_info().get_url();
+          topicName python:view.get_topic_name();
+          topicId python:view.get_topic()[-1]['id']"
+          tal:attributes="href string:${siteUrl}/r/topic/${topicId};
+          title string:A short link to all posts in ${topicName}">(Short 
+          link)</a>
+      </h1>
       
-      <div class="messages-nl">
+      <div class="messages-nl" id="topicNavigation">
         <p class="label">Topic Navigation</p>
         <ul>
           <li class="prev">
             <span 
-              tal:condition="python:not(prev and prev[0])">Previous 
+              tal:condition="python:not(prev and prev[0])">Next 
               topic</span>
             <a href="foo" tal:condition="python:prev and prev[0]"
               tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);">
-              Previous topic: <cite tal:content="python:prev[1]">Topic Name</cite>
+              Next topic: <cite tal:content="python:prev[1]">Topic Name</cite>
             </a>
           </li>
           <li class="next">
             <a href="foo"
               tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);"
-              tal:condition="python:next and next[0]">Next topic: 
+              tal:condition="python:next and next[0]">Previous topic: 
               <cite tal:content="python:next[1]">Topic Name</cite></a>
-            <span tal:condition="python:not(next and next[0])">Next topic</span>
+            <span tal:condition="python:not(next and next[0])">Previous
+              topic</span>
           </li>
+        </ul>
+      </div>
+      <div class="messages-nl" id="usefulLinks">
+        <p class="label">Useful Links</p>
+        <ul>
           <li class="topics">
             <a href="topics.html">Latest topics in 
               <span tal:replace="python:view.get_group_info().get_name()"/></a> 
-            </li>
-          </ul>
-        </div>
+          </li>
+        </ul>
+      </div>
       
       <p tal:define="topic python:view.get_topic()"
         tal:replace="structure provider:groupserver.TopicIndex"/>

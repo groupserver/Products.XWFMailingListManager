@@ -1,5 +1,10 @@
 /* Stylesheet for the single-post view of a topic */
 
+h1 .shortLink {
+    font-size: xx-small;
+    font-weight: 200;
+}
+
 .messages-nl .label {
     font-size: 12px; 
     font-weight: bold;
@@ -19,11 +24,21 @@
 .messages-nl a:hover {
     background-color: #eff0ed;
 }
+
+#usefulLinks.messages-nl p {
+    display: none;
+}
+
+#usefulLinks.messages-nl a {
+    padding-left: 0px;
+    margin-right: 10px;
+}
+
 .messages-nl .first a, .messages-nl .first span {
     background-image: url('/++resource++postImages/arrow_left_bar.png');
 }
 .messages-nl .prev a, .messages-nl .prev span {
-    background-image: url('/++resource++postImages/arrow_left.png');
+    background-image: url('/++resource++postImages/arrow_up.png');
 }
 .messages-nl .next a, .messages-nl .next span, 
 .messages-nl .last a, .messages-nl .last span{
@@ -31,22 +46,25 @@
     background-position: right center;
 }
 .messages-nl .next a, .messages-nl .next span {
+    background-image: url('/++resource++postImages/arrow_down.png');
+}
+#singlePostTopicNavigation.messages-nl .prev a,
+#singlePostTopicNavigation.messages-nl .prev span {
+    background-image: url('/++resource++postImages/arrow_left.png');
+}
+#singlePostTopicNavigation.messages-nl .next a, 
+#singlePostTopicNavigation.messages-nl .next span {
     background-image: url('/++resource++postImages/arrow_right.png');
 }
-.messages-nl .last a, .messages-nl .last span {
+#singlePostTopicNavigation.messages-nl .last a,
+#singlePostTopicNavigation.messages-nl .last span {
     background-image: url('/++resource++postImages/arrow_right_bar.png');
 }
-.messages-nl .topicLink, .messages-nl .posts, .messages-nl .topics,
-.messages-nl .start, .messages-nl .alternateATOM {
-    line-height: 30px;
-    display: block;
+#singlePostTopicNavigation.messages-nl .next a,
+#singlePostTopicNavigation.messages-nl .next span {
+    background-image: url('/++resource++postImages/arrow_right.png');
 }
-
-.messages-nl .topics a, .messages-nl .posts  a, .messages-nl .start a {
-    padding-left: 0px;
-}
-
-.messages-nl .topicLink a {
+#singlePostTopicNavigation.messages-nl .topicLink a {
     background-image: url('/++resource++postImages/arrow_up.png');
 }
 pre.email-body {

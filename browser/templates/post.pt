@@ -175,9 +175,14 @@
               <li class="last">
                 <a tal:condition="next"
                   tal:attributes="href string:${postURLPrefix}${last/id};
-                  title string:Last post in ${email/mailSubject};">Last post</a>
+                  title string:Most recent post in ${email/mailSubject};">Last post</a>
                 <span tal:condition="not:next">Last post</span>                
               </li>
+            </ul>
+          </div>
+          <div class="messages-nl" id="usefulLinks">
+            <p class="label">Useful Links</p>
+            <ul>
               <li class="topicLink">
                 <a href="#" 
                   tal:attributes="href string:topic.html?id=${last/id}">

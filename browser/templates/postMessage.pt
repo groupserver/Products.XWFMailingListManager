@@ -6,13 +6,17 @@
     <a class="helpLink" title="Help with posting a message" 
       href="/help/manual/#groupserver-posting-a-message-using-the-web">[?]</a></h2>
   
-  <h2 tal:condition="startNew">Start a new Topic in
-    <span class="group" tal:content="options/groupName">A Group</span>
-  </h2>
+  <div id="post-topic-field" class="formelementtext"
+    tal:condition="startNew">
+    <label class="text" for="topic">Topic</label>
+    <div class="hint">The topic (or subject) of your post.</div>
+    <input type="text" name="topic" id="topic" class="text"
+      value="Enter your new topic name here"/>
+  </div>
   
   <div id="post-from-fields" class="formelementtext"
     tal:condition="python:len(options['fromEmailAddresses'])&gt;1">
-    <label class="text" for="email">Email</label>
+    <label class="text" for="email">Email from</label>
     <div class="hint">The email address that you wish to send the 
       post from.</div>
     <select id="email" name="email" class="text"

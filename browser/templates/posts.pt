@@ -41,6 +41,10 @@
         tal:condition="nextChunkURL"
         tal:attributes="href lastChunkURL">&#160;</link>
       
+      <link rel="up" href="#"
+        tal:attributes="title python:groupInfo.get_name();
+        href python:'%s/groups/%s' % (siteInfo.get_url(), groupInfo.get_id())"/>
+      
       <!--ATOM feed-->
       <link rel="alternate" title="ATOM Feed" type="application/atom+xml"
         href="posts.atom" 
@@ -159,15 +163,20 @@
                 <span tal:replace="len">-1</span> posts
               </span>
             </li>
-            <li class="alternateATOM">
-              <a title="ATOM Feed" type="application/atom+xml"
-                tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.get_group_info().get_name()"
-                href="posts.atom">Web feed of the latest posts.</a>
-            </li>
+          </ul>
+        </div>
+        <div class="messages-nl" id="usefulLinks">
+          <p class="label">Useful Links</p>
+          <ul>
             <li class="topics">
               <a href="topics.html">Latest of topics in
                 <span tal:replace="python:view.get_group_info().get_name()" />
               </a>
+            </li>
+            <li class="alternateATOM">
+              <a title="ATOM Feed" type="application/atom+xml"
+                tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.get_group_info().get_name()"
+                href="posts.atom">Web feed of the latest posts.</a>
             </li>
           </ul>
         </div>

@@ -91,6 +91,44 @@ class GSGroupObject(GSSiteObject):
           assert retval
           return retval
 
+class GSNewTopicView(Products.Five.BrowserView, GSGroupObject):
+      def __init__(self, context, request):
+          # Preconditions
+          assert context
+          assert request
+           
+          Products.Five.BrowserView.__init__(self, context, request)
+          GSGroupObject.__init__(self, context)
+
+      def process_form(self):
+        form = self.context.REQUEST.form
+        result = {}
+        if form.has_key('submitted'):
+            model = form['model']
+            instance = form['instance']
+            
+            oldScripts = self.context.Scripts.forms
+            if hasattr(oldScripts, model):
+                modelDir = getattr(oldScripts, model)
+                if hasattr(modelDir, instance):
+                    script = getattr(modelDir, instance)
+                    return script()
+                else:
+                    m = """<p>Could not find the instance
+                           <code>%s</code></p>.""" % instance
+                    result['error'] = True
+                    result['message'] = m
+            else:
+                m = """<p>Could not find the model 
+                       <code>%s</code></p>.""" % model
+                result['error'] = True
+                result['message'] = m
+            assert result.has_key('error')
+            assert result.has_key('message')
+            assert result['message'].split
+    
+        result['form'] = form            
+        return result
 
 class GSBaseMessageView(Products.Five.BrowserView):
       def __init__(self, context, request):
