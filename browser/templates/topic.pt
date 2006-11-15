@@ -50,10 +50,10 @@
         href python:groupInfo.get_url()">&#160;</link>
       <link rel="home" 
         tal:attributes="title python:'%s Homepage' % view.get_site_info().get_name();
-        href python:view.get_site_info().get_url()"/>
+        href python:view.get_site_info().get_url()">&#160;</link>
       <link rel="help" 
         tal:attributes="title python:'%s Help' % view.get_site_info().get_name();
-        href python:'%s/help' % view.get_site_info().get_url()"/>
+        href python:'%s/help' % view.get_site_info().get_url()">&#160;</link>
     </tal:block>
     
     <!-- 
