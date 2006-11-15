@@ -357,7 +357,7 @@ class GSPostContentProvider(object):
           markedUpPost = self.__markup_text(text).strip()
           retval = self.__wrap_message(markedUpPost)
           
-          assert retval
+          #assert retval # Some messages may be blank
           return retval
 
       def get_email_intro_and_remainder(self):
