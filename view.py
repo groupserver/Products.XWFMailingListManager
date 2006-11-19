@@ -58,6 +58,11 @@ class GSGroupInfo:
         siteURL = self.siteInfo.get_url()
         retval = '%s/groups/%s' % (siteURL, self.get_id())
         return retval
+        
+    def get_property(self, propertyId, default=None):
+        assert self.groupObj
+        retval = self.groupObj.getProperty(propertyId, default)
+        return retval
 
 class GSSiteObject:          
     def __init__(self, context):

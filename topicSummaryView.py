@@ -61,11 +61,12 @@ class GSTopicSummaryView(Products.Five.BrowserView,
                                                        'nocase'),
                                                       ('mailDate', 
                                                        'cmp', 'desc')))
+
           threads = []
           currThread = None
           currThreadResults = []
           threads = []
-          
+                    
           for result in resultSet:
               subj = result.mailSubject.lower() 
               if subj != currThread:
@@ -77,6 +78,7 @@ class GSTopicSummaryView(Products.Five.BrowserView,
                   threads.append(threadInfo)
               else:
                   threads[-1]['length'] = threads[-1]['length'] + 1
+                  
           threads.sort(self.__thread_sorter)
           threads.reverse()
           
@@ -123,12 +125,39 @@ class GSTopicSummaryView(Products.Five.BrowserView,
           
       def get_topics(self):
           assert self.threads
+          
           if len(self.threads) > self.start:
-              retval = self.threads[self.start:self.end]
+              topics = self.threads[self.start:self.end]
+              if self.start == 0:
+                  stickyTopics = self.get_sticky_topics()
+                  stickyTopicNames = map(lambda t: t['name'].lower(),
+                                         stickyTopics)
+                  for topic in topics:
+                      if topic['name'].lower() in stickyTopicNames:
+                          topics.remove(topic)
+              retval = topics
           else:
               retval = []
           assert retval.append
           assert len(retval) <= self.get_summary_length()
+          return retval
+
+      def get_sticky_topics(self):
+          assert self.threads
+          
+          retval = []
+          
+          groupInfo = self.get_group_info()
+          stickyTopicsIds = groupInfo.get_property('sticky_topics')
+          if stickyTopicsIds and (self.start == 0):
+              for stickyTopicId in stickyTopicsIds:
+                  query = {'id': stickyTopicId}
+                  result = self.archive.find_email(query)[0]
+                  threadInfo = {'id':     result.id,
+                                'name':   result.mailSubject,
+                                'date':   result.mailDate,
+                                'length': ''}
+                  retval.append(threadInfo)
           return retval
           
       def __thread_sorter(self, a, b):

@@ -167,7 +167,7 @@
             </li>
           </ul>
         </div>
-
+        
         <table id="topicsSummary">
           <caption>Latest topics in
             <span class="group" 
@@ -180,8 +180,26 @@
               <th class="date">Latest Post</th>
             </tr>
           </thead>
-          <tbody>
-            <tr tal:repeat="topic python:view.get_topics()"
+          <tbody tal:define="topics python:view.get_topics();
+            stickyTopics python:view.get_sticky_topics()">
+            <tal:block tal:condition="stickyTopics">
+              <tr tal:repeat="stickyTopic stickyTopics"
+                tal:attributes="id string:sticky-${stickyTopic/id};"
+                class="stickyTopic">
+                <td class="topic" title="Topic name">
+                  <strong>Sticky:</strong>
+                  <a href="#" id="foo"
+                    tal:attributes="href string:topic.html?id=${stickyTopic/id}"
+                    tal:content="stickyTopic/name">Wibble</a>
+                </td>
+                <td class="posts" title="Number of posts" 
+                  tal:content="stickyTopic/length">-1</td>
+                <td class="date" title="Date of most recent post" 
+                  tal:content="stickyTopic/date">Today, Tomorrow, Timaru</td>
+              </tr>
+            </tal:block>
+            
+            <tr tal:repeat="topic topics"
               tal:attributes="id topic/id;">
               <td class="topic" title="Topic name">
                 <a href="#" id="foo"
