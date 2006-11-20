@@ -1,0 +1,18 @@
+<tal:block>
+  <input type="hidden" id="toggleStickySubmitted" name="submitted" 
+    value="1"/>
+  <input type="hidden" id="toggleStickyModel" name="model" 
+    value="sticky_topic" />
+  <input type="hidden" id="toggleStickyInstance" name="instance" 
+    value="add" tal:attributes="value options/instance"/>
+  
+  <input type="hidden" id="toggleStickyID" name="id" 
+    value="0" tal:attributes="value options/topicId"/>
+  
+  <input type="hidden" id="toggleStickyGroupId" name="groupId"
+    value="foo" tal:attributes="value options/groupId"/>
+  <input type="hidden" id="toggleStickySiteId" name="siteId"
+    value="bar" tal:attributes="value options/siteId"/>
+  <input type="hidden" id="toggleStickyTopicId" name="topicId"
+    value="wibble" tal:attributes="value options/topicId"/>
+</tal:block>

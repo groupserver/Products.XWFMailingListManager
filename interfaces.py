@@ -79,6 +79,27 @@ class IGSPostMessageContentProvider(zope.interface.Interface):
                                 required=False,
                                 default=u"browser/templates/postMessage.pt")
 
+class IGSStickyTopicToggleContentProvider(zope.interface.Interface):
+    """A content provider for the sticky-topic toggle"""
+    topic = Text(title=u"Topic",
+                 description=u"The name of the topic to be toggled",
+                 required=True)
+    topicId = Text(title=u"Topic ID",
+                   description=u"The ID of the topic to be toggled",
+                   required=True)
+    groupInfo = Field(title=u"Group Information",
+                     description=u"Information about the group",
+                     required=True,
+                     default=None)
+    siteInfo = Field(title=u"Site Information",
+                     description=u"Information about the site",
+                     required=True, 
+                     default=None)
+    pageTemplateFileName = Text(title=u"Page Template File Name",
+                                description=u"""The name of the ZPT file
+                                that is used to render the form.""",
+                                required=False,
+                                default=u"browser/templates/toggleStickyTopicForm.pt")
 # </zope-3>
 
         

@@ -59,7 +59,10 @@
 
   <interface interface=".interfaces.IGSPostMessageContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
-  
+
+  <interface interface=".interfaces.IGSStickyTopicToggleContentProvider"
+    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
+
   <!-- Adapters -->
   <!--adapter for=".interfaces.IGSTopicIndexContentProvider"
     provides="zope.contentprovider.interfaces.IContentProvider"

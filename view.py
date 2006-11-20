@@ -14,6 +14,7 @@ import Products.XWFMailingListManager.interfaces
 import Products.XWFMailingListManager.postContentProvider
 import Products.XWFMailingListManager.topicIndexContentProvider
 import Products.XWFMailingListManager.postMessageContentProvider
+import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
@@ -289,6 +290,24 @@ class GSTopicView(GSBaseMessageView, GSGroupObject):
           assert len(retval) == 2
           return retval
           
+      def get_sticky_topics(self):
+          assert self.threads
+          
+          retval = []
+          
+          groupInfo = self.get_group_info()
+          stickyTopicsIds = groupInfo.get_property('sticky_topics')
+          if stickyTopicsIds:
+              for stickyTopicId in stickyTopicsIds:
+                  query = {'id': stickyTopicId}
+                  result = self.archive.find_email(query)[0]
+                  threadInfo = {'id':     result.id,
+                                'name':   result.mailSubject,
+                                'date':   result.mailDate,
+                                'length': ''}
+                  retval.append(threadInfo)
+          return retval
+          
       def process_form(self):
         form = self.context.REQUEST.form
         result = {}
@@ -301,7 +320,10 @@ class GSTopicView(GSBaseMessageView, GSGroupObject):
                 modelDir = getattr(oldScripts, model)
                 if hasattr(modelDir, instance):
                     script = getattr(modelDir, instance)
-                    return script()
+                    assert script
+                    retval = script()
+                    retval['form'] = form
+                    return retval
                 else:
                     m = """<p>Could not find the instance
                            <code>%s</code></p>.""" % instance
