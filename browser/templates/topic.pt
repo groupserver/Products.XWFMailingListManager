@@ -134,7 +134,12 @@
         tal:define="topic python:view.get_topic_name();
         topicId python:view.get_topic()[-1]['id'];
         groupInfo python:view.get_group_info();
-        siteInfo python:view.get_site_info();">
+        siteInfo python:view.get_site_info();
+        group_object context/Scripts/get/group_object;
+        roles python:user.getRolesInContext(group_object);
+        isGroupAdmin python:'GroupAdmin' in roles;
+        isDivisionAdmin python:'DivisionAdmin' in roles;"
+         tal:condition="python:isGroupAdmin or isDivisionAdmin">
         <p 
           tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicFormData.pt"
           tal:replace="structure provider:groupserver.StickyTopicToggle">
