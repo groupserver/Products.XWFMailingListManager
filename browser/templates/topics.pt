@@ -131,7 +131,9 @@
         <div id="replacedHelpPane" 
           style="width: 0px; height 0px;">&#160;</div>
         
-        <h1>Latest Topics in <span class="group" tal:content="python:view.get_group_info().get_name()">a Group</span></h1>
+        <h1>Latest Topics in 
+        <span class="group" 
+            tal:content="python:view.get_group_info().get_name()">a Group</span></h1>
 
         <div class="messages-nl" 
           tal:define="len python:view.get_summary_length()">
@@ -167,6 +169,18 @@
             </li>
           </ul>
         </div>
+
+        <p tal:condition="python:view.start == 0">The following are the
+          latest <span tal:content="python:view.get_summary_length()"/> topics in
+          <span class="group" 
+            tal:content="python:view.get_group_info().get_name()">a Group</span>:
+          the topics that have posts in them recently.
+          You can view any topic by clicking its name<span tal:condition="nextURL">, or
+            view the <span tal:content="python:view.get_summary_length()"/>
+            earlier topics by clicking 
+            <a href="#" tal:attributes="href nextURL">Previous</a>
+          </span>.
+        </p>
         
         <table id="topicsSummary">
           <caption>Latest topics in

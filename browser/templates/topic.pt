@@ -129,6 +129,25 @@
           link)</a>
       </h1>
       
+      <form method="post" action="" enctype="multipart/form-data"
+        class="adminTasks" id="toggleStickyTopic"
+        tal:define="topic python:view.get_topic_name();
+        topicId python:view.get_topic()[-1]['id'];
+        groupInfo python:view.get_group_info();
+        siteInfo python:view.get_site_info();">
+        <p 
+          tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicFormData.pt"
+          tal:replace="structure provider:groupserver.StickyTopicToggle">
+          The space for the hidden metadata associated with the
+          sticky topic toggle.
+        </p>
+        <p
+          tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicForm.pt"
+          tal:replace="structure provider:groupserver.StickyTopicToggle">
+          The button to do the toggling!.
+        </p>
+      </form>
+
       <div class="messages-nl" id="topicNavigation">
         <p class="label">Topic Navigation</p>
         <ul>
@@ -160,26 +179,7 @@
           </li>
         </ul>
       </div>
-      
-      <form method="post" action=""
-        enctype="multipart/form-data"
-        tal:define="topic python:view.get_topic_name();
-        topicId python:view.get_topic()[-1]['id'];
-        groupInfo python:view.get_group_info();
-        siteInfo python:view.get_site_info();">
-        <p 
-          tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicFormData.pt"
-          tal:replace="structure provider:groupserver.StickyTopicToggle">
-          The space for the hidden metadata associated with the
-          sticky topic toggle.
-        </p>
-        <p
-          tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicForm.pt"
-          tal:replace="structure provider:groupserver.StickyTopicToggle">
-          The button to do the toggling!.
-        </p>
-      </form>
-      
+            
       <p tal:define="topic python:view.get_topic()"
         tal:replace="structure provider:groupserver.TopicIndex"/>
       

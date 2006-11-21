@@ -125,3 +125,13 @@ table#results {
 #post-message h2 {
     padding-top: 0px;
 }
+
+#toggleStickyTopic {
+    float: right;
+}
+#toggleStickyTopic div {
+    padding: 0px;
+}
+#toggleStickyTopic input.button {
+    margin: 10px 0px 0px 0px;
+}
