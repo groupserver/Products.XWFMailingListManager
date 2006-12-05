@@ -83,7 +83,7 @@ class GSTopicSummaryView(Products.Five.BrowserView,
           threads.reverse()
           
           self.threads = threads
-          assert self.threads
+          #assert self.threads
       
       def get_summary_length(self):
           assert self.start >= 0
@@ -124,7 +124,7 @@ class GSTopicSummaryView(Products.Five.BrowserView,
           return 'topics.html?start=%d&end=%d' % (newStart, newEnd)
           
       def get_topics(self):
-          assert self.threads
+          #assert self.threads
           
           if len(self.threads) > self.start:
               topics = self.threads[self.start:self.end]
@@ -143,7 +143,7 @@ class GSTopicSummaryView(Products.Five.BrowserView,
           return retval
 
       def get_sticky_topics(self):
-          assert self.threads
+          #assert self.threads
           
           retval = []
           
