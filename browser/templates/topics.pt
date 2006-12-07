@@ -195,7 +195,8 @@
             </tr>
           </thead>
           <tbody tal:define="topics python:view.get_topics();
-            stickyTopics python:view.get_sticky_topics()">
+            stickyTopics python:view.get_sticky_topics();
+            timezone python:context.Scripts.get.option('timezone')">
             <tal:block tal:condition="stickyTopics">
               <tr tal:repeat="stickyTopic stickyTopics"
                 tal:attributes="id string:sticky-${stickyTopic/id};"
@@ -208,8 +209,9 @@
                 </td>
                 <td class="posts" title="Number of posts" 
                   tal:content="stickyTopic/length">-1</td>
-                <td class="date" title="Date of most recent post" 
-                  tal:content="stickyTopic/date">Today, Tomorrow, Timaru</td>
+                <td class="date" title="Date of most recent post"
+                  tal:define="date python:stickyTopic['date'].toZone(timezone).strftime('%H')"
+                  tal:content="date">Today, Tomorrow, Timaru</td>
               </tr>
             </tal:block>
             
@@ -223,7 +225,13 @@
               <td class="posts" title="Number of posts" 
                 tal:content="topic/length">-1</td>
               <td class="date" title="Date of most recent post" 
-                tal:content="topic/date">Today, Tomorrow, Timaru</td>
+                tal:define="date python:topic['date'].toZone(timezone).strftime('%F %T')">
+                <span 
+                  tal:replace="date">
+                  Today, Tomorrow, Timaru
+                </span>
+                (<span tal:replace="timezone"/>)
+              </td>
             </tr>
           </tbody>
         </table>

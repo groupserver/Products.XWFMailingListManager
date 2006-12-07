@@ -49,7 +49,8 @@ class GSTopicIndexContentProvider(object):
           VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
           self.pageTemplate = VPTF(pageTemplateFileName)
           
-          return self.pageTemplate(entries=self.entries)
+          return self.pageTemplate(entries=self.entries, 
+                                   context=self.context)
           
       #########################################
       # Non standard methods below this point #

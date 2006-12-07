@@ -1,4 +1,5 @@
-<table id="results">
+<table id="results"
+  tal:define="timezone python:options['context'].Scripts.get.option('timezone')">
   <thead>
     <tr>
       <th class="file">File</th>
@@ -21,8 +22,15 @@
           <span class="emailname-self"
             tal:content="structure entry/name">Me!</span></a>
       </td>
-      <td class="date" tal:content="structure entry/date">
-        Today, Tomorrow, Timaru
+      <td tal:define="date python:entry['date'].toZone(timezone).strftime('%F %T')"
+        class="date">
+        <a tal:attributes="href entry/href">
+          <span 
+            tal:replace="date">
+            Today, Tomorrow, Timaru
+          </span>
+          (<span tal:replace="timezone"/>)
+        </a>
       </td>
     </tr>
   </tbody>

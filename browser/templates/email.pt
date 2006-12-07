@@ -5,7 +5,8 @@
   authored python:options['authored'];
   authorImage python:options['authorImage'];
   postIntro options/postIntro;
-  postRemainder options/postRemainder">
+  postRemainder options/postRemainder;
+  timezone python:options['context'].Scripts.get.option('timezone')">
   <div tal:attributes="class options/cssClass; id post/id">
     <p class="email-metadata">
       <span class="topic" tal:condition="options/topicName"
@@ -22,8 +23,14 @@
       <span class="posted">
         <strong>Date:</strong>
         <span class="date" 
-          tal:content="post/mailDate">Today, Tomorrow, Timaru</span>
+          tal:define="date python:post.mailDate.toZone(timezone).strftime('%F %T')">
+          <span 
+            tal:replace="date">
+            Today, Tomorrow, Timaru
+          </span>
+          (<span tal:replace="timezone"/>)
         </span>
+      </span>
       <a class="email-link"
         tal:attributes="href string:post.html?id=${post/id};"
         title="A short link to this post">Short link</a>
