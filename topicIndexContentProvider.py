@@ -12,6 +12,7 @@ import DocumentTemplate, Products.XWFMailingListManager
 import Products.GSContent, Products.XWFCore.XWFUtils
 
 from interfaces import IGSTopicIndexContentProvider
+from view import GSGroupInfo
 
 class GSTopicIndexContentProvider(object):
       """GroupServer Topic Index Content Provider

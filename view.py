@@ -105,6 +105,9 @@ class GSBaseMessageView(Products.Five.BrowserView):
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
           self.groupInfo = GSGroupInfo( context )
           
+          self.context = context
+          self.request = request
+
           self.set_archive(self.context.messages)
           self.set_emailId(self.context.REQUEST.form.get('id', None))
           self.init_email()
@@ -299,7 +302,7 @@ class GSPostView(GSBaseMessageView):
       entire topic, which is why it inherits from "GSTopicView". The main
       semantic difference is the ID specifies post to display, rather than
       the first post in the topic.   
-      """      
+      """
       # Next and previous email messages
       def get_previous_email(self):
           assert self.topic

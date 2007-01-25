@@ -55,7 +55,7 @@
         tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
         href python:view.siteInfo.get_url()"/>
       <link rel="help" 
-        tal:attributes="title python:'%s Help' % view.get_siteInfo.get_name();
+        tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
         href python:'%s/help' % view.siteInfo.get_url()"/>
       </tal:block>
       

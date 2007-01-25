@@ -131,8 +131,8 @@
         class="adminTasks" id="toggleStickyTopic"
         tal:define="topic python:view.get_topic_name();
         topicId python:view.get_topic()[-1]['id'];
-        groupInfo python:view.groupInfo();
-        siteInfo python:view.siteInfo();
+        groupInfo python:view.groupInfo;
+        siteInfo python:view.siteInfo;
         group_object context/Scripts/get/group_object;
         roles python:user.getRolesInContext(group_object);
         isGroupAdmin python:'GroupAdmin' in roles;
@@ -188,7 +188,7 @@
       
       <div class="postList">
         <tal:block tal:repeat="post python:view.get_topic()">
-          <p tal:define="position repeat/post/number;
+          <p tal:define="position repeat/post/number"
             tal:replace="structure provider:groupserver.Post">
             The email message is rendered by the Post content provider,
             not by this page.
