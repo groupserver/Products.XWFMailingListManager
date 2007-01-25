@@ -1,5 +1,5 @@
 import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
+import Products.Five, Products.GSContent, DateTime, Globals
 #import Products.Five.browser.pagetemplatefile
 import zope.schema
 import zope.app.pagetemplate.viewpagetemplatefile
@@ -7,20 +7,20 @@ import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 
+from view import GSGroupInfo
+
 import DocumentTemplate, Products.XWFMailingListManager
 
 import Products.GSContent, Products.XWFCore.XWFUtils
          
-class GSLatestPostsView(Products.Five.BrowserView, 
-                        Products.XWFMailingListManager.view.GSGroupObject):
+class GSLatestPostsView(Products.Five.BrowserView):
       def __init__(self, context, request):
-          # Preconditions
-          assert context
-          assert request
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+          self.groupInfo = GSGroupInfo( context )
            
-          Products.Five.BrowserView.__init__(self, context, request)
-          Products.XWFMailingListManager.view.GSGroupObject.__init__(self, 
-                                                                     context)
+          self.context = context
+          self.request = request
+          
           self.set_archive(self.context.messages)
           self.init_start_and_end()
           self.init_posts()

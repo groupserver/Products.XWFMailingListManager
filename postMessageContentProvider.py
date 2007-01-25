@@ -8,20 +8,21 @@ import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 
 import DocumentTemplate
-import Products.XWFMailingListManager.view
 
 import Products.GSContent, Products.XWFCore.XWFUtils
+
+from view import GSGroupInfo
+from interfaces import IGSPostMessageContentProvider
 
 class GSPostMessageContentProvider(object):
       """GroupServer Post Message Content Provider
       """
 
-      zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSPostMessageContentProvider)
+      zope.interface.implements( IGSPostMessageContentProvider )
       zope.component.adapts(zope.interface.Interface,
                             zope.publisher.interfaces.browser.IDefaultBrowserLayer,
                             zope.interface.Interface)
-      
-      
+            
       def __init__(self, context, request, view):
           self.__parent = view
           self.__updated = False
@@ -29,18 +30,23 @@ class GSPostMessageContentProvider(object):
           self.request = request
           self.view = view
 
-          #GSGroupObject.__init__(self, context)
-          
       def update(self):
-          #groupInfo = self.get_group_info()
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
+          self.groupInfo = GSGroupInfo( self.context )
+
           self.groupName = self.groupInfo.get_name()
           self.groupId = self.groupInfo.get_id()
           self.siteId = self.siteInfo.get_id()
           user = self.request.AUTHENTICATED_USER
-          self.fromEmailAddresses = user.emailAddresses
-          self.preferredEmailAddress = user.preferredEmailAddresses[0]
-          if self.preferredEmailAddress not in self.fromEmailAddresses:
-              self.preferredEmailAddress = self.fromEmailAddresses[0]
+          if user.getId() != None:
+              self.fromEmailAddresses = user.emailAddresses
+              self.preferredEmailAddress = user.preferredEmailAddresses[0]
+              if self.preferredEmailAddress not in self.fromEmailAddresses:
+                  self.preferredEmailAddress = self.fromEmailAddresses[0]
+          else:
+              self.fromEmailAddresses = []
+              self.preferredEmailAddress = None
+          
           self.__updated = True
           
       def render(self):

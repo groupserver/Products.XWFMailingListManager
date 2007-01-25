@@ -11,12 +11,14 @@ import DocumentTemplate, Products.XWFMailingListManager
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
+from interfaces import IGSTopicIndexContentProvider
+
 class GSTopicIndexContentProvider(object):
       """GroupServer Topic Index Content Provider
       
       """
 
-      zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSTopicIndexContentProvider)
+      zope.interface.implements( IGSTopicIndexContentProvider )
       zope.component.adapts(zope.interface.Interface,
                             zope.publisher.interfaces.browser.IDefaultBrowserLayer,
                             zope.interface.Interface)
@@ -32,14 +34,18 @@ class GSTopicIndexContentProvider(object):
       def update(self):
           # The entries list is made up of 4-tuples representing the
           #   post ID, files, author, user authored, and post-date.
-          self.topciId = self.view.get_emailId() 
-          hr = 'topic.html?id=%s' % self.topciId
+          self.topicId = self.view.get_emailId() 
+          hr = 'topic.html?id=%s' % self.topicId
           self.entries = [{'href':  '%s#%s' % (hr, post['id']),
                            'files': self.get_file_from_post(post),
                            'name':  self.get_author_realnames_from_post(post),
                            'user':  self.get_user_authored_from_post(post),
                            'date':  self.get_date_from_post(post)} 
                            for post in self.topic ]
+
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
+          self.groupInfo = GSGroupInfo( self.context )
+          
           self.__updated = True
           
       def render(self):

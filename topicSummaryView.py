@@ -1,6 +1,5 @@
 import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
+import Products.Five, Products.GSContent, DateTime, Globals
 import zope.schema
 import zope.app.pagetemplate.viewpagetemplatefile
 import zope.pagetemplate.pagetemplatefile
@@ -11,18 +10,17 @@ import DocumentTemplate, Products.XWFMailingListManager
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
-class GSTopicSummaryView(Products.Five.BrowserView, 
-                         Products.XWFMailingListManager.view.GSGroupObject):
+from view import GSGroupInfo
+
+class GSTopicSummaryView( Products.Five.BrowserView ):
       __groupInfo = None
       def __init__(self, context, request):
-          # Preconditions
-          assert context
-          assert request
-           
-          Products.Five.BrowserView.__init__(self, context, request)
-          Products.XWFMailingListManager.view.GSGroupObject.__init__(self, 
-                                                                     context)
-          
+          self.context = context
+          self.request = request
+
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+          self.groupInfo = GSGroupInfo( context )
+
           self.set_archive(self.context.messages)
           self.__init_start_and_end()
           self.__init_threads()
@@ -147,8 +145,7 @@ class GSTopicSummaryView(Products.Five.BrowserView,
           
           retval = []
           
-          groupInfo = self.get_group_info()
-          stickyTopicsIds = groupInfo.get_property('sticky_topics')
+          stickyTopicsIds = self.groupInfo.get_property('sticky_topics')
           if stickyTopicsIds and (self.start == 0):
               for stickyTopicId in stickyTopicsIds:
                   query = {'id': stickyTopicId}

@@ -10,20 +10,17 @@ import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 
 import DocumentTemplate
-import Products.XWFMailingListManager.interfaces
-import Products.XWFMailingListManager.postContentProvider
-import Products.XWFMailingListManager.topicIndexContentProvider
-import Products.XWFMailingListManager.postMessageContentProvider
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 
 import Products.GSContent, Products.XWFCore.XWFUtils
+from interfaces import IGSUserInfo
 
 class GSGroupInfo:
     def __init__(self, context):
         assert context
         self.context = context
         self.groupObj = self.__get_group_object()
-        self.siteInfo = Products.GSContent.view.GSSiteInfo(context)
+        self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
 
     def __get_group_object(self):
         assert self.context
@@ -65,46 +62,13 @@ class GSGroupInfo:
         retval = self.groupObj.getProperty(propertyId, default)
         return retval
 
-class GSSiteObject:          
-    def __init__(self, context):
-          self.__set_site_info(Products.GSContent.view.GSSiteInfo(context))
-
-    def __set_site_info(self, siteInfo):
-          assert siteInfo
-          self.__siteInfo = siteInfo
-          assert self.__siteInfo
-           
-    def get_site_info(self):
-          assert self.__siteInfo
-          retval = self.__siteInfo
-          assert retval
-          return retval
-
-
-class GSGroupObject(GSSiteObject):
-    def __init__(self, context):
-          GSSiteObject.__init__(self, context)
-          self.__set_group_info(GSGroupInfo(context))
-
-    def __set_group_info(self, groupInfo):
-          assert groupInfo
-          self.__groupInfo = groupInfo
-          assert self.__groupInfo
-           
-    def get_group_info(self):
-          assert self.__groupInfo
-          retval = self.__groupInfo
-          assert retval
-          return retval
-
-class GSNewTopicView(Products.Five.BrowserView, GSGroupObject):
+class GSNewTopicView(Products.Five.BrowserView):
       def __init__(self, context, request):
-          # Preconditions
-          assert context
-          assert request
-           
-          Products.Five.BrowserView.__init__(self, context, request)
-          GSGroupObject.__init__(self, context)
+          self.context = context
+          self.request = request
+          
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+          self.groupInfo = GSGroupInfo( context )
 
       def process_form(self):
         form = self.context.REQUEST.form
@@ -138,21 +102,13 @@ class GSNewTopicView(Products.Five.BrowserView, GSGroupObject):
 
 class GSBaseMessageView(Products.Five.BrowserView):
       def __init__(self, context, request):
-          # Preconditions
-          assert context
-          assert request
-           
-          Products.Five.BrowserView.__init__(self, context, request)
-                    
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+          self.groupInfo = GSGroupInfo( context )
+          
           self.set_archive(self.context.messages)
           self.set_emailId(self.context.REQUEST.form.get('id', None))
           self.init_email()
           self.init_topic()
-          # Postconditions
-          assert self.archive
-          assert self.emailId
-          assert self.email
-          assert self.topic
       
       def set_archive(self, archive):
           """Set the email message archive to "archive"."""
@@ -220,15 +176,11 @@ class GSBaseMessageView(Products.Five.BrowserView):
       def process_form(self):
           pass
 
-class GSTopicView(GSBaseMessageView, GSGroupObject):
+class GSTopicView(GSBaseMessageView):
       """View of a GroupServer Topic"""
       def __init__(self, context, request):
-          # Preconditions
-          assert context
-          assert request
-           
           GSBaseMessageView.__init__(self, context, request)
-          GSGroupObject.__init__(self, context)
+          
           self.init_threads()
 
       def init_threads(self):
@@ -295,8 +247,7 @@ class GSTopicView(GSBaseMessageView, GSGroupObject):
           
           retval = []
           
-          groupInfo = self.get_group_info()
-          stickyTopicsIds = groupInfo.get_property('sticky_topics')
+          stickyTopicsIds = self.groupInfo.get_property('sticky_topics')
           if stickyTopicsIds:
               for stickyTopicId in stickyTopicsIds:
                   query = {'id': stickyTopicId}
@@ -341,7 +292,7 @@ class GSTopicView(GSBaseMessageView, GSGroupObject):
         result['form'] = form            
         return result
 
-class GSPostView(GSBaseMessageView, GSGroupObject):
+class GSPostView(GSBaseMessageView):
       """A view of a single post in a topic.
       
       A view of a single post shares much in common with a view of an 
@@ -349,14 +300,6 @@ class GSPostView(GSBaseMessageView, GSGroupObject):
       semantic difference is the ID specifies post to display, rather than
       the first post in the topic.   
       """      
-      def __init__(self, context, request):
-          # Preconditions
-          assert context
-          assert request
-           
-          GSBaseMessageView.__init__(self, context, request)
-          GSGroupObject.__init__(self, context)
-          
       # Next and previous email messages
       def get_previous_email(self):
           assert self.topic
@@ -396,7 +339,7 @@ class GSPostView(GSBaseMessageView, GSGroupObject):
 
 class GSCurrentUserInfo:
     """Information about the current user"""
-    zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSUserInfo)
+    zope.interface.implements( IGSUserInfo )
     
     def __init__(self):
         pass

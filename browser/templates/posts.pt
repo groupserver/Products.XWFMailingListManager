@@ -10,8 +10,8 @@
     <!--Todo: add the division name.-->
   	<title metal:fill-slot="title">
       Latest posts in
-      <span tal:replace="python:view.get_group_info().get_name()"/>:
-      <span tal:replace="python:view.get_site_info().get_name()"/>
+      <span tal:replace="python:view.groupInfo.get_name()"/>:
+      <span tal:replace="python:view.siteInfo.get_name()"/>
     </title>
     
     <meta name="title" content="Lastest Posts Template"/>
@@ -23,8 +23,6 @@
     <tal:block metal:fill-slot="metadata" 
       tal:define="global postURLPrefix string:post.html?id=;
       global topicURLPrefix string:topic.html?id=;
-      groupInfo python:view.get_group_info();
-      siteInfo python:view.get_site_info();
       global nextChunkURL python:view.get_next_chunk_url();
       global previousChunkURL python:view.get_previous_chunk_url();
       global lastChunkURL python:view.get_last_chunk_url()">
@@ -42,24 +40,24 @@
         tal:attributes="href lastChunkURL">&#160;</link>
       
       <link rel="up" href="#"
-        tal:attributes="title python:groupInfo.get_name();
-        href python:'%s/groups/%s' % (siteInfo.get_url(), groupInfo.get_id())">&#160;</link>
+        tal:attributes="title python:view.groupInfo.get_name();
+        href python:'%s/groups/%s' % (view.siteInfo.get_url(), view.groupInfo.get_id())">&#160;</link>
       
       <!--ATOM feed-->
       <link rel="alternate" title="ATOM Feed" type="application/atom+xml"
         href="posts.atom" 
-        tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.get_group_info().get_name()">&#160;</link>
+        tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.groupInfo.get_name()">&#160;</link>
       
       <!-- The documents related to this post -->
       <link rel="bookmark" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % groupInfo.get_name();
-        href python:groupInfo.get_url()">&#160;</link>
+        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+        href python:view.groupInfo.get_url()">&#160;</link>
       <link rel="home" 
-        tal:attributes="title python:'%s Homepage' % view.get_site_info().get_name();
-        href python:view.get_site_info().get_url()">&#160;</link>
+        tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+        href python:view.siteInfo.get_url()">&#160;</link>
       <link rel="help" 
-        tal:attributes="title python:'%s Help' % view.get_site_info().get_name();
-        href python:'%s/help' % view.get_site_info().get_url()">&#160;</link>
+        tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
+        href python:'%s/help' % view.siteInfo.get_url()">&#160;</link>
     </tal:block>
 
     <!-- 
@@ -141,7 +139,7 @@
         
         <h1>Latest Posts in       
           <span class="group"
-            tal:content="python:view.get_group_info().get_name()"/></h1>
+            tal:content="python:view.groupInfo.get_name()"/></h1>
 
         <div class="messages-nl" 
           tal:define="len python:view.get_chunk_length()">
@@ -170,12 +168,12 @@
           <ul>
             <li class="topics">
               <a href="topics.html">Latest of topics in
-                <span tal:replace="python:view.get_group_info().get_name()" />
+                <span tal:replace="python:view.groupInfo.get_name()" />
               </a>
             </li>
             <li class="alternateATOM">
               <a title="ATOM Feed" type="application/atom+xml"
-                tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.get_group_info().get_name()"
+                tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.groupInfo.get_name()"
                 href="posts.atom">Web feed of the latest posts.</a>
             </li>
           </ul>
@@ -183,10 +181,7 @@
         
         <div class="postList">
           <tal:block tal:repeat="post python:view.get_posts()">
-            <p tal:define="position repeat/post/number;
-              topicName post/mailSubject;
-              groupInfo python:view.get_group_info();
-              siteInfo python:view.get_site_info()"
+            <p tal:define="position repeat/post/number; topicName post/mailSubject"
               tal:replace="structure provider:groupserver.Post">
               The email message is rendered by the Post content provider,
               not by this page.

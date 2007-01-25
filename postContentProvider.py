@@ -11,6 +11,9 @@ import DocumentTemplate, Products.XWFMailingListManager
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
+from interfaces import IGSPostContentProvider
+from view import GSGroupInfo
+
 # <zope-3 weirdness="high">
           
 class GSPostContentProvider(object):
@@ -31,7 +34,7 @@ class GSPostContentProvider(object):
          </p>
       """
 
-      zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSPostContentProvider)
+      zope.interface.implements( IGSPostContentProvider )
       zope.component.adapts(zope.interface.Interface,
                             zope.publisher.interfaces.browser.IDefaultBrowserLayer,
                             zope.interface.Interface)
@@ -58,7 +61,7 @@ class GSPostContentProvider(object):
       
           self.context = context
           self.request = request
-      
+
       def update(self):
           """Update the internal state of the post content-provider.
           
@@ -75,6 +78,8 @@ class GSPostContentProvider(object):
               * "self.authored"      Set to "True" if the current user 
                                      authored the post.
               * "self.authorImage"   Set to the URL of the author's image.
+              * "self.siteInfo"     Set to an instance of GSSiteInfo
+              * "self.groupInfo"    Set to an instance of GSGroupInfo
           """
           assert self.post
           
@@ -90,6 +95,9 @@ class GSPostContentProvider(object):
           self.postIntro, self.postRemainder = ir
           
           self.cssClass = self.get_cssClass()
+
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
+          self.groupInfo = GSGroupInfo( self.context )
            
           assert self.__updated
           
@@ -105,7 +113,7 @@ class GSPostContentProvider(object):
               raise interfaces.UpdateNotCalled
       
           VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-          pageTemplate = VPTF(self.pageTemplateFileName)
+          pageTemplate = VPTF(self.pageTemplateFileName)          
 
           return pageTemplate(authorId=self.authorId, 
                               authorName=self.authorName,

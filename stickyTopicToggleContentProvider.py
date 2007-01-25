@@ -12,11 +12,13 @@ import Products.XWFMailingListManager.view
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
+from interfaces import IGSStickyTopicToggleContentProvider
+
 class GSStickyTopicToggleContentProvider(object):
       """GroupServer Post Message Content Provider
       """
 
-      zope.interface.implements(Products.XWFMailingListManager.interfaces.IGSStickyTopicToggleContentProvider)
+      zope.interface.implements( IGSStickyTopicToggleContentProvider )
       zope.component.adapts(zope.interface.Interface,
                             zope.publisher.interfaces.browser.IDefaultBrowserLayer,
                             zope.interface.Interface)

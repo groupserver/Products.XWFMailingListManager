@@ -13,8 +13,8 @@
       <span tal:replace="python:view.get_topic_name()">
         Standard Template for a Single Post
       </span>:
-      <span tal:replace="python:view.get_group_info().get_name()"/>:
-      <span tal:replace="python:view.get_site_info().get_name()"/>
+      <span tal:replace="python:view.groupInfo.get_name()"/>:
+      <span tal:replace="python:view.siteInfo.get_name()"/>
     </title>
     
     <meta name="title" content="Standard Template for a Single Post"/>
@@ -26,9 +26,7 @@
     <tal:block metal:fill-slot="metadata" 
       tal:define="topicName python:view.get_email()['mailSubject'];
       global postURLPrefix string:post.html?id=;
-      global topicURLPrefix string:topic.html?id=;
-      groupInfo python:view.get_group_info();
-      siteInfo python:view.get_site_info();">
+      global topicURLPrefix string:topic.html?id=">
       <!-- The documents related to this post -->
       
       <link tal:define="global prev python:view.get_previous_topic()" 
@@ -46,14 +44,14 @@
         href="topics.html">&#160;</link>
       
       <link rel="bookmark" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % groupInfo.get_name();
-        href python:groupInfo.get_url()">&#160;</link>
+        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+        href python:view.groupInfo.get_url()">&#160;</link>
       <link rel="home" 
-        tal:attributes="title python:'%s Homepage' % view.get_site_info().get_name();
-        href python:view.get_site_info().get_url()">&#160;</link>
+        tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+        href python:view.siteInfo.get_url()">&#160;</link>
       <link rel="help" 
-        tal:attributes="title python:'%s Help' % view.get_site_info().get_name();
-        href python:'%s/help' % view.get_site_info().get_url()">&#160;</link>
+        tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
+        href python:'%s/help' % view.siteInfo.get_url()">&#160;</link>
     </tal:block>
     
     <!-- 
@@ -121,7 +119,7 @@
       <h1>All posts in the topic
         <cite tal:content="python:view.get_topic_name()">This Topic</cite>
         <a href="#" title="A short link to this topic" class="shortLink"
-          tal:define="siteUrl python:view.get_site_info().get_url();
+          tal:define="siteUrl python:view.siteInfo.get_url();
           topicName python:view.get_topic_name();
           topicId python:view.get_topic()[-1]['id']"
           tal:attributes="href string:${siteUrl}/r/topic/${topicId};
@@ -133,8 +131,8 @@
         class="adminTasks" id="toggleStickyTopic"
         tal:define="topic python:view.get_topic_name();
         topicId python:view.get_topic()[-1]['id'];
-        groupInfo python:view.get_group_info();
-        siteInfo python:view.get_site_info();
+        groupInfo python:view.groupInfo();
+        siteInfo python:view.siteInfo();
         group_object context/Scripts/get/group_object;
         roles python:user.getRolesInContext(group_object);
         isGroupAdmin python:'GroupAdmin' in roles;
@@ -180,7 +178,7 @@
         <ul>
           <li class="topics">
             <a href="topics.html">Latest topics in 
-              <span tal:replace="python:view.get_group_info().get_name()"/></a> 
+              <span tal:replace="python:view.groupInfo.get_name()"/></a> 
           </li>
         </ul>
       </div>
@@ -191,8 +189,6 @@
       <div class="postList">
         <tal:block tal:repeat="post python:view.get_topic()">
           <p tal:define="position repeat/post/number;
-            groupInfo python:view.get_group_info();
-            siteInfo python:view.get_site_info()"
             tal:replace="structure provider:groupserver.Post">
             The email message is rendered by the Post content provider,
             not by this page.
@@ -204,8 +200,6 @@
         enctype="multipart/form-data"
         tal:define="startNew python:False; 
         topic python:view.get_topic_name();
-        groupInfo python:view.get_group_info();
-        siteInfo python:view.get_site_info();
         replyToId python:view.get_topic()[-1]['id'];">
     
         <p 
