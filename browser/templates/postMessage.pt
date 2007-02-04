@@ -34,6 +34,7 @@
     <strong>From:</strong>
     <span class="email" 
       tal:content="python:options['fromEmailAddresses'][0]">foo@example.com</span>
+    <input type="hidden" name="email" tal:attributes="value python:options['fromEmailAddresses'][0]"/>
   </p>
   
   <div id="message-fields" class="formelementtext">
