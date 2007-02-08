@@ -6,15 +6,13 @@ h1 .shortLink {
 }
 
 .messages-nl .label {
-    font-size: 12px; 
     font-weight: bold;
-    color: #6c911d;
+    color: #01375B;
 }
 .messages-nl ul li {
     display: inline;
     margin: 0px 30px 0px 0px;
     padding: 5px 0px 0px 0px;
-    font-size: 11px;
 }
 .messages-nl a, .messages-nl span {
     padding: 5px 5px 5px 30px;
@@ -22,7 +20,7 @@ h1 .shortLink {
     background-position: left center;
 }
 .messages-nl a:hover {
-    background-color: #eff0ed;
+    color: #41638B;
 }
 
 #usefulLinks.messages-nl p {
@@ -80,10 +78,12 @@ div.userimage {
   padding-right: 30px;
 }
 
-.postList .emaildetails-odd, .postList .emaildetails-self-odd,
-.postList .emaildetials-even, .postList .emaildetails-self-even
+.emaildetails-odd, .emaildetails-self-odd, .emaildetials-even, .emaildetails-self-even
 {
     padding: 15px 30px 15px 30px;
+}
+.emaildetails-odd {
+    background-color: #c0c6cf;
 }
 
 .email-remainder {
@@ -109,7 +109,7 @@ div.userimage {
   display: block;
   font-weight: bold;
   font-size: 1.4em;
-  color: #6C911D;
+  color: #01375B;
   padding: 0px 0px 15px 0px;
 }
 
@@ -132,6 +132,13 @@ table#results {
 #toggleStickyTopic div {
     padding: 0px;
 }
+#toggleStickyTopic .hint {
+    width: 10em;
+}
+#toggleStickyTopic input {
+    display: none;
+}
 #toggleStickyTopic input.button {
     margin: 10px 0px 0px 0px;
+    display: block;
 }
