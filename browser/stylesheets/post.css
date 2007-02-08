@@ -69,9 +69,10 @@ pre.email-body {
   margin: 0px;
 }
 
-div.userimage {
+.userimage {
     margin: 0px;
     padding: 0px 15px 15px 0px;
+    float: left;
 }
 
 .email-metadata .author, .email-metadata .posted {
