@@ -7,7 +7,7 @@
     value="post"/>
   <input type="hidden" 
     name="instance" id="instance" 
-    value="addPost"/>
+    value="addPost_pragmatic"/>
 
   
   <input type="hidden" 
