@@ -15,5 +15,5 @@ function showHideInline(remainderId, discloseButtonId)
         discloseElement.setAttribute('title', "Hide the footer");
         discloseElement.setAttribute('class', "shownArrow");
     }
-    Effect.toggle(remainderId,'blind', {duration: 2, delay: 0});
+    Effect.toggle(remainderId,'blind', {duration: 1, delay: 0});
 }
