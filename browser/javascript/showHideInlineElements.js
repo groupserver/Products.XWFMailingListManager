@@ -3,24 +3,21 @@ function showHideInline(remainderId, discloseButtonId)
     var i=0;
     var remainderElement = document.getElementById(remainderId);
     var discloseElement = document.getElementById(discloseButtonId);
-    var img = discloseElement.childNodes[1];
     const hiddenArrow = "\u25b6";
     const shownArrow = "\u25bc"
     
-    if (remainderElement.getAttribute('class') == 'emailRemainderShown')
+    if (discloseElement.getAttribute('class') == 'shownArrow')
     { 
-        remainderElement.setAttribute('class', 'emailRemainderHidden');
-        discloseElement.setAttribute('title', 
-                                      "Show the email footer");
-        img.setAttribute("src",
-                         '/++resource++postImages/disclosure-arrow-hidden.gif');
+        //remainderElement.setAttribute('class', 'emailRemainderHidden');
+        discloseElement.setAttribute('title', "Show the footer");
+        discloseElement.setAttribute('class', "hiddenArrow");
+
     }
     else
     {
-        remainderElement.setAttribute('class', 'emailRemainderShown');
-        discloseElement.setAttribute('title', 
-                                      "Hide the email footer");
-        img.setAttribute("src",
-                         '/++resource++postImages/disclosure-arrow-shown.gif');
+        //remainderElement.setAttribute('class', 'emailRemainderShown');
+        discloseElement.setAttribute('title', "Hide the footer");
+        discloseElement.setAttribute('class', "shownArrow");
     }
+    Effect.toggle(remainderId,'blind', {duration: 2, delay: 0});
 }

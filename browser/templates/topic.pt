@@ -66,6 +66,10 @@
     
     <tal:block metal:fill-slot="javascript">
       <script type="text/javascript" defer="defer"
+        src="/++resource++prototype/prototype.js">&#160;</script>
+      <script type="text/javascript" defer="defer"
+          src="/++resource++scriptaculous/scriptaculous.js?load=effects">&#160;</script>
+      <script type="text/javascript" defer="defer"
         src="/++resource++post.js">&#160;</script>
     </tal:block>
     

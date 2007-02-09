@@ -50,19 +50,20 @@
       discloseId string:emailDiscloseButton${post/id}">
       <div class="emailshowremainder" 
         tal:condition="options/postRemainder">
-        <a href="#" title="Show the email footer"
+        <a href="#" title="Show the footer" 
+          class="hiddenArrow"
           tal:define="fn string:showHideInline('${remId}','${discloseId}')"
           tal:attributes="href string:javascript:${fn}; id discloseId;">
-          <img alt="&#9654;"
-            src="/++resource++postImages/disclosure-arrow-hidden.gif">
+          <span class="txt">&#9654;</span>
         </a>
       </div><!--emailshowremander-->
-      <pre class="emailRemainderHidden" 
+      <pre style="display: none;" 
         tal:condition="options/postRemainder"
-        tal:attributes="id remId"
-        tal:content="structure options/postRemainder">
-        This is the remainder of the email, with such things as the 
-        footer.
+        tal:attributes="id remId">
+        <div tal:content="structure options/postRemainder">
+            This is the remainder of the email, with such things as the 
+            footer.
+        </div>
       </pre><!--emailRemainderHidden-->
     </div><!--email-remainder-->
 

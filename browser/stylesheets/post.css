@@ -96,13 +96,14 @@ pre.email-body {
   width: 100%;
   text-decoration: none;
 }
+/*
 .emailRemainderHidden {
   display: none;
 }
 
 .emailRemainderShown {
   display: block;
-}
+}*/
 
 /* List of latest posts */
 
@@ -142,4 +143,26 @@ table#results {
 #toggleStickyTopic input.button {
     margin: 10px 0px 0px 0px;
     display: block;
+}
+
+/* Disclosure Button */
+a.hiddenArrow {
+    background: transparent url("/++resource++postImages/disclosure-arrow-hidden.gif") no-repeat;
+    width: 16px;
+    height: 16px;
+}
+a.shownArrow {
+    background: transparent url("/++resource++postImages/disclosure-arrow-shown.gif") no-repeat;
+    width: 16px;
+    height: 16px;
+}
+.emailshowremainder a .txt {
+    display: none;
+}
+
+/* Message entry box */
+#message {
+    width: 100%;
+    max-width: 80em;
+    height: 20em;
 }
