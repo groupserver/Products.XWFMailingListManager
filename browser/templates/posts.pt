@@ -76,20 +76,11 @@
         src="/Presentation/Tofu/XForms/js/xforms.js">&#160;</script>
       <script type="text/javascript" defer="defer"
         src="/++resource++post.js">&#160;</script>
-      <script type="text/javascript"
-        src="/++resource++dojo/dojo.js">&#160;</script>
-      <script type="text/javascript" defer="defer"
-        src="/++resource++help.js">&#160;</script>
     </tal:block>
     
     <tal:block metal:fill-slot="style">
-
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
         href="/++resource++singlePost.css">&#160;</link>
-
-      <link rel="stylesheet" title="Popup-Help Stylesheet" type="text/css" 
-        href="/++resource++help.css">&#160;</link>
-
     </tal:block>
   </head>
   
@@ -134,9 +125,6 @@
             value="get"/>
         </div>
 
-        <div id="replacedHelpPane" 
-          style="width: 0px; height 0px;">&#160;</div>
-        
         <h1>Latest Posts in       
           <span class="group"
             tal:content="python:view.groupInfo.get_name()"/></h1>

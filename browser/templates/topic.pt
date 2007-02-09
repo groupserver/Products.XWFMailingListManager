@@ -107,9 +107,6 @@
         </div>
       </form>
       
-      <div id="replacedHelpPane" 
-        style="width: 0px; height 0px;">&#160;</div>
-      
       <h1>All posts in the topic
         <cite tal:content="python:view.get_topic_name()">This Topic</cite>
         <a href="#" title="A short link to this topic" class="shortLink"

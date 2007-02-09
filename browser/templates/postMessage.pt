@@ -10,10 +10,9 @@
     tal:condition="startNew">
     <label class="text" for="topic">Topic</label>
     <div class="hint">The topic (or subject) of your post.</div>
-    <input type="text" name="topic" id="topic" class="text"
-      value="Enter your new topic name here"/>
+    <input type="text" name="topic" id="topic" class="text"/>
   </div>
-  
+
   <div id="post-from-fields" class="formelementtext"
     tal:condition="python:len(options['fromEmailAddresses'])&gt;1">
     <label class="text" for="email">Email from</label>
