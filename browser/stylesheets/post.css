@@ -28,6 +28,10 @@ h1 .shortLink {
     padding-left: 0px;
     margin-right: 10px;
 }
+#usefulLinks.messages-nl .alternateATOM a {
+    padding-left: 18px;
+}
+
 
 .messages-nl .first a, .messages-nl .first span {
     background-image: url('/++resource++postImages/arrow_left_bar.png');
