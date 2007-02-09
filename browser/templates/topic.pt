@@ -96,7 +96,8 @@
       - from the messages, grabbed from the XWFVirtualMailingList
       - instance.
       -->
-    <tal:block metal:fill-slot="body">
+    <tal:block metal:fill-slot="body"
+      tal:define="topicList python:view.get_topic()">
       <form method="get" action="search_all.xml"
         enctype="application/x-www-form-urlencoded">
         <!-- Site Search -->
@@ -112,7 +113,7 @@
         <a href="#" title="A short link to this topic" class="shortLink"
           tal:define="siteUrl python:view.siteInfo.get_url();
           topicName python:view.get_topic_name();
-          topicId python:view.get_topic()[-1]['id']"
+          topicId python:topicList[-1]['id']"
           tal:attributes="href string:${siteUrl}/r/topic/${topicId};
           title string:A short link to all posts in ${topicName}">(Short 
           link)</a>
@@ -121,7 +122,7 @@
       <form method="post" action="" enctype="multipart/form-data"
         class="adminTasks" id="toggleStickyTopic"
         tal:define="topic python:view.get_topic_name();
-        topicId python:view.get_topic()[-1]['id'];
+        topicId python:topicList[-1]['id'];
         groupInfo python:view.groupInfo;
         siteInfo python:view.siteInfo;
         group_object context/Scripts/get/group_object;
@@ -174,12 +175,13 @@
         </ul>
       </div>
             
-      <p tal:define="topic python:view.get_topic()"
+      <p tal:define="topic topicList"
         tal:replace="structure provider:groupserver.TopicIndex"/>
       
       <div class="postList">
-        <tal:block tal:repeat="post python:view.get_topic()">
-          <p tal:define="position repeat/post/number"
+        <tal:block tal:repeat="post topicList">
+          <p tal:define="position repeat/post/number;
+            showPhoto python:(position==1) or (topicList[position-1].mailUserId != topicList[position-2].mailUserId)"
             tal:replace="structure provider:groupserver.Post">
             The email message is rendered by the Post content provider,
             not by this page.
@@ -191,7 +193,7 @@
         enctype="multipart/form-data"
         tal:define="startNew python:False; 
         topic python:view.get_topic_name();
-        replyToId python:view.get_topic()[-1]['id'];">
+        replyToId python:topicList[-1]['id'];">
     
         <p 
           tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"

@@ -27,6 +27,11 @@ class IGSPostContentProvider(zope.interface.Interface):
                        description=u"""The title of the topic.""",
                        required=False,
                        default=u'')
+      showPhoto = Bool(title=u'Whether to show the photo',
+                       description=u"""Determines if the author's photo
+                       should be shown.""",
+                       required=False,
+                       default=False)
       pageTemplateFileName = Text(title=u"Page Template File Name",
                                   description=u"""The name of the ZPT file
                                   that is used to render the post.""",

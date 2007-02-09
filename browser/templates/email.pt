@@ -4,6 +4,7 @@
   authorExists python:options['authorExists'];
   authored python:options['authored'];
   authorImage python:options['authorImage'];
+  showPhoto options/showPhoto;
   postIntro options/postIntro;
   postRemainder options/postRemainder;
   timezone python:options['context'].Scripts.get.option('timezone')">
@@ -35,7 +36,8 @@
         tal:attributes="href string:post.html?id=${post/id};"
         title="A short link to this post">Short link</a>
       </p><!--email-metadata-->
-    <div tal:condition="authorImage" class="userimage">
+    <div tal:condition="python:showPhoto and authorImage" 
+      class="userimage">
       <a tal:attributes="href string:/contacts/${authorId}">
         <img tal:attributes="src authorImage; alt string:Photo of ${authorName}"/>
       </a>

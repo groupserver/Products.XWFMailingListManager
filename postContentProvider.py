@@ -119,6 +119,7 @@ class GSPostContentProvider(object):
                               authorName=self.authorName,
                               authorExists=self.authorExists,
                               authorImage=self.authorImage,
+                              showPhoto=self.showPhoto,
                               authored=self.authored,
                               postIntro=self.postIntro,
                               postRemainder=self.postRemainder,
