@@ -8,6 +8,7 @@ import zope.app.pagetemplate.viewpagetemplatefile
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
+import Products.PythonScripts.standard.url_quote
 
 import DocumentTemplate
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
@@ -97,7 +98,7 @@ class GSNewTopicView(Products.Five.BrowserView):
             assert result.has_key('message')
             assert result['message'].split
     
-        result['form'] = form            
+        result['form'] = form
         return result
 
 class GSBaseMessageView(Products.Five.BrowserView):
@@ -277,7 +278,16 @@ class GSTopicView(GSBaseMessageView):
                     assert script
                     retval = script()
                     retval['form'] = form
-                    return retval
+                    f = 'id=%s&error=%d&message=%s' % (form['id'], 
+                                                       retval['error'], 
+                                                       retval['message'])
+                    gid = self.groupInfo.get_id()
+                    u = '/groups/%s/messages/topic.html?%s' % (gid,
+                                                             f)
+                    u = Products.PythonScripts.standard.url_quote(u)
+                    self.context.REQUEST.RESPONSE.redirect(u)
+                    return
+                    #return retval
                 else:
                     m = """<p>Could not find the instance
                            <code>%s</code></p>.""" % instance
@@ -292,6 +302,9 @@ class GSTopicView(GSBaseMessageView):
             assert result.has_key('message')
             assert result['message'].split
     
+            print u
+            return printed
+
         result['form'] = form            
         return result
 
