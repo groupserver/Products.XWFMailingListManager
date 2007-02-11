@@ -107,7 +107,6 @@
         </div>
 
         <div class="xforms_model">
-          <!-- The site-search model -->
           <input type="hidden" name="__submit__" value=""/>
           <input type="hidden" name="__models__" value="sitesearch"/>
           <input type="hidden" name="__instance+sitesearch+query" value=""/>
@@ -116,7 +115,6 @@
           <input type="hidden" name="__submission_method+sitesearch+search"
             value="get"/>
         </div>
-
         <h1>Latest Topics in 
         <span class="group" 
             tal:content="python:view.groupInfo.get_name()">a Group</span></h1>
@@ -150,7 +148,7 @@
                 <span tal:replace="python:view.groupInfo.get_name()" />
               </a>
             </li>
-            <li class="start">
+            <li class="start" tal:condition="user/getId | nothing">
               <a href="newTopic.html">Start a new topic</a>
             </li>
           </ul>
