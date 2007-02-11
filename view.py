@@ -8,7 +8,7 @@ import zope.app.pagetemplate.viewpagetemplatefile
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
-import Products.PythonScripts.standard.url_quote
+import Products.PythonScripts.standard
 
 import DocumentTemplate
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
@@ -282,8 +282,7 @@ class GSTopicView(GSBaseMessageView):
                                                        retval['error'], 
                                                        retval['message'])
                     gid = self.groupInfo.get_id()
-                    u = '/groups/%s/messages/topic.html?%s' % (gid,
-                                                             f)
+                    u = '/groups/%s/messages/topic.html?%s' % (gid, f)
                     u = Products.PythonScripts.standard.url_quote(u)
                     self.context.REQUEST.RESPONSE.redirect(u)
                     return
