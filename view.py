@@ -186,6 +186,7 @@ class GSTopicView(GSBaseMessageView):
           GSBaseMessageView.__init__(self, context, request)
           
           self.init_threads()
+          self.retval = self.process_form()
 
       def init_threads(self):
           assert self.topic
@@ -278,14 +279,15 @@ class GSTopicView(GSBaseMessageView):
                     assert script
                     retval = script()
                     retval['form'] = form
-                    f = 'id=%s&error=%d&message=%s' % (form['id'], 
-                                                       retval['error'], 
-                                                       retval['message'])
-                    gid = self.groupInfo.get_id()
-                    u = '/groups/%s/messages/topic.html?%s' % (gid, f)
-                    u = Products.PythonScripts.standard.url_quote(u)
-                    self.context.REQUEST.RESPONSE.redirect(u)
-                    return
+                    return retval
+                    #f = 'id=%s&error=%d&message=%s' % (form['id'], 
+                    #                                   retval['error'], 
+                    #                                   retval['message'])
+                    #gid = self.groupInfo.get_id()
+                    #u = '/groups/%s/messages/topic.html?%s' % (gid, f)
+                    #u = Products.PythonScripts.standard.url_quote(u)
+                    #self.context.REQUEST.RESPONSE.redirect(u)
+                    #return
                     #return retval
                 else:
                     m = """<p>Could not find the instance
@@ -301,9 +303,6 @@ class GSTopicView(GSBaseMessageView):
             assert result.has_key('message')
             assert result['message'].split
     
-            print u
-            return printed
-
         result['form'] = form            
         return result
 
