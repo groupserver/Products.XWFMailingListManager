@@ -186,7 +186,8 @@ class GSTopicView(GSBaseMessageView):
           GSBaseMessageView.__init__(self, context, request)
           
           self.init_threads()
-          self.retval = self.process_form()
+          #self.retval = self.process_post()
+          self.retval = self.process_post()
 
       def init_threads(self):
           assert self.topic
@@ -280,15 +281,6 @@ class GSTopicView(GSBaseMessageView):
                     retval = script()
                     retval['form'] = form
                     return retval
-                    #f = 'id=%s&error=%d&message=%s' % (form['id'], 
-                    #                                   retval['error'], 
-                    #                                   retval['message'])
-                    #gid = self.groupInfo.get_id()
-                    #u = '/groups/%s/messages/topic.html?%s' % (gid, f)
-                    #u = Products.PythonScripts.standard.url_quote(u)
-                    #self.context.REQUEST.RESPONSE.redirect(u)
-                    #return
-                    #return retval
                 else:
                     m = """<p>Could not find the instance
                            <code>%s</code></p>.""" % instance
@@ -303,7 +295,60 @@ class GSTopicView(GSBaseMessageView):
             assert result.has_key('message')
             assert result['message'].split
     
-        result['form'] = form            
+        result['form'] = form
+        return result
+
+      def process_post(self):
+        form = self.context.REQUEST.form
+        result = {}
+        if form.has_key('submitted'):
+            if ((form['model'] == 'post') 
+                and (form['instance'] == 'addPost_pragmatic')):
+                assert form.has_key('groupId')
+                assert form.has_key('siteId')
+                assert form.has_key('replyToId')
+                assert form.has_key('topic')
+                assert form.has_key('message')
+                assert form.has_key('tags')
+                assert form.has_key('email')
+                assert form.has_key('file')
+                
+                # --=mpj17=-- Do not, under *A*N*Y* circumstances, 
+                #  strip the file.
+                fields = ['replyToId', 'topic', 'message', 'tags', 'email']
+                for field in fields:
+                    # No really: do not strip the file.
+                    try:
+                        form[field] = form[field].strip()
+                    except AttributeError:
+                        pass
+                        
+                groupId = form.get('groupId')
+                siteId = form.get('siteId')
+                replyToId = form.get('replyToId', '')
+                topic = form.get('topic', '')
+                message = form.get('message', '')
+                tags = form.get('tags', '')
+                email = form.get('email', '')
+                uploadedFile = form.get('file', '')
+                
+                retval = self.context.Scripts.forms.add_a_post(groupId,
+                    siteId, replyToId, topic, messge, tags, email,
+                    uploadedFile)
+                    
+                result['error'] = retval['errror']
+                result['message'] = retval['message']
+            else:
+                m = """<p>Could not find the model
+                       <code>%s</code> and instance 
+                       <code>%s</code></p>.""" % (model, instance)
+                result['error'] = True
+                result['message'] = m
+            assert result.has_key('error')
+            assert result.has_key('message')
+            assert result['message'].split
+    
+        result['form'] = form
         return result
 
 class GSPostView(GSBaseMessageView):
