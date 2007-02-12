@@ -119,8 +119,9 @@
           link)</a>
       </h1>
       
-      <form method="post" action="request/URL" enctype="multipart/form-data"
+      <form method="post" enctype="multipart/form-data"
         class="adminTasks" id="toggleStickyTopic"
+        tal:attributes="action request/URL"
         tal:define="topic python:view.get_topic_name();
         topicId python:topicList[-1]['id'];
         groupInfo python:view.groupInfo;
@@ -189,7 +190,7 @@
           </tal:block>
         </div><!--postList-->
       
-      <form method="post" action="request/URL"
+      <form method="post" tal:attributes="action request/URL"
         enctype="multipart/form-data"
         tal:define="startNew python:False; 
         topic python:view.get_topic_name();
