@@ -333,11 +333,9 @@ class GSTopicView(GSBaseMessageView):
                 email = form.get('email', '')
                 uploadedFile = form.get('file', '')
                 
-                retval = addapost.add_a_post(groupId, siteId, replyToId,
+                result = addapost.add_a_post(groupId, siteId, replyToId,
                                              topic, message, tags, email,
                                              uploadedFile, self.context)
-                result['error'] = retval['errror']
-                result['message'] = retval['message']
             else:
                 m = """<p>Could not find the model
                        <code>%s</code> and instance 
@@ -347,8 +345,8 @@ class GSTopicView(GSBaseMessageView):
             assert result.has_key('error')
             assert result.has_key('message')
             assert result['message'].split
-    
         result['form'] = form
+        print result
         return result
 
 class GSPostView(GSBaseMessageView):

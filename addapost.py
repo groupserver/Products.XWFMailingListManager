@@ -35,22 +35,28 @@ def tagProcess(tagsString):
 
 def add_a_post(groupId, siteId, replyToId, topic, messge, 
                tags, email, uploadedFile, context):
-    result = {}
+
+    result = {'error': False, 'message': 'No errror'}
 
     tagsList = tagProcess(tags)
     tagsString = ', '.join(tagsList)
 
-
     site_root = context.site_root()
     assert site_root
+
+    print result
     user = context.REQUEST.AUTHENTICATED_USER
+    print "add_to_post: Up to here"
     assert user
+    print "add_to_post: Up to here II"
+
 
     siteObj = getattr(site_root.Content, siteId)
     groupObj = getattr(siteObj.groups, groupId)
     ptnCoachId = groupObj.getProperty('ptn_coach_id', '')
     canonicalHost = context.Scripts.get.option('canonicalHost',
                                                  'onlinegroups.net')
+
     host = context.Scripts.get.option('canonicalHost', 'onlinegroups.net')
     messages = getattr(groupObj, 'messages')
     assert messages
