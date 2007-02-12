@@ -15,6 +15,7 @@ import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 from interfaces import IGSUserInfo
+import addapost
 
 class GSGroupInfo:
     def __init__(self, context):
@@ -312,7 +313,7 @@ class GSTopicView(GSBaseMessageView):
                 assert form.has_key('tags')
                 assert form.has_key('email')
                 assert form.has_key('file')
-                
+
                 # --=mpj17=-- Do not, under *A*N*Y* circumstances, 
                 #  strip the file.
                 fields = ['replyToId', 'topic', 'message', 'tags', 'email']
@@ -332,10 +333,9 @@ class GSTopicView(GSBaseMessageView):
                 email = form.get('email', '')
                 uploadedFile = form.get('file', '')
                 
-                retval = self.context.Scripts.forms.add_a_post(groupId,
-                    siteId, replyToId, topic, messge, tags, email,
-                    uploadedFile)
-                    
+                retval = addapost.add_a_post(groupId, siteId, replyToId,
+                                             topic, message, tags, email,
+                                             uploadedFile, self.context)
                 result['error'] = retval['errror']
                 result['message'] = retval['message']
             else:
