@@ -109,8 +109,8 @@ class GSBaseMessageView(Products.Five.BrowserView):
           self.context = context
           self.request = request
 
-          self.set_archive(self.context.messages)
-          self.set_emailId(self.context.REQUEST.form.get('id', None))
+          self.set_archive(context.messages)
+          self.set_emailId(request.form.get('id', None))
           self.init_email()
           self.init_topic()
       
