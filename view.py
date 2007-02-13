@@ -73,7 +73,7 @@ class GSNewTopicView(Products.Five.BrowserView):
           self.groupInfo = GSGroupInfo( context )
 
       def process_form(self):
-        form = self.context.REQUEST.form
+        form = self.request.form
         result = {}
         if form.has_key('submitted'):
             model = form['model']
@@ -188,7 +188,8 @@ class GSTopicView(GSBaseMessageView):
           
           self.init_threads()
           #self.retval = self.process_post()
-          self.retval = self.process_post()
+          self.retval = None
+          print "INIT CALLED"
 
       def init_threads(self):
           assert self.topic
@@ -267,7 +268,7 @@ class GSTopicView(GSBaseMessageView):
           return retval
           
       def process_form(self):
-        form = self.context.REQUEST.form
+        form = self.request.form
         result = {}
         if form.has_key('submitted'):
             model = form['model']
@@ -300,7 +301,7 @@ class GSTopicView(GSBaseMessageView):
         return result
 
       def process_post(self):
-        form = self.context.REQUEST.form
+        form = self.request.form
         result = {}
         if form.has_key('submitted'):
             if ((form['model'] == 'post') 
@@ -347,11 +348,13 @@ class GSTopicView(GSBaseMessageView):
                        <code>%s</code></p>.""" % (model, instance)
                 result['error'] = True
                 result['message'] = m
-            assert result.has_key('error')
-            assert result.has_key('message')
-            assert result['message'].split
+            print result
+            #assert result.has_key('error')
+            #assert result.has_key('message')
+            #assert result['message'].split
         result['form'] = form
         print result
+        self.retval = result
         return result
 
 class GSPostView(GSBaseMessageView):
