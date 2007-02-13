@@ -51,7 +51,6 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     assert user
     print "add_to_post: Up to here II"
 
-
     siteObj = getattr(site_root.Content, siteId)
     groupObj = getattr(siteObj.groups, groupId)
     ptnCoachId = groupObj.getProperty('ptn_coach_id', '')

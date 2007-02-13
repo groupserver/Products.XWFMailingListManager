@@ -18,10 +18,10 @@
       <span tal:replace="python:view.siteInfo.get_name()"/>
     </title>
     
-    <meta name="title" content="Standard Template for a Single Post"/>
+    <meta name="title" content="Standard Template for a Single Topic"/>
     <meta name="author" content="Michael JasonSmith" />
     <meta name="description" 
-      content="This template is used to render a single post to GroupServer" />
+      content="This template is used to render a topic post for GroupServer" />
     <meta name="date" content="2006-10-25"/>
     
     <tal:block metal:fill-slot="metadata" 

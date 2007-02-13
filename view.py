@@ -189,6 +189,10 @@ class GSTopicView(GSBaseMessageView):
           self.retval = None
           print "INIT CALLED"
 
+      def update(self):
+          self.process_post()
+          self.init_threads()
+
       def init_threads(self):
           assert self.topic
           assert self.archive
