@@ -33,8 +33,8 @@ def tagProcess(tagsString):
     
     return map(lambda t: t.strip(), filter(lambda t: t!='', retval))
 
-def add_a_post(groupId, siteId, replyToId, topic, messge, 
-               tags, email, uploadedFile, context):
+def add_a_post(groupId, siteId, replyToId, topic, message,
+               tags, email, uploadedFile, context, request):
 
     result = {'error': False, 'message': 'No errror'}
 
@@ -45,7 +45,8 @@ def add_a_post(groupId, siteId, replyToId, topic, messge,
     assert site_root
 
     print result
-    user = context.REQUEST.AUTHENTICATED_USER
+    print request
+    user = request.AUTHENTICATED_USER
     print "add_to_post: Up to here"
     assert user
     print "add_to_post: Up to here II"
@@ -123,7 +124,7 @@ def add_a_post(groupId, siteId, replyToId, topic, messge,
 
     for list_id in messages.getProperty('xwf_mailing_list_ids', []):
         curr_list = listManager.get_list(list_id)
-        m = messageTemplate(context.REQUEST, list_object=curr_list,
+        m = messageTemplate(request, list_object=curr_list,
                             user=user, from_addr=email,
                             subject=subject, tags=tagsString,
                             canonicalHost=canonicalHost,
