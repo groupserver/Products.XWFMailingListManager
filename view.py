@@ -185,15 +185,18 @@ class GSTopicView(GSBaseMessageView):
       """View of a GroupServer Topic"""
       def __init__(self, context, request):
           GSBaseMessageView.__init__(self, context, request)
-          
           self.retval = None
-          print "INIT CALLED"
 
       def update(self):
           self.process_post()
+          self.init_topic()
           self.init_threads()
 
       def init_threads(self):
+          """Find out the threads that are temporally related to this
+          topic, so we can show the previous and next links to the user.
+          Painfully intensive."""
+          
           assert self.topic
           assert self.archive
 
@@ -348,14 +351,74 @@ class GSTopicView(GSBaseMessageView):
                 result['error'] = True
                 result['message'] = m
             print result
-            #assert result.has_key('error')
-            #assert result.has_key('message')
-            #assert result['message'].split
+            assert result.has_key('error')
+            assert result.has_key('message')
+            assert result['message'].split
+            
         result['form'] = form
-        print result
         self.retval = result
         return result
 
+      def get_user_can_post(self, reasonNeeded=False):
+        # Assume the user can post
+        retval = (('', 1), True)
+
+        user = self.request.AUTHENTICATED_USER
+        groupList = getattr(self.context.ListManager.aq_explicit, 
+                            self.groupInfo.get_id())
+        assert user
+        print dir(user)
+        print user.name
+        print user.getId()
+        if user.getId() == None:
+            m = 'You must log in to post.'
+            retval = ((m, 2), False)
+        elif groupList.is_senderBlocked(user.getId())[0]:
+            senderLimit = groupList.getValueFor('senderlimit')
+            senderInterval = groupList.getValueFor('senderinterval')
+
+            secInDay = 86400
+            secInHour = 3600
+            day = not(senderInterval % secInDay)
+            duration = senderInterval/(day and secInDay or secInHour)
+            plural = duration > 1
+            dayOrHour = day and 'day' or 'hour'
+            dayOrHour = dayOrHour + ((plural and 's') or '')
+            interval = '%d %s' % (duration, dayOrHour)
+
+            m = """You may only send %d messages every %s, and 
+            you have exceeded this limit. You may post again 
+            at %d."""  % (senderLimit, interval,
+                          groupList.is_senderBlocked(user.getId())[1])
+            retval = ((m, 3), False)
+        else:            
+            # ...there is a local reason that allows the user to post
+            retval = self.get_user_can_post_local(True)
+
+        if not reasonNeeded:
+            retval = retval[1]
+        return retval
+
+      def get_user_can_post_local(self, reasonNeeded=False):
+        assert self.context
+
+        # Assume the user can post
+        retval = (('', 1), True)
+        
+        try:
+            localScripts = self.context.LocalScripts
+        except:
+            localScripts = None
+            
+        if (localScripts
+            and hasattr(localScripts, 'get')
+            and hasattr(localScripts.get, 'userCanPostToGroup')):
+            retval = localScripts.get.userCanPostToGroup(True)
+
+        if not reasonNeeded:
+            retval = retval[1]
+        return retval
+        
 class GSPostView(GSBaseMessageView):
       """A view of a single post in a topic.
       

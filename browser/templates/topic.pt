@@ -2,211 +2,219 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <tal:block xmlns:tal="http://xml.zope.org/namespaces/tal"
-           tal:define="retval view/update">
-<html xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  metal:use-macro="context/@@groupserver_layout/page">
-  <head>
-    
-    <!--Todo: add the division name.-->
-    <title metal:fill-slot="title">
-      All posts in
-      <span tal:replace="python:view.get_topic_name()">
-        Standard Template for a Single Post
-      </span>:
-      <span tal:replace="python:view.groupInfo.get_name()"/>:
-      <span tal:replace="python:view.siteInfo.get_name()"/>
-    </title>
-    
-    <meta name="title" content="Standard Template for a Single Topic"/>
-    <meta name="author" content="Michael JasonSmith" />
-    <meta name="description" 
-      content="This template is used to render a topic post for GroupServer" />
-    <meta name="date" content="2006-10-25"/>
-    
-    <tal:block metal:fill-slot="metadata" 
-      tal:define="topicName python:view.get_email()['mailSubject'];
-      global postURLPrefix string:post.html?id=;
-      global topicURLPrefix string:topic.html?id=">
-      <!-- The documents related to this post -->
+  tal:define="retval view/update">
+  <html xmlns="http://www.w3.org/1999/xhtml"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    metal:use-macro="context/@@groupserver_layout/page">
+    <head>
       
-      <link tal:define="global prev python:view.get_previous_topic()" 
-        tal:condition="python:prev and prev[0]" rel="prev" title="Previous topic" href="wibble"
-        tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]); 
-        title python:'Previous topic: %s' % prev[1];">&#160;</link>
+      <!--Todo: add the division name.-->
+      <title metal:fill-slot="title">
+        All posts in
+        <span tal:replace="python:view.get_topic_name()">
+          Standard Template for a Single Post
+        </span>:
+        <span tal:replace="python:view.groupInfo.get_name()"/>:
+        <span tal:replace="python:view.siteInfo.get_name()"/>
+      </title>
       
-      <link tal:define="global next python:view.get_next_topic()" 
-        tal:condition="python:next and next[0]" 
-        rel="next" title="Next topic" href="wibble"
-        tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]); 
-        title python:'Next topic: %s' % next[1];">&#160;</link>
+      <meta name="title" content="Standard Template for a Single Topic"/>
+      <meta name="author" content="Michael JasonSmith" />
+      <meta name="description" 
+        content="This template is used to render a topic post for GroupServer" />
+      <meta name="date" content="2006-10-25"/>
       
-      <link rel="up" title="Summary of topics" 
-        href="topics.html">&#160;</link>
+      <tal:block metal:fill-slot="metadata" 
+        tal:define="topicName python:view.get_email()['mailSubject'];
+        global postURLPrefix string:post.html?id=;
+        global topicURLPrefix string:topic.html?id=">
+        <!-- The documents related to this post -->
+        
+        <link tal:define="global prev python:view.get_previous_topic()" 
+          tal:condition="python:prev and prev[0]" rel="prev" title="Previous topic" href="wibble"
+          tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]); 
+          title python:'Previous topic: %s' % prev[1];">&#160;</link>
+        
+        <link tal:define="global next python:view.get_next_topic()" 
+          tal:condition="python:next and next[0]" 
+          rel="next" title="Next topic" href="wibble"
+          tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]); 
+          title python:'Next topic: %s' % next[1];">&#160;</link>
+        
+        <link rel="up" title="Summary of topics" 
+          href="topics.html">&#160;</link>
+        
+        <link rel="bookmark" title="Group Homepage" href="#"
+          tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+          href python:view.groupInfo.get_url()">&#160;</link>
+        <link rel="home" 
+          tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+          href python:view.siteInfo.get_url()">&#160;</link>
+        <link rel="help" 
+          tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
+          href python:'%s/help' % view.siteInfo.get_url()">&#160;</link>
+      </tal:block>
       
-      <link rel="bookmark" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
-        href python:view.groupInfo.get_url()">&#160;</link>
-      <link rel="home" 
-        tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
-        href python:view.siteInfo.get_url()">&#160;</link>
-      <link rel="help" 
-        tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
-        href python:'%s/help' % view.siteInfo.get_url()">&#160;</link>
-    </tal:block>
-    
-    <!-- 
-      - The standard template used to display a single topic.
-      -
-      - Like the other message-based templates, the data is martialed
-      - out of an XWFVirtualMailingList instance into the page. The
-      - template is then passed to the standard GroupServer skin, using
-      - the same slots as the GSContent template ("standard.pt").
-      -
-      -->
-    
-    <tal:block metal:fill-slot="javascript">
-      <script type="text/javascript" defer="defer"
-        src="/++resource++prototype/prototype.js">&#160;</script>
-      <script type="text/javascript" defer="defer"
+      <!-- 
+        - The standard template used to display a single topic.
+        -
+        - Like the other message-based templates, the data is martialed
+        - out of an XWFVirtualMailingList instance into the page. The
+        - template is then passed to the standard GroupServer skin, using
+        - the same slots as the GSContent template ("standard.pt").
+        -
+        -->
+      
+      <tal:block metal:fill-slot="javascript">
+        <script type="text/javascript" defer="defer"
+          src="/++resource++prototype/prototype.js">&#160;</script>
+        <script type="text/javascript" defer="defer"
           src="/++resource++scriptaculous/scriptaculous.js?load=effects">&#160;</script>
       <script type="text/javascript" defer="defer"
-        src="/++resource++post.js">&#160;</script>
-    </tal:block>
+          src="/++resource++post.js">&#160;</script>
+      </tal:block>
+      
+      <tal:block metal:fill-slot="style">
+        <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
+          href="/++resource++singlePost.css">&#160;</link>
+      </tal:block>
+    </head>
     
-    <tal:block metal:fill-slot="style">
-      <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
-        href="/++resource++singlePost.css">&#160;</link>
-    </tal:block>
-  </head>
-  
-  <body>
-    <!--
-      - The error-messages can go in odd places, so define them seperately 
-      - from the content. In addition, they can be generated by something 
-      - other than the "process_form" method of the view. -->
-    <div metal:fill-slot="messages" 
-      tal:define="result view/retval;
-      isError python:result and result.has_key('error') and result['error'];"
-      tal:condition="python:result and result.has_key('message')"
-      tal:attributes="class python:(isError and 'message-error') or 'message-result'"
-      tal:content="structure result/message"/>
-    
-    <!-- 
-      - The body of the document. Most of the body-content is created 
-      - from the messages, grabbed from the XWFVirtualMailingList
-      - instance.
-      -->
-    <tal:block metal:fill-slot="body"
-      tal:define="topicList python:view.get_topic()">
-      <form method="get" action="search_all.xml"
-        enctype="application/x-www-form-urlencoded">
-        <!-- Site Search -->
-        <div id="searcharea">
+    <body>
+      <!--
+        - The error-messages can go in odd places, so define them seperately 
+        - from the content. In addition, they can be generated by something 
+        - other than the "process_form" method of the view. -->
+      <div metal:fill-slot="messages" 
+        tal:define="result view/retval;
+        isError python:result and result.has_key('error') and result['error'];"
+        tal:condition="python:result and result.has_key('message')"
+        tal:attributes="class python:(isError and 'message-error') or 'message-result'"
+        tal:content="structure result/message"/>
+      
+      <!-- 
+        - The body of the document. Most of the body-content is created 
+        - from the messages, grabbed from the XWFVirtualMailingList
+        - instance.
+        -->
+      <tal:block metal:fill-slot="body"
+        tal:define="topicList python:view.get_topic()">
+        <form method="get" action="search_all.xml"
+          enctype="application/x-www-form-urlencoded">
+          <!-- Site Search -->
+          <div id="searcharea">
           <h3>Site Search</h3>
           <input type="text" class="text" name="query"/>
           <input type="submit" name="" value="Go" class="button"/>
-        </div>
-      </form>
-      
-      <h1>All posts in the topic
-        <cite tal:content="python:view.get_topic_name()">This Topic</cite>
-        <a href="#" title="A short link to this topic" class="shortLink"
-          tal:define="siteUrl python:view.siteInfo.get_url();
-          topicName python:view.get_topic_name();
-          topicId python:topicList[-1]['id']"
-          tal:attributes="href string:${siteUrl}/r/topic/${topicId};
-          title string:A short link to all posts in ${topicName}">(Short 
-          link)</a>
-      </h1>
-      
-      <form method="post" enctype="multipart/form-data"
-        class="adminTasks" id="toggleStickyTopic"
-        tal:attributes="action request/URL"
-        tal:define="topic python:view.get_topic_name();
-        topicId python:topicList[-1]['id'];
-        groupInfo python:view.groupInfo;
-        siteInfo python:view.siteInfo;
-        group_object context/Scripts/get/group_object;
-        roles python:user.getRolesInContext(group_object);
-        isGroupAdmin python:'GroupAdmin' in roles;
-        isDivisionAdmin python:'DivisionAdmin' in roles;"
-         tal:condition="python:isGroupAdmin or isDivisionAdmin">
-        <p 
-          tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicFormData.pt"
-          tal:replace="structure provider:groupserver.StickyTopicToggle">
-          The space for the hidden metadata associated with the
-          sticky topic toggle.
-        </p>
+          </div>
+        </form>
+        
+        <h1>All posts in the topic
+          <cite tal:content="python:view.get_topic_name()">This Topic</cite>
+          <a href="#" title="A short link to this topic" class="shortLink"
+            tal:define="siteUrl python:view.siteInfo.get_url();
+            topicName python:view.get_topic_name();
+            topicId python:topicList[-1]['id']"
+            tal:attributes="href string:${siteUrl}/r/topic/${topicId};
+            title string:A short link to all posts in ${topicName}">(Short 
+            link)</a>
+        </h1>
+        
+        <form method="post" enctype="multipart/form-data"
+          class="adminTasks" id="toggleStickyTopic"
+          tal:attributes="action request/URL"
+          tal:define="topic python:view.get_topic_name();
+          topicId python:topicList[-1]['id'];
+          groupInfo python:view.groupInfo;
+          siteInfo python:view.siteInfo;
+          group_object context/Scripts/get/group_object;
+          roles python:user.getRolesInContext(group_object);
+          isGroupAdmin python:'GroupAdmin' in roles;
+          isDivisionAdmin python:'DivisionAdmin' in roles;"
+          tal:condition="python:isGroupAdmin or isDivisionAdmin">
+          <p 
+            tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicFormData.pt"
+            tal:replace="structure provider:groupserver.StickyTopicToggle">
+            The space for the hidden metadata associated with the
+            sticky topic toggle.
+          </p>
         <p
-          tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicForm.pt"
-          tal:replace="structure provider:groupserver.StickyTopicToggle">
-          The button to do the toggling!.
-        </p>
-      </form>
-
-      <div class="messages-nl" id="topicNavigation">
-        <p class="label">Topic Navigation</p>
-        <ul>
-          <li class="prev">
-            <span 
-              tal:condition="python:not(prev and prev[0])">Next 
-              topic</span>
+            tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicForm.pt"
+            tal:replace="structure provider:groupserver.StickyTopicToggle">
+            The button to do the toggling!.
+          </p>
+        </form>
+        
+        <div class="messages-nl" id="topicNavigation">
+          <p class="label">Topic Navigation</p>
+          <ul>
+            <li class="prev">
+              <span 
+                tal:condition="python:not(prev and prev[0])">Next 
+                topic</span>
             <a href="foo" tal:condition="python:prev and prev[0]"
-              tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);">
-              Next topic: <cite tal:content="python:prev[1]">Topic Name</cite>
-            </a>
-          </li>
-          <li class="next">
-            <a href="foo"
-              tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);"
-              tal:condition="python:next and next[0]">Previous topic: 
+                tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);">
+                Next topic: <cite tal:content="python:prev[1]">Topic Name</cite>
+              </a>
+            </li>
+            <li class="next">
+              <a href="foo"
+                tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);"
+                tal:condition="python:next and next[0]">Previous topic: 
               <cite tal:content="python:next[1]">Topic Name</cite></a>
             <span tal:condition="python:not(next and next[0])">Previous
-              topic</span>
-          </li>
-        </ul>
-      </div>
-      <div class="messages-nl" id="usefulLinks">
+                topic</span>
+            </li>
+          </ul>
+        </div>
+        <div class="messages-nl" id="usefulLinks">
         <p class="label">Useful Links</p>
         <ul>
           <li class="topics">
             <a href="topics.html">Latest topics in 
               <span tal:replace="python:view.groupInfo.get_name()"/></a> 
-          </li>
-        </ul>
-      </div>
-            
-      <p tal:define="topic topicList"
-        tal:replace="structure provider:groupserver.TopicIndex"/>
-      
-      <div class="postList">
-        <tal:block tal:repeat="post topicList">
-          <p tal:define="position repeat/post/number;
-            showPhoto python:(position==1) or (topicList[position-1].mailUserId != topicList[position-2].mailUserId)"
-            tal:replace="structure provider:groupserver.Post">
-            The email message is rendered by the Post content provider,
-            not by this page.
+            </li>
+          </ul>
+        </div>
+        
+        <p tal:define="topic topicList"
+          tal:replace="structure provider:groupserver.TopicIndex"/>
+        
+        <div class="postList">
+          <tal:block tal:repeat="post topicList">
+            <p tal:define="position repeat/post/number;
+              showPhoto python:(position==1) or (topicList[position-1].mailUserId != topicList[position-2].mailUserId)"
+              tal:replace="structure provider:groupserver.Post">
+              The email message is rendered by the Post content provider,
+              not by this page.
             </p>
           </tal:block>
         </div><!--postList-->
-      
-      <form method="post" tal:attributes="action request/URL"
-        enctype="multipart/form-data"
-        tal:define="startNew python:False; 
-        topic python:view.get_topic_name();
-        replyToId python:topicList[-1]['id'];">
-    
-        <p 
-          tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"
-          tal:replace="structure provider:groupserver.PostMessage">
-          The space for the hidden metadata associated with the new post.
-        </p>
-        <p tal:replace="structure provider:groupserver.PostMessage">
-          The space to allow people to write the new post.
-        </p>
-      </form>
-    </tal:block>
-  </body>
-</html>
+        
+        <div id="posting" 
+          tal:define="canPost python:view.get_user_can_post(True)">
+          <form tal:condition="python:canPost[1]"
+            method="post" tal:attributes="action request/URL"
+            enctype="multipart/form-data"
+            tal:define="startNew python:False; 
+            topic python:view.get_topic_name();
+            replyToId python:topicList[-1]['id'];">
+          
+            <p style="display: none;" 
+              tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"
+              tal:replace="structure provider:groupserver.PostMessage">
+              The space for the hidden metadata associated with the new post.
+            </p>
+            <p tal:replace="structure provider:groupserver.PostMessage">
+              The space to allow people to write the new post.
+            </p>
+          </form><!-- Posting Form -->
+          <div tal:condition="python: not canPost[1]">
+            <h3>Posting</h3>
+            <p tal:content="python:canPost[0][0]"/>
+          </div>
+        </div>
+      </tal:block>
+    </body>
+  </html>
 </tal:block>

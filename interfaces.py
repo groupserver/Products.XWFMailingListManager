@@ -56,6 +56,10 @@ class IGSTopicIndexContentProvider(zope.interface.Interface):
                   description=u"The topic to display",
                   required=True, 
                   readonly=False)
+                  
+    def get_user_can_post():
+        """ """
+        pass
 
 class IGSPostMessageContentProvider(zope.interface.Interface):
     """A content provider for the post-topic form"""
