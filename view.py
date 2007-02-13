@@ -188,6 +188,7 @@ class GSTopicView(GSBaseMessageView):
           self.retval = None
 
       def update(self):
+          self.process_form()
           self.process_post()
           self.init_topic()
           self.init_threads()
@@ -339,18 +340,14 @@ class GSTopicView(GSBaseMessageView):
                 email = form.get('email', '')
                 uploadedFile = form.get('file', '')
  
-                print 'Foo'
                 result = addapost.add_a_post(groupId, siteId, replyToId,
                                              topic, message, tags, email,
                                              uploadedFile, 
                                              self.context, self.request)
             else:
-                m = """<p>Could not find the model
-                       <code>%s</code> and instance 
-                       <code>%s</code></p>.""" % (model, instance)
-                result['error'] = True
-                result['message'] = m
-            print result
+                result['error'] = False
+                result['message'] = ''
+ 
             assert result.has_key('error')
             assert result.has_key('message')
             assert result['message'].split
