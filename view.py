@@ -334,9 +334,9 @@ class GSTopicView(GSBaseMessageView):
                 uploadedFile = form.get('file', '')
                 
                 print self.context
-                    print self.request.keys()
-                print 'Foo' 
-                
+                print self.request.get('__ac_name')
+                print self.request.keys()
+                print 'Foo'
 #                result = addapost.add_a_post(groupId, siteId, replyToId,
 #                                             topic, message, tags, email,
 #                                             uploadedFile, 
