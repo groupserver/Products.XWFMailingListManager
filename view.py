@@ -335,15 +335,12 @@ class GSTopicView(GSBaseMessageView):
                 tags = form.get('tags', '')
                 email = form.get('email', '')
                 uploadedFile = form.get('file', '')
-                
-                print self.context
-                print self.request.get('__ac_name')
-                print self.request.keys()
+ 
                 print 'Foo'
-#                result = addapost.add_a_post(groupId, siteId, replyToId,
-#                                             topic, message, tags, email,
-#                                             uploadedFile, 
-#                                             self.context, self.request)
+                result = addapost.add_a_post(groupId, siteId, replyToId,
+                                             topic, message, tags, email,
+                                             uploadedFile, 
+                                             self.context, self.request)
             else:
                 m = """<p>Could not find the model
                        <code>%s</code> and instance 

@@ -44,12 +44,8 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     site_root = context.site_root()
     assert site_root
 
-    print result
-    print request
     user = request.AUTHENTICATED_USER
-    print "add_to_post: Up to here"
     assert user
-    print "add_to_post: Up to here II"
 
     siteObj = getattr(site_root.Content, siteId)
     groupObj = getattr(siteObj.groups, groupId)
