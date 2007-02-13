@@ -364,9 +364,6 @@ class GSTopicView(GSBaseMessageView):
         groupList = getattr(self.context.ListManager.aq_explicit, 
                             self.groupInfo.get_id())
         assert user
-        print dir(user)
-        print user.name
-        print user.getId()
         if user.getId() == None:
             m = 'You must log in to post.'
             retval = ((m, 2), False)

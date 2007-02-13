@@ -191,11 +191,6 @@
                     tal:attributes="href string:topic.html?id=${stickyTopic/id}"
                     tal:content="stickyTopic/name">Wibble</a>
                 </td>
-                <td class="posts" title="Number of posts" 
-                  tal:content="stickyTopic/length">-1</td>
-                <td class="date" title="Date of most recent post"
-                  tal:define="date python:stickyTopic['date'].toZone(timezone).strftime('%H')"
-                  tal:content="date">Today, Tomorrow, Timaru</td>
               </tr>
             </tal:block>
             
