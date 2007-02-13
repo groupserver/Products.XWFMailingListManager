@@ -186,8 +186,6 @@ class GSTopicView(GSBaseMessageView):
       def __init__(self, context, request):
           GSBaseMessageView.__init__(self, context, request)
           
-          self.init_threads()
-          #self.retval = self.process_post()
           self.retval = None
           print "INIT CALLED"
 
