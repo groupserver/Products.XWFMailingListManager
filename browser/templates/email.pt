@@ -42,8 +42,7 @@
         <img tal:attributes="src authorImage; alt string:Photo of ${authorName}"/>
       </a>
     </div><!--authorImage-->
-    <pre class="email-body">
-      <p tal:replace="structure options/postIntro">
+    <pre class="email-body"><p tal:replace="structure options/postIntro">
         This is the body of the document.
       </p>
     </pre><!--email-body-->
