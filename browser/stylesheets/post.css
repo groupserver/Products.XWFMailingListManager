@@ -52,7 +52,7 @@ h1 .shortLink {
     background-image: url('/++resource++postImages/arrow_down.png');
 }
 
-#singlePostTopicNavigation.messages-nl  ul li {
+#singlePostTopicNavigation.messages-nl ul li, #usefulLinks.messages-nl ul li {
     display: inline;
 }
 
