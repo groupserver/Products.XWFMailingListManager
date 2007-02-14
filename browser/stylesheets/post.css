@@ -16,6 +16,9 @@ h1 .shortLink {
     font-weight: bold;
 }
  
+.messages-nl ul {
+    list-style: none inside none;
+}
 .messages-nl ul li {
     margin: 0px 30px 0px 0px;
     padding: 5px 0px 0px 0px;
@@ -48,6 +51,11 @@ h1 .shortLink {
 .messages-nl .next a, .messages-nl .next span {
     background-image: url('/++resource++postImages/arrow_down.png');
 }
+
+#singlePostTopicNavigation.messages-nl  ul li {
+    display: inline;
+}
+
 #singlePostTopicNavigation.messages-nl .prev a,
 #singlePostTopicNavigation.messages-nl .prev span {
     background-image: url('/++resource++postImages/arrow_left.png');
