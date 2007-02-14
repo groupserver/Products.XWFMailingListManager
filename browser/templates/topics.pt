@@ -159,11 +159,11 @@
           <span class="group" 
             tal:content="python:view.groupInfo.get_name()">a Group</span>:
           the topics that have posts in them recently.
-          You can view any topic by clicking its name<span tal:condition="nextURL">, or
-            view the <span tal:content="python:view.get_summary_length()"/>
-            earlier topics by clicking 
-            <a href="#" tal:attributes="href nextURL">Previous</a>
-          </span>.
+          You can view any topic by clicking its 
+          name<span tal:condition="nextURL">, or
+            <a href="#" tal:attributes="href nextURL">view
+              the <span tal:content="python:view.get_summary_length()"/>
+              earlier topics</a></span>.
         </p>
         
         <table id="topicsSummary">

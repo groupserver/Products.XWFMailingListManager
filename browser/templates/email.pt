@@ -10,8 +10,9 @@
   timezone python:options['context'].Scripts.get.option('timezone')">
   <div tal:attributes="class options/cssClass; id post/id">
     <p class="email-metadata">
-      <span class="topic" tal:condition="options/topicName"
-        tal:content="options/topicName">A Topic</span>
+      <a class="topic" tal:condition="options/topicName"
+        tal:attributes="href string:/r/topic/${post/id};"
+        tal:content="options/topicName">A Topic</a>
       <span class="author">
         <strong>From:</strong>
         <a tal:condition="authorExists" class="name"
@@ -33,7 +34,7 @@
         </span>
       </span>
       <a class="email-link"
-        tal:attributes="href string:post.html?id=${post/id};"
+        tal:attributes="href string:/r/post/${post/id};"
         title="A short link to this post">Short link</a>
       </p><!--email-metadata-->
     <div tal:condition="python:showPhoto and authorImage" 

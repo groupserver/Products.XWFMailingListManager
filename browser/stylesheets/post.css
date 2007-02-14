@@ -1,4 +1,11 @@
-/* Stylesheet for the single-post view of a topic */
+/* Stylesheet for the messages */
+
+#topicsSummary .topic, #topicsSummary .date {
+    text-align: left;
+}
+#topicsSummary .date {
+    text-align: right;
+}
 
 h1 .shortLink {
     font-size: xx-small;
@@ -38,11 +45,6 @@ h1 .shortLink {
 }
 .messages-nl .prev a, .messages-nl .prev span {
     background-image: url('/++resource++postImages/arrow_up.png');
-}
-.messages-nl .next a, .messages-nl .next span, 
-.messages-nl .last a, .messages-nl .last span{
-    padding: 5px 30px 5px 5px;
-    background-position: right center;
 }
 .messages-nl .next a, .messages-nl .next span {
     background-image: url('/++resource++postImages/arrow_down.png');
@@ -94,14 +96,6 @@ pre.email-body {
   width: 100%;
   text-decoration: none;
 }
-/*
-.emailRemainderHidden {
-  display: none;
-}
-
-.emailRemainderShown {
-  display: block;
-}*/
 
 /* List of latest posts */
 
