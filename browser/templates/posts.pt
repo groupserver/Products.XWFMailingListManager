@@ -171,9 +171,12 @@
           </ul>
         </div>
         
-        <div class="postList">
-          <tal:block tal:repeat="post python:view.get_posts()">
-            <p tal:define="position repeat/post/number; topicName post/mailSubject"
+        <div class="postList" 
+          tal:define="postList python:view.get_posts()">
+          <tal:block tal:repeat="post postList">
+            <p tal:define="position repeat/post/number; 
+              topicName post/mailSubject;
+              showPhoto python:(position==1) or (postList[position-1].mailUserId != postList[position-2].mailUserId)"
               tal:replace="structure provider:groupserver.Post">
               The email message is rendered by the Post content provider,
               not by this page.
