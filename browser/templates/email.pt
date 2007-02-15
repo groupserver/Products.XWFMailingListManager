@@ -8,7 +8,7 @@
   postIntro options/postIntro;
   postRemainder options/postRemainder;
   timezone python:options['context'].Scripts.get.option('timezone')">
-  <div tal:attributes="class options/cssClass; id post/id">
+  <div tal:attributes="class options/cssClass; id string:post-{post/id}">
     <p class="email-metadata">
       <a class="topic" tal:condition="options/topicName"
         tal:attributes="href string:/r/topic/${post/id};"
