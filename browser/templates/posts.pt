@@ -28,36 +28,36 @@
       global lastChunkURL python:view.get_last_chunk_url()">
 
       <link rel="first" href="posts.html" title="Latest Posts"
-        tal:condition="previousChunkURL">&#160;</link>
+        tal:condition="previousChunkURL" />
       <link rel="previous" href="#" title="Previous chunk"
         tal:condition="previousChunkURL"
-        tal:attributes="href previousChunkURL">&#160;</link>
+        tal:attributes="href previousChunkURL" />
       <link rel="next" href="#" title="Next chunk"
         tal:condition="nextChunkURL"
-        tal:attributes="href nextChunkURL">&#160;</link>
+        tal:attributes="href nextChunkURL" />
       <link rel="last" title="Get Oldest Posts"
         tal:condition="nextChunkURL"
-        tal:attributes="href lastChunkURL">&#160;</link>
+        tal:attributes="href lastChunkURL" />
       
       <link rel="up" href="#"
         tal:attributes="title python:view.groupInfo.get_name();
-        href python:'%s/groups/%s' % (view.siteInfo.get_url(), view.groupInfo.get_id())">&#160;</link>
+        href python:'%s/groups/%s' % (view.siteInfo.get_url(), view.groupInfo.get_id())" />
       
       <!--ATOM feed-->
       <link rel="alternate" title="ATOM Feed" type="application/atom+xml"
         href="posts.atom" 
-        tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.groupInfo.get_name()">&#160;</link>
+        tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.groupInfo.get_name()" />
       
       <!-- The documents related to this post -->
       <link rel="bookmark" title="Group Homepage" href="#"
         tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
-        href python:view.groupInfo.get_url()">&#160;</link>
+        href python:view.groupInfo.get_url()" />
       <link rel="home" 
         tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
-        href python:view.siteInfo.get_url()">&#160;</link>
+        href python:view.siteInfo.get_url()" />
       <link rel="help" 
         tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
-        href python:'%s/help' % view.siteInfo.get_url()">&#160;</link>
+        href python:'%s/help' % view.siteInfo.get_url()" />
     </tal:block>
 
     <!-- 
@@ -84,7 +84,7 @@
     
     <tal:block metal:fill-slot="style">
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
-        href="/++resource++singlePost.css">&#160;</link>
+        href="/++resource++singlePost.css" />
     </tal:block>
   </head>
   
