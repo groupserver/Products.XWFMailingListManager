@@ -52,14 +52,11 @@
       discloseId string:emailDiscloseButton${post/id}">
       <div class="emailshowremainder" 
         tal:condition="options/postRemainder">
-        <a href="#" title="Show the footer" 
-          class="hiddenArrow"
-          tal:define="fn string:showHideInline('${remId}','${discloseId}')"
-          tal:attributes="href string:javascript:${fn}; id discloseId;">
-          <span class="txt">&#9654;</span>
-        </a>
+        <a tal:define="fn string:showHideInline('${remId}','${discloseId}')"
+          tal:attributes="href string:javascript:${fn}; id discloseId;"
+          href="#" title="Show the footer">&#9654;</a>
       </div><!--emailshowremander-->
-      <div style="display: none;" 
+      <div style="display: none;"
         tal:condition="options/postRemainder"
         tal:attributes="id remId">
         <div>
