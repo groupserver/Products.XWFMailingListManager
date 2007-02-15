@@ -59,14 +59,16 @@
           <span class="txt">&#9654;</span>
         </a>
       </div><!--emailshowremander-->
-      <pre style="display: none;" 
+      <div style="display: none;" 
         tal:condition="options/postRemainder"
         tal:attributes="id remId">
-        <div tal:content="structure options/postRemainder">
+        <div>
+          <pre tal:content="structure options/postRemainder">
             This is the remainder of the email, with such things as the 
             footer.
+          </pre>
         </div>
-      </pre><!--emailRemainderHidden-->
+      </div>
     </div><!--email-remainder-->
 
       <!--I need to fix this -->
