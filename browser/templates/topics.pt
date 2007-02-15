@@ -26,32 +26,32 @@
       <link rel="previous" title="Previous topics" href=""
         tal:define="global previousURL python:view.get_previous_summary_url()"
         tal:condition="previousURL"
-        tal:attributes="href previousURL;">&#160;</link>
+        tal:attributes="href previousURL;" />
       <link rel="next" title="Next topics" href=""
         tal:define="global nextURL python:view.get_next_summary_url()"
         tal:condition="nextURL"
-        tal:attributes="href nextURL;">&#160;</link>
+        tal:attributes="href nextURL;" />
       <link rel="first" title="Most recent topics" href="topics.html" 
-        tal:condition="previousURL">&#160;</link>
+        tal:condition="previousURL" />
       <link rel="last" title="Oldest topics" href="" 
         tal:condition="nextURL" 
-        tal:attributes="href python:view.get_last_summary_url()">&#160;</link>
+        tal:attributes="href python:view.get_last_summary_url()" />
      
       <link rel="up" title="Group Homepage" href="#"
         tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
-        href python:view.groupInfo.get_url()">&#160;</link>
+        href python:view.groupInfo.get_url()" />
       
       <link rel="bookmark" href="posts.html"
         tal:attributes="title python:'Latest posts in %s' % view.groupInfo.get_name()" />
       <link rel="bookmark" title="Group Homepage" href="#"
         tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
-        href python:view.groupInfo.get_url()">&#160;</link>
+        href python:view.groupInfo.get_url()" />
       <link rel="home" 
         tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
-        href python:view.siteInfo.get_url()">&#160;</link>
+        href python:view.siteInfo.get_url()" />
       <link rel="help" 
         tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
-        href python:'%s/help' % view.siteInfo.get_url()">&#160;</link>
+        href python:'%s/help' % view.siteInfo.get_url()" />
     </tal:block>
 
     <!-- 
@@ -72,7 +72,7 @@
     
     <tal:block metal:fill-slot="style">
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
-        href="/++resource++singlePost.css">&#160;</link>
+        href="/++resource++singlePost.css" />
     </tal:block>
   </head>
   
@@ -83,7 +83,7 @@
       - other than the "process_form" method of the view. -->
     <div metal:fill-slot="messages"
       tal:define="result view/process_form;
-      isError python:result and result.has_key('error') and result['error'];"
+      isError python:result and result.get('error', False)"
       tal:condition="python:result and result.has_key('message')"
       tal:attributes="class python:(isError and 'message-error') or 'message-result'"
       tal:content="structure result/message"/>
