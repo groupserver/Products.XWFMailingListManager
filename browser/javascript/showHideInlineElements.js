@@ -8,12 +8,16 @@ function showHideInline(remainderId, discloseButtonId)
     { 
         discloseElement.setAttribute('title', "Show the footer");
         discloseElement.setAttribute('class', "hiddenArrow");
+        document.getElementById(remainderId).setAttribute('style',
+                                                          'display:none;');
 
     }
     else
     {
         discloseElement.setAttribute('title', "Hide the footer");
         discloseElement.setAttribute('class', "shownArrow");
+        document.getElementById(remainderId).setAttribute('style',
+                                                          'display:block;');
     }
-    Effect.toggle(remainderId,'blind', {duration: 1, delay: 0});
+    //Effect.toggle(remainderId,'blind', {duration: 1, delay: 0});
 }
