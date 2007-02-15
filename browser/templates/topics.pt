@@ -195,7 +195,7 @@
             </tal:block>
             
             <tr tal:repeat="topic topics"
-              tal:attributes="id string:${topic/id};">
+              tal:attributes="id string:topic-${topic/id};">
               <td class="topic" title="Topic name">
                 <a href="#"
                   tal:attributes="href string:topic.html?id=${topic/id}"
