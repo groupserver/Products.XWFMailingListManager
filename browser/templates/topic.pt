@@ -87,7 +87,7 @@
         - other than the "process_form" method of the view. -->
       <div metal:fill-slot="messages" 
         tal:define="result view/retval;
-        isError python:result and result.has_key('error') and result['error'];"
+        isError python:result and result.get('error', False);"
         tal:condition="python:result and result.has_key('message')"
         tal:attributes="class python:(isError and 'message-error') or 'message-result'"
         tal:content="structure result/message"/>

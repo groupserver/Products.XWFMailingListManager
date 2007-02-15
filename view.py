@@ -149,6 +149,16 @@ class GSBaseMessageView(Products.Five.BrowserView):
           return retval
 
       # topic
+      def post_date_storter(self, a, b):
+          if a['mailDate'] > b['mailDate']:
+              retval = 1
+          elif a['mailDate'] == b['mailDate']:
+              retval = 0
+          else:
+              retval = -1
+          assert retval in (1, 0, -1)
+          return retval
+          
       def init_topic(self):
           assert self.emailId
           assert self.archive
@@ -161,7 +171,8 @@ class GSBaseMessageView(Products.Five.BrowserView):
           assert result
           
           self.topic = map(lambda x: x.getObject(), result)
-
+          self.topic.sort(self.post_date_storter)
+          
           assert self.topic
           assert self.topic.append
           assert len(self.topic) > 0
@@ -206,23 +217,7 @@ class GSTopicView(GSBaseMessageView):
                                  self.threads)
           currThreadName = self.get_topic_name()
           assert currThreadName in self.threadNames
-          self.currThreadIndex = self.threadNames.index(currThreadName)
-
-      def post_date_storter(self, a, b):
-          if a['mailDate'] > b['mailDate']:
-              retval = 1
-          elif a['mailDate'] == b['mailDate']:
-              retval = 0
-          else:
-              retval = -1
-          assert retval in (1, 0, -1)
-          return retval
-          
-      # topic
-      def init_topic(self):
-          GSBaseMessageView.init_topic(self)
-          
-          self.topic.sort(self.post_date_storter)
+          self.currThreadIndex = self.threadNames.index(currThreadName)         
           
       def get_next_topic(self):
           assert self.threads
