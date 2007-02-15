@@ -187,7 +187,7 @@
                 class="stickyTopic">
                 <td class="topic" title="Topic name">
                   <strong>Sticky:</strong>
-                  <a href="#" id="foo"
+                  <a href="#"
                     tal:attributes="href string:topic.html?id=${stickyTopic/id}"
                     tal:content="stickyTopic/name">Wibble</a>
                 </td>
@@ -195,9 +195,9 @@
             </tal:block>
             
             <tr tal:repeat="topic topics"
-              tal:attributes="id topic/id;">
+              tal:attributes="id string:topic-${topic/id;}">
               <td class="topic" title="Topic name">
-                <a href="#" id="foo"
+                <a href="#"
                   tal:attributes="href string:topic.html?id=${topic/id}"
                   tal:content="topic/name">Wibble</a>
               </td>
