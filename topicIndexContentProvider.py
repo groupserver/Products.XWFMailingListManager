@@ -37,7 +37,7 @@ class GSTopicIndexContentProvider(object):
           #   post ID, files, author, user authored, and post-date.
           self.topicId = self.view.get_emailId() 
           hr = 'topic.html?id=%s' % self.topicId
-          self.entries = [{'href':  '%s#%s' % (hr, post['id']),
+          self.entries = [{'href':  '%s#post-%s' % (hr, post['id']),
                            'files': self.get_file_from_post(post),
                            'name':  self.get_author_realnames_from_post(post),
                            'user':  self.get_user_authored_from_post(post),
