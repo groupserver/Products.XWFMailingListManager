@@ -79,7 +79,7 @@
       -->
     
     <!-- Standard GroupServer JavaScript: XForms, Dojo and popup help -->
-    <!--tal:block metal:fill-slot="javascript">
+    <tal:block metal:fill-slot="javascript">
       <script type="text/javascript" defer="defer"
         src="/++resource++prototype/prototype.js">&#160;</script>
       <script type="text/javascript" defer="defer"
@@ -90,7 +90,7 @@
         src="/Presentation/Tofu/XForms/js/xforms.js">&#160;</script>
       <script type="text/javascript" defer="defer"
         src="/++resource++post.js">&#160;</script>
-    </tal:block-->
+    </tal:block>
     
     <tal:block metal:fill-slot="style">
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
