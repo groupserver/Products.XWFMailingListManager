@@ -143,6 +143,10 @@ table#results {
     display: block;
 }
 
+.fileMetadata img {
+    border: none;
+}
+
 /* Disclosure Button */
 a.hiddenArrow {
     background: transparent url("/++resource++postImages/disclosure-arrow-hidden.gif") no-repeat;
