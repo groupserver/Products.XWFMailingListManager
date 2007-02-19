@@ -1,6 +1,6 @@
 /* Stylesheet for the messages */
 
-#topicsSummary .topic, #topicsSummary .date {
+#topicsSummary .topic, #topicsSummary th.date {
     text-align: left;
 }
 #topicsSummary .date {
@@ -52,7 +52,7 @@ h1 .shortLink {
     background-image: url('/++resource++postImages/arrow_down.png');
 }
 
-#topicNavigation .label {
+#topicNavigation .label, #topicsNavigation .label {
     display: none;
 }
 

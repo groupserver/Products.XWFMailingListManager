@@ -119,7 +119,7 @@
         <span class="group" 
             tal:content="python:view.groupInfo.get_name()">a Group</span></h1>
 
-        <div class="messages-nl" 
+        <div class="messages-nl" id="topicsNavigation"
           tal:define="len python:view.get_summary_length()">
           <p class="label">Latest Topics Navigation</p>
           <ul>
@@ -153,19 +153,7 @@
             </li>
           </ul>
         </div>
-
-        <p tal:condition="python:view.start == 0">The following are the
-          latest <span tal:content="python:view.get_summary_length()"/> topics in
-          <span class="group" 
-            tal:content="python:view.groupInfo.get_name()">a Group</span>:
-          the topics that have posts in them recently.
-          You can view any topic by clicking its 
-          name<span tal:condition="nextURL">, or
-            <a href="#" tal:attributes="href nextURL">view
-              the <span tal:content="python:view.get_summary_length()"/>
-              earlier topics</a></span>.
-        </p>
-        
+                
         <table id="topicsSummary">
           <caption>Latest topics in
             <span class="group" 
