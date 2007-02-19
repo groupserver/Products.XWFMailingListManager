@@ -1,9 +1,13 @@
 /* Stylesheet for the messages */
 
-#topicsSummary .topic, #topicsSummary th.date {
+#topicsSummary .topic, #topicsSummary th.posts, #topicsSummary th.date {
     text-align: left;
 }
-#topicsSummary .date {
+#topicsSummary .posts {
+    padding-left: 1em;
+    padding-right: 1em;
+}
+#topicsSummary .posts, #topicsSummary .date {
     text-align: right;
 }
 
@@ -52,7 +56,7 @@ h1 .shortLink {
     background-image: url('/++resource++postImages/arrow_down.png');
 }
 
-#topicNavigation .label, #topicsNavigation .label {
+#topicNavigation .label, #topicsNavigation .label, #postsNavigation .label {
     display: none;
 }
 

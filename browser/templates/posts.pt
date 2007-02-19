@@ -133,7 +133,7 @@
           <span class="group"
             tal:content="python:view.groupInfo.get_name()"/></h1>
 
-        <div class="messages-nl" 
+        <div class="messages-nl" id="postsNavigation"
           tal:define="len python:view.get_chunk_length()">
           <p class="label">Posts Navigation</p>
           <ul>
