@@ -150,7 +150,7 @@
           <ul>
             <li class="prev">
               <span 
-                tal:condition="python:not(prev and prev[0])">Next 
+                tal:condition="python:not(prev and prev[0])">No next 
                 topic</span>
             <a href="foo" tal:condition="python:prev and prev[0]"
                 tal:attributes="href python:'%s%s' %(topicURLPrefix, prev[0]);">
@@ -162,7 +162,7 @@
                 tal:attributes="href python:'%s%s' %(topicURLPrefix, next[0]);"
                 tal:condition="python:next and next[0]">Previous topic: 
               <cite tal:content="python:next[1]">Topic Name</cite></a>
-            <span tal:condition="python:not(next and next[0])">Previous
+            <span tal:condition="python:not(next and next[0])">No previous
                 topic</span>
             </li>
           </ul>
