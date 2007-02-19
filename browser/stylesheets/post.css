@@ -52,6 +52,10 @@ h1 .shortLink {
     background-image: url('/++resource++postImages/arrow_down.png');
 }
 
+#topicNavigation .label {
+    display: none;
+}
+
 #singlePostTopicNavigation.messages-nl ul li, #usefulLinks.messages-nl ul li {
     display: inline;
 }
@@ -116,6 +120,14 @@ pre.email-body {
 /* Topic-index table */
 table#results {
     padding-bottom: 30px;
+}
+
+table#results th {
+    text-align: left;
+}
+
+table#results th.file {
+    visibility: hidden;
 }
 
 #post-message {
