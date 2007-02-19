@@ -204,7 +204,7 @@
               <td class="posts" title="Number of posts" 
                 tal:content="topic/length">-1</td>
               <td class="date" title="Date of most recent post" 
-                tal:define="date python:topic['date'].toZone(timezone).strftime('%F %T')">
+                tal:define="date python:topic['date'].toZone(timezone).strftime('%F %H:%M')">
                 <span 
                   tal:replace="date">
                   Today, Tomorrow, Timaru

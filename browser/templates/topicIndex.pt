@@ -22,7 +22,7 @@
           <span class="emailname-self"
             tal:content="structure entry/name">Me!</span></a>
       </td>
-      <td tal:define="date python:entry['date'].toZone(timezone).strftime('%F %T')"
+      <td tal:define="date python:entry['date'].toZone(timezone).strftime('%F %H:%M')"
         class="date">
         <a tal:attributes="href entry/href">
           <span 

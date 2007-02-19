@@ -25,7 +25,7 @@
       <span class="posted">
         <strong>Date:</strong>
         <span class="date" 
-          tal:define="date python:post.mailDate.toZone(timezone).strftime('%F %T')">
+          tal:define="date python:post.mailDate.toZone(timezone).strftime('%F %H:%M')">
           <span 
             tal:replace="date">
             Today, Tomorrow, Timaru
