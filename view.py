@@ -348,11 +348,13 @@ class GSTopicView(GSBaseMessageView):
             dayOrHour = day and 'day' or 'hour'
             dayOrHour = dayOrHour + ((plural and 's') or '')
             interval = '%d %s' % (duration, dayOrHour)
-
+            
+            timezone = self.context.Scripts.get.option('timezone')
+            t = DateTime.DateTime(int(groupList.is_senderBlocked(user.getId())[1]))
+            postingDate = t.toZone(timezone).strftime('%F %H:%M')
             m = """You may only send %d messages every %s, and 
             you have exceeded this limit. You may post again 
-            at %d."""  % (senderLimit, interval,
-                          groupList.is_senderBlocked(user.getId())[1])
+            at %s."""  % (senderLimit, interval, postingDate)
             retval = ((m, 3), False)
         else:            
             # ...there is a local reason that allows the user to post
