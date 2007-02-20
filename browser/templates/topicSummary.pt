@@ -6,7 +6,7 @@
   authorName python:options['authorName'];
   authorExists python:options['authorExists'];
   timezone python:options['context'].Scripts.get.option('timezone')">
-  <p cass="label">Summary</p>
+  <p class="label">Summary</p>
   <ul>
     <li>There are
       <strong><span tal:replace="length">-1</span> posts</strong>
