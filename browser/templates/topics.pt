@@ -6,9 +6,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   metal:use-macro="context/@@groupserver_layout/page">
   <head>
-
+    
     <!--Todo: add the division name.-->
-  	<title metal:fill-slot="title">
+    <title metal:fill-slot="title">
       Latest Topics in <span tal:replace="python:view.groupInfo.get_name()">a Group</span>:
       <span tal:replace="python:view.siteInfo.get_name()"/>
     </title>
@@ -22,7 +22,7 @@
     <tal:block metal:fill-slot="metadata" 
       tal:define="global topicURLPrefix string:topic.html?id=">
       <!-- The documents related to this post -->
-
+      
       <link rel="previous" title="Previous topics" href=""
         tal:define="global previousURL python:view.get_previous_summary_url()"
         tal:condition="previousURL"
@@ -36,7 +36,7 @@
       <link rel="last" title="Oldest topics" href="" 
         tal:condition="nextURL" 
         tal:attributes="href python:view.get_last_summary_url()" />
-     
+      
       <link rel="up" title="Group Homepage" href="#"
         tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
         href python:view.groupInfo.get_url()" />
@@ -53,7 +53,7 @@
         tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
         href python:'%s/help' % view.siteInfo.get_url()" />
     </tal:block>
-
+    
     <!-- 
       - The standard template used to display a single topic.
       -
@@ -87,17 +87,17 @@
       tal:condition="python:result and result.has_key('message')"
       tal:attributes="class python:(isError and 'message-error') or 'message-result'"
       tal:content="structure result/message"/>
-
+    
     <!-- 
       - The body of the document. Most of the body-content is created 
       - from the messages, grabbed from the XWFVirtualMailingList
       - instance.
-    -->
+      -->
     <tal:block metal:fill-slot="body">
       <form method="post" action="" 
         enctype="application/x-www-form-urlencoded"
         onkeypress="javascript:return keypressEventHandler(this, event)">
-      
+        
         <!-- Site Search -->
         <div id="searcharea">
           <h3>Site Search</h3>
@@ -105,7 +105,7 @@
           <input type="submit" name="__submit+sitesearch+search" 
             onclick="submitButtonHandler(this)" value="Go" class="button"/>
         </div>
-
+        
         <div class="xforms_model">
           <input type="hidden" name="__submit__" value=""/>
           <input type="hidden" name="__models__" value="sitesearch"/>
@@ -116,9 +116,9 @@
             value="get"/>
         </div>
         <h1>Latest Topics in 
-        <span class="group" 
+          <span class="group" 
             tal:content="python:view.groupInfo.get_name()">a Group</span></h1>
-
+        
         <div class="messages-nl" id="topicsNavigation"
           tal:define="len python:view.get_summary_length()">
           <p class="label">Latest Topics Navigation</p>
@@ -153,7 +153,7 @@
             </li>
           </ul>
         </div>
-                
+        
         <table id="topicsSummary">
           <caption>Latest topics in
             <span class="group" 
@@ -168,40 +168,45 @@
           </thead>
           <tbody tal:define="topics python:view.get_topics();
             stickyTopics python:view.get_sticky_topics();
+            lenSticky python:len(stickyTopics);
             timezone python:context.Scripts.get.option('timezone')">
             <tal:block tal:condition="stickyTopics">
-              <tr tal:repeat="stickyTopic stickyTopics"
-                tal:attributes="id string:sticky-${stickyTopic/id};"
-                class="stickyTopic">
+              <tal:block tal:repeat="stickyTopic stickyTopics">
+                <tr tal:define="position repeat/stickyTopic/number;"
+                  tal:attributes="id string:sticky-${stickyTopic/id};
+                  class python:((((position) % 2) == 0) and 'evenStickyTopic') or 'oddStickyTopic';">
+                  <td class="topic" title="Topic name">
+                    <strong>Sticky:</strong>
+                    <a href="#"
+                      tal:attributes="href string:topic.html?id=${stickyTopic/id}"
+                      tal:content="stickyTopic/name">Wibble</a>
+                  </td>
+                </tr>
+              </tal:block>
+            </tal:block>
+            <tal:block tal:repeat="topic topics">
+              <tr tal:define="position repeat/topic/number;"
+                tal:attributes="id string:topic-${topic/id};
+                class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';">
                 <td class="topic" title="Topic name">
-                  <strong>Sticky:</strong>
-                  <a href="#"
-                    tal:attributes="href string:topic.html?id=${stickyTopic/id}"
-                    tal:content="stickyTopic/name">Wibble</a>
+                  <a tal:content="python:topic['name'][:50]"
+                    tal:attributes="href string:topic.html?id=${topic/id};
+                    title string:View the topic ${topic/name}"
+                    href="#">Wibble</a><span 
+                    tal:condition="python:len(topic['name'])&gt;50">&#8230;</span>
+                </td>
+                <td class="posts" title="Number of posts" 
+                  tal:content="topic/length">-1</td>
+                <td class="date" title="Date of most recent post" 
+                  tal:define="date python:topic['date'].toZone(timezone).strftime('%F %H:%M')">
+                  <span 
+                    tal:replace="date">
+                    Today, Tomorrow, Timaru
+                  </span>
+                  (<span tal:replace="timezone"/>)
                 </td>
               </tr>
             </tal:block>
-            
-            <tr tal:repeat="topic topics"
-              tal:attributes="id string:topic-${topic/id};">
-              <td class="topic" title="Topic name">
-                <a tal:content="python:topic['name'][:50]"
-                  tal:attributes="href string:topic.html?id=${topic/id};
-                  title string:View the topic ${topic/name}"
-                  href="#">Wibble</a><span 
-                    tal:condition="python:len(topic['name'])&gt;50">&#8230;</span>
-              </td>
-              <td class="posts" title="Number of posts" 
-                tal:content="topic/length">-1</td>
-              <td class="date" title="Date of most recent post" 
-                tal:define="date python:topic['date'].toZone(timezone).strftime('%F %H:%M')">
-                <span 
-                  tal:replace="date">
-                  Today, Tomorrow, Timaru
-                </span>
-                (<span tal:replace="timezone"/>)
-              </td>
-            </tr>
           </tbody>
         </table>
       </form><!-- The One True XForm-->
