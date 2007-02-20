@@ -112,11 +112,14 @@ class GSTopicIndexContentProvider(object):
       
       def get_file_from_post(self, post):
           assert post
-          retval = ''
+          retval = ()
           if hasattr(post, 'x-xwfnotification-file-id'):
               # Just work with the first ID
               fileId = post['x-xwfnotification-file-id'].split()[0]
-              retval = fileId
+              filesArchive = self.context.files
+              files = filesArchive.find_files({'id': fileId})
+              fileType = files[0].content_type
+              retval = (fileId, fileType)
           return retval
 zope.component.provideAdapter(GSTopicIndexContentProvider, 
                               provides=zope.contentprovider.interfaces.IContentProvider,

@@ -1,5 +1,9 @@
 <table id="results"
-  tal:define="timezone python:options['context'].Scripts.get.option('timezone')">
+  tal:define="entries options/entries;
+  files python:map(lambda e:e['files'] ,entries);
+  timezone python:options['context'].Scripts.get.option('timezone')"
+  tal:condition="python:reduce(lambda a, b: a or b, files, False)">
+  <caption>Posts with files</caption>
   <thead>
     <tr>
       <th class="file">File</th>
@@ -8,30 +12,36 @@
     </tr>
   </thead>
   <tbody>
-    <tr tal:repeat="entry options/entries">
-      <td class="file">
-        <img tal:condition="entry/files"
-          alt="File attached to the post" width="16" height="16"
-          src="/++resource++fileIcons/application-octet-stream.png"/></td>
-      <td class="author">
-        <a tal:condition="not:entry/user" 
-          tal:attributes="href entry/href" 
-          tal:content="structure entry/name">Me!</a>
-        <a tal:condition="entry/user" 
-          tal:attributes="href entry/href">
-          <span class="emailname-self"
-            tal:content="structure entry/name">Me!</span></a>
-      </td>
-      <td tal:define="date python:entry['date'].toZone(timezone).strftime('%F %H:%M')"
-        class="date">
-        <a tal:attributes="href entry/href">
-          <span 
-            tal:replace="date">
-            Today, Tomorrow, Timaru
-          </span>
-          (<span tal:replace="timezone"/>)
-        </a>
-      </td>
-    </tr>
+    <tal:block tal:repeat="entry entries">
+      <tr tal:condition="python:len(entry['files']) == 2">
+        <td class="file">
+          <a tal:attributes="href entry/href">
+            <img alt="File attached to the post" width="16" height="16"
+              src="/++resource++fileIcons/application-octet-stream.png"
+              tal:define="iconName python:'%s.png' % entry['files'][1].replace('/','-')"
+              tal:attributes="src string:/++resource++fileIcons/${iconName}"/>
+          </a>
+        </td>
+        <td class="author">
+          <a tal:condition="not:entry/user" 
+            tal:attributes="href entry/href" 
+            tal:content="structure entry/name">Me!</a>
+          <a tal:condition="entry/user" 
+            tal:attributes="href entry/href">
+            <span class="emailname-self"
+              tal:content="structure entry/name">Me!</span></a>
+        </td>
+        <td tal:define="date python:entry['date'].toZone(timezone).strftime('%F %H:%M')"
+          class="date">
+          <a tal:attributes="href entry/href">
+            <span 
+              tal:replace="date">
+              Today, Tomorrow, Timaru
+            </span>
+            (<span tal:replace="timezone"/>)
+          </a>
+        </td>
+      </tr>
+    </tal:block>
   </tbody>
 </table>

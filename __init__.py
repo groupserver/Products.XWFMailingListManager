@@ -9,7 +9,9 @@
 import XWFMailingListManager, XWFMailingList
 import XWFVirtualMailingListArchive, XWFVirtualMailingListArchive2
 
-import postContentProvider, postMessageContentProvider, topicIndexContentProvider, stickyTopicToggleContentProvider
+import postContentProvider, postMessageContentProvider
+import topicIndexContentProvider, topicSummaryContentProvider
+import stickyTopicToggleContentProvider
 
 def initialize(context):
     # import lazily and defer initialization to the module

@@ -1,5 +1,6 @@
 /* Stylesheet for the messages */
 
+/* Summary for the Latest Topics page */
 #topicsSummary .topic, #topicsSummary th.posts, #topicsSummary th.date {
     text-align: left;
 }
@@ -9,6 +10,16 @@
 }
 #topicsSummary .posts, #topicsSummary .date {
     text-align: right;
+}
+
+/* Summary for All Posts in Topic page */
+#topicSummary {
+  margin: 30px 0px 30px 0px;
+}
+
+#topicSummary .label {
+  font-size: larger;
+  font-weight: bold;
 }
 
 h1 .shortLink {
@@ -124,6 +135,19 @@ pre.email-body {
 /* Topic-index table */
 table#results {
     padding-bottom: 30px;
+}
+
+table#results caption {
+  padding-top: 30px;
+  text-align: left;
+  font-size: larger;
+  font-weight: bold;
+}
+table#results .file a img {
+  border: none;
+}
+table#results .file {
+    padding-left: 30px;
 }
 
 table#results th {

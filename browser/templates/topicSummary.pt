@@ -1,0 +1,38 @@
+<div id="topicSummary"
+  tal:define="length options/length;
+  lastPostId options/lastPostId;
+  lastPostDate options/lastPostDate;
+  authorId python:options['authorId']; 
+  authorName python:options['authorName'];
+  authorExists python:options['authorExists'];
+  timezone python:options['context'].Scripts.get.option('timezone')">
+  <p cass="label">Summary</p>
+  <ul>
+    <li>There are
+      <strong><span tal:replace="length">-1</span> posts</strong>
+      in this topic.</li>
+    <li><a title="View the latest post"
+      tal:attributes="href string:topic.html?id=${lastPostId}#post-${lastPostId}"
+      href="#">Latest post</a> made by
+      <span tal:condition="authorExists">
+        <a tal:content="authorName"
+          tal:attributes="href string:/contacts/${authorId};
+          title string:View the profile of ${authorName};"
+          class="name">me</a>
+      </span>
+      <span tal:condition="not:authorExists">
+        <span tal:content="authorName"
+          class="name">me</span>
+      </span>
+      at
+      <span class="date" 
+        tal:define="date python:lastPostDate.toZone(timezone).strftime('%F %H:%M')">
+        <span 
+          tal:replace="date">
+          Today, Tomorrow, Timaru
+        </span>
+        (<span tal:replace="timezone"/>)
+      </span>
+    </li>
+  </ul>
+</div>  
