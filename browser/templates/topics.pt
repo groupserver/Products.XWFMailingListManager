@@ -185,9 +185,11 @@
             <tr tal:repeat="topic topics"
               tal:attributes="id string:topic-${topic/id};">
               <td class="topic" title="Topic name">
-                <a href="#"
-                  tal:attributes="href string:topic.html?id=${topic/id}"
-                  tal:content="topic/name">Wibble</a>
+                <a tal:content="python:topic['name'][:50]"
+                  tal:attributes="href string:topic.html?id=${topic/id};
+                  title string:View the topic ${topic/name}"
+                  href="#">Wibble</a><span 
+                    tal:condition="python:len(topic['name'])&gt;50">&#8230;</span>
               </td>
               <td class="posts" title="Number of posts" 
                 tal:content="topic/length">-1</td>
