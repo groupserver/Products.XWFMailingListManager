@@ -18,12 +18,12 @@
 }
 
 #topicSummary .label {
-  font-size: larger;
+  font-size: 112%;
   font-weight: bold;
 }
 
 h1 .shortLink {
-    font-size: xx-small;
+    font-size: 77%;
     font-weight: 200;
 }
 
@@ -128,7 +128,7 @@ pre.email-body {
 .email-metadata .topic {
   display: block;
   font-weight: bold;
-  font-size: 1.4em;
+  font-size: 122%;
   padding: 0px 0px 15px 0px;
 }
 
@@ -140,7 +140,7 @@ table#results {
 table#results caption {
   padding-top: 30px;
   text-align: left;
-  font-size: larger;
+  font-size: 122%;
   font-weight: bold;
 }
 table#results .file a img {
