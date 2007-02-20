@@ -175,7 +175,7 @@
                 <tr tal:define="position repeat/stickyTopic/number;"
                   tal:attributes="id string:sticky-${stickyTopic/id};
                   class python:((((position) % 2) == 0) and 'evenStickyTopic') or 'oddStickyTopic';">
-                  <td class="topic" title="Topic name">
+                  <td class="topic" title="Topic name" colspan="3">
                     <strong>Sticky:</strong>
                     <a href="#"
                       tal:attributes="href string:topic.html?id=${stickyTopic/id}"
