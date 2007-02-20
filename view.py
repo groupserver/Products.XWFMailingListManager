@@ -17,6 +17,85 @@ import Products.GSContent, Products.XWFCore.XWFUtils
 from interfaces import IGSUserInfo
 import addapost
 
+def process_post( context, request ):
+    form = request.form
+    result = {}
+    if form.has_key('submitted'):
+        if ((form['model'] == 'post') 
+            and (form['instance'] == 'addPost_pragmatic')):
+            assert form.has_key('groupId')
+            assert form.has_key('siteId')
+            assert form.has_key('replyToId')
+            assert form.has_key('topic')
+            assert form.has_key('message')
+            assert form.has_key('tags')
+            assert form.has_key('email')
+            assert form.has_key('file')
+
+            # --=mpj17=-- Do not, under *A*N*Y* circumstances, 
+            #  strip the file.
+            fields = ['replyToId', 'topic', 'message', 'tags', 'email']
+            for field in fields:
+                # No really: do not strip the file.
+                try:
+                    form[field] = form[field].strip()
+                except AttributeError:
+                    pass
+                    
+            groupId = form.get('groupId')
+            siteId = form.get('siteId')
+            replyToId = form.get('replyToId', '')
+            topic = form.get('topic', '')
+            message = form.get('message', '')
+            tags = form.get('tags', '')
+            email = form.get('email', '')
+            uploadedFile = form.get('file', '')
+            result = addapost.add_a_post(groupId, siteId, replyToId,
+                                         topic, message, tags, email,
+                                         uploadedFile, 
+                                         context, request)
+        else:
+            result['error'] = False
+            result['message'] = ''
+
+        assert result.has_key('error')
+        assert result.has_key('message')
+        assert result['message'].split
+            
+        result['form'] = form
+
+        return result
+
+def process_form( context, request ):
+    form = request.form
+    result = {}
+    if form.has_key('submitted'):
+        model = form['model']
+        instance = form['instance']
+        
+        oldScripts = context.Scripts.forms
+        if hasattr(oldScripts, model):
+            modelDir = getattr(oldScripts, model)
+            if hasattr(modelDir, instance):
+                script = getattr(modelDir, instance)
+                return script()
+            else:
+                m = """<p>Could not find the instance
+                       <code>%s</code></p>.""" % instance
+                result['error'] = True
+                result['message'] = m
+        else:
+            m = """<p>Could not find the model 
+                   <code>%s</code></p>.""" % model
+            result['error'] = True
+            result['message'] = m
+        assert result.has_key('error')
+        assert result.has_key('message')
+        assert result['message'].split
+    
+    result['form'] = form
+    return result
+
 class GSGroupInfo:
     def __init__(self, context):
         assert context
@@ -72,35 +151,12 @@ class GSNewTopicView(Products.Five.BrowserView):
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
           self.groupInfo = GSGroupInfo( context )
 
-      def process_form(self):
-        form = self.request.form
-        result = {}
-        if form.has_key('submitted'):
-            model = form['model']
-            instance = form['instance']
-            
-            oldScripts = self.context.Scripts.forms
-            if hasattr(oldScripts, model):
-                modelDir = getattr(oldScripts, model)
-                if hasattr(modelDir, instance):
-                    script = getattr(modelDir, instance)
-                    return script()
-                else:
-                    m = """<p>Could not find the instance
-                           <code>%s</code></p>.""" % instance
-                    result['error'] = True
-                    result['message'] = m
-            else:
-                m = """<p>Could not find the model 
-                       <code>%s</code></p>.""" % model
-                result['error'] = True
-                result['message'] = m
-            assert result.has_key('error')
-            assert result.has_key('message')
-            assert result['message'].split
-    
-        result['form'] = form
-        return result
+          self.retval = {}
+
+      def update(self):
+          result = process_post( self.context, self.request )
+          if result:
+              self.retval.update(result.items())
 
 class GSBaseMessageView(Products.Five.BrowserView):
       def __init__(self, context, request):
@@ -189,18 +245,19 @@ class GSBaseMessageView(Products.Five.BrowserView):
           
           return retval
           
-      def process_form(self):
-          pass
-
 class GSTopicView(GSBaseMessageView):
       """View of a GroupServer Topic"""
       def __init__(self, context, request):
           GSBaseMessageView.__init__(self, context, request)
-          self.retval = None
+          self.retval = {}
 
       def update(self):
-          self.process_form()
-          self.process_post()
+          result = process_form( self.context, self.request )
+          if result:
+              self.retval.update(result.items())
+          result = process_post( self.context, self.request )
+          if result:
+              self.retval.update(result.items())
           self.init_topic()
           self.init_threads()
 
@@ -268,89 +325,6 @@ class GSTopicView(GSBaseMessageView):
                   retval.append(threadInfo)
           return retval
           
-      def process_form(self):
-        form = self.request.form
-        result = {}
-        if form.has_key('submitted'):
-            model = form['model']
-            instance = form['instance']
-            
-            oldScripts = self.context.Scripts.forms
-            if hasattr(oldScripts, model):
-                modelDir = getattr(oldScripts, model)
-                if hasattr(modelDir, instance):
-                    script = getattr(modelDir, instance)
-                    assert script
-                    retval = script()
-                    retval['form'] = form
-                    return retval
-                else:
-                    m = """<p>Could not find the instance
-                           <code>%s</code></p>.""" % instance
-                    result['error'] = True
-                    result['message'] = m
-            else:
-                m = """<p>Could not find the model 
-                       <code>%s</code></p>.""" % model
-                result['error'] = True
-                result['message'] = m
-            assert result.has_key('error')
-            assert result.has_key('message')
-            assert result['message'].split
-    
-        result['form'] = form
-        return result
-
-      def process_post(self):
-        form = self.request.form
-        result = {}
-        if form.has_key('submitted'):
-            if ((form['model'] == 'post') 
-                and (form['instance'] == 'addPost_pragmatic')):
-                assert form.has_key('groupId')
-                assert form.has_key('siteId')
-                assert form.has_key('replyToId')
-                assert form.has_key('topic')
-                assert form.has_key('message')
-                assert form.has_key('tags')
-                assert form.has_key('email')
-                assert form.has_key('file')
-
-                # --=mpj17=-- Do not, under *A*N*Y* circumstances, 
-                #  strip the file.
-                fields = ['replyToId', 'topic', 'message', 'tags', 'email']
-                for field in fields:
-                    # No really: do not strip the file.
-                    try:
-                        form[field] = form[field].strip()
-                    except AttributeError:
-                        pass
-                        
-                groupId = form.get('groupId')
-                siteId = form.get('siteId')
-                replyToId = form.get('replyToId', '')
-                topic = form.get('topic', '')
-                message = form.get('message', '')
-                tags = form.get('tags', '')
-                email = form.get('email', '')
-                uploadedFile = form.get('file', '')
- 
-                result = addapost.add_a_post(groupId, siteId, replyToId,
-                                             topic, message, tags, email,
-                                             uploadedFile, 
-                                             self.context, self.request)
-            else:
-                result['error'] = False
-                result['message'] = ''
- 
-            assert result.has_key('error')
-            assert result.has_key('message')
-            assert result['message'].split
-            
-        result['form'] = form
-        self.retval = result
-        return result
-
       def get_user_can_post(self, reasonNeeded=False):
         # Assume the user can post
         retval = (('', 1), True)
