@@ -185,35 +185,8 @@ class GSPostContentProvider(object):
           retval = ''
           t = textwrap.TextWrapper(width=width, expand_tabs=False, 
                                    replace_whitespace=False)
-          print messageText
-          retval = '\n'.join(map(lambda l: '\n'.join(t.wrap(l)), messageText.split('\n')))
-          #retval = '\n'.join(lines)
-          print retval
-          return retval
-          
-          remaining = messageText
-          wrapped = []
-          
-          while len(remaining) > width:
-              cut = width
-              newline = string.find(remaining, '\n', 0, cut)
-          
-              if newline != -1:
-                  cut = newline
-              elif remaining[cut] != ' ':
-                  temp = string.rfind(remaining, ' ', 0, cut-1)
-                  if temp == -1:temp = string.find(remaining, ' ', cut-1, len(remaining))
-                  if temp == -1: temp = len(remaining)
-                  cut = temp
-              wrapped.append(remaining[:cut])
-              remaining = remaining[cut+1:]
-          
-          if remaining:
-              wrapped.append(remaining)
-          
-          retval = string.join(wrapped, '\n')
-          
-          # assert retval # Some messages may be blank
+          retval = '\n'.join(map(lambda l: '\n'.join(t.wrap(l)), 
+                                 messageText.split('\n')))
           return retval
 
       def __split_message(self, messageText, 
