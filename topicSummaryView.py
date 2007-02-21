@@ -10,9 +10,9 @@ import DocumentTemplate, Products.XWFMailingListManager
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
-from view import GSGroupInfo
+from view import GSGroupInfo, GSPostingInfo
 
-class GSTopicSummaryView( Products.Five.BrowserView ):
+class GSTopicSummaryView( Products.Five.BrowserView, GSPostingInfo ):
       __groupInfo = None
       def __init__(self, context, request):
           self.context = context

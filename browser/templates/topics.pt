@@ -148,8 +148,13 @@
                 <span tal:replace="python:view.groupInfo.get_name()" />
               </a>
             </li>
-            <li class="start" tal:condition="user/getId | nothing">
-              <a href="newTopic.html">Start a new topic</a>
+            <li tal:define="canPost python:view.get_user_can_post(True)"
+              class="start" tal:condition="user/getId | nothing">
+              <a tal:condition="python:canPost[1]"
+                href="newTopic.html">Start a new topic</a>
+              <span tal:condition="python:not canPost[1]">
+                You may not start a new topic: posting limit exceeded.
+              </span>
             </li>
           </ul>
         </div>

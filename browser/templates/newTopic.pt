@@ -87,20 +87,26 @@
       </form>
       
       <h1>Start a New Topic</h1>
+      <div id="posting" 
+        tal:define="canPost python:view.get_user_can_post(True)">
+        <form method="post" action=""
+          enctype="multipart/form-data"
+          tal:condition="python:canPost[1]"
+          tal:define="startNew python:True">
       
-      <form method="post" action=""
-        enctype="multipart/form-data"
-        tal:define="startNew python:True">
-    
-        <p 
-          tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"
-          tal:replace="structure provider:groupserver.PostMessage">
-          The space for the hidden metadata associated with the new post.
-        </p>
-        <p tal:replace="structure provider:groupserver.PostMessage">
-          The space to allow people to write the new post.
-        </p>
-      </form>
+          <p 
+            tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"
+            tal:replace="structure provider:groupserver.PostMessage">
+            The space for the hidden metadata associated with the new post.
+          </p>
+          <p tal:replace="structure provider:groupserver.PostMessage">
+            The space to allow people to write the new post.
+          </p>
+        </form><!-- Posting Form -->
+        <div tal:condition="python: not canPost[1]">
+          <p tal:content="python:canPost[0][0]"/>
+        </div>
+      </div><!--posting-->
     </tal:block>
   </body>
 </html>

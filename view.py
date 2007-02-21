@@ -143,7 +143,67 @@ class GSGroupInfo:
         retval = self.groupObj.getProperty(propertyId, default)
         return retval
 
-class GSNewTopicView(Products.Five.BrowserView):
+class GSPostingInfo:
+      def get_user_can_post(self, reasonNeeded=False):
+        # Assume the user can post
+        retval = (('', 1), True)
+
+        user = self.request.AUTHENTICATED_USER
+        groupList = getattr(self.context.ListManager.aq_explicit, 
+                            self.groupInfo.get_id())
+        assert user
+        if user.getId() == None:
+            m = 'You must log in to post.'
+            retval = ((m, 2), False)
+        elif groupList.is_senderBlocked(user.getId())[0]:
+            senderLimit = groupList.getValueFor('senderlimit')
+            senderInterval = groupList.getValueFor('senderinterval')
+
+            secInDay = 86400
+            secInHour = 3600
+            day = not(senderInterval % secInDay)
+            duration = senderInterval/(day and secInDay or secInHour)
+            plural = duration > 1
+            dayOrHour = day and 'day' or 'hour'
+            dayOrHour = dayOrHour + ((plural and 's') or '')
+            interval = '%d %s' % (duration, dayOrHour)
+            
+            timezone = self.context.Scripts.get.option('timezone')
+            t = DateTime.DateTime(int(groupList.is_senderBlocked(user.getId())[1]))
+            postingDate = t.toZone(timezone).strftime('%F %H:%M')
+            m = """You may only send %d messages every %s, and 
+            you have exceeded this limit. You may post again 
+            at %s."""  % (senderLimit, interval, postingDate)
+            retval = ((m, 3), False)
+        else:            
+            # ...there is a local reason that allows the user to post
+            retval = self.get_user_can_post_local(True)
+
+        if not reasonNeeded:
+            retval = retval[1]
+        return retval
+
+      def get_user_can_post_local(self, reasonNeeded=False):
+        assert self.context
+
+        # Assume the user can post
+        retval = (('', 1), True)
+        
+        try:
+            localScripts = self.context.LocalScripts
+        except:
+            localScripts = None
+            
+        if (localScripts
+            and hasattr(localScripts, 'get')
+            and hasattr(localScripts.get, 'userCanPostToGroup')):
+            retval = localScripts.get.userCanPostToGroup(True)
+
+        if not reasonNeeded:
+            retval = retval[1]
+        return retval
+        
+class GSNewTopicView(Products.Five.BrowserView, GSPostingInfo):
       def __init__(self, context, request):
           self.context = context
           self.request = request
@@ -152,11 +212,12 @@ class GSNewTopicView(Products.Five.BrowserView):
           self.groupInfo = GSGroupInfo( context )
 
           self.retval = {}
-
+          
       def update(self):
           result = process_post( self.context, self.request )
           if result:
               self.retval.update(result.items())
+
 
 class GSBaseMessageView(Products.Five.BrowserView):
       def __init__(self, context, request):
@@ -245,7 +306,7 @@ class GSBaseMessageView(Products.Five.BrowserView):
           
           return retval
           
-class GSTopicView(GSBaseMessageView):
+class GSTopicView(GSBaseMessageView, GSPostingInfo):
       """View of a GroupServer Topic"""
       def __init__(self, context, request):
           GSBaseMessageView.__init__(self, context, request)
@@ -325,64 +386,6 @@ class GSTopicView(GSBaseMessageView):
                   retval.append(threadInfo)
           return retval
           
-      def get_user_can_post(self, reasonNeeded=False):
-        # Assume the user can post
-        retval = (('', 1), True)
-
-        user = self.request.AUTHENTICATED_USER
-        groupList = getattr(self.context.ListManager.aq_explicit, 
-                            self.groupInfo.get_id())
-        assert user
-        if user.getId() == None:
-            m = 'You must log in to post.'
-            retval = ((m, 2), False)
-        elif groupList.is_senderBlocked(user.getId())[0]:
-            senderLimit = groupList.getValueFor('senderlimit')
-            senderInterval = groupList.getValueFor('senderinterval')
-
-            secInDay = 86400
-            secInHour = 3600
-            day = not(senderInterval % secInDay)
-            duration = senderInterval/(day and secInDay or secInHour)
-            plural = duration > 1
-            dayOrHour = day and 'day' or 'hour'
-            dayOrHour = dayOrHour + ((plural and 's') or '')
-            interval = '%d %s' % (duration, dayOrHour)
-            
-            timezone = self.context.Scripts.get.option('timezone')
-            t = DateTime.DateTime(int(groupList.is_senderBlocked(user.getId())[1]))
-            postingDate = t.toZone(timezone).strftime('%F %H:%M')
-            m = """You may only send %d messages every %s, and 
-            you have exceeded this limit. You may post again 
-            at %s."""  % (senderLimit, interval, postingDate)
-            retval = ((m, 3), False)
-        else:            
-            # ...there is a local reason that allows the user to post
-            retval = self.get_user_can_post_local(True)
-
-        if not reasonNeeded:
-            retval = retval[1]
-        return retval
-
-      def get_user_can_post_local(self, reasonNeeded=False):
-        assert self.context
-
-        # Assume the user can post
-        retval = (('', 1), True)
-        
-        try:
-            localScripts = self.context.LocalScripts
-        except:
-            localScripts = None
-            
-        if (localScripts
-            and hasattr(localScripts, 'get')
-            and hasattr(localScripts.get, 'userCanPostToGroup')):
-            retval = localScripts.get.userCanPostToGroup(True)
-
-        if not reasonNeeded:
-            retval = retval[1]
-        return retval
         
 class GSPostView(GSBaseMessageView):
       """A view of a single post in a topic.
