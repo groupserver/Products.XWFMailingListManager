@@ -22,8 +22,12 @@
   font-weight: bold;
 }
 
+#topicSummary td {
+  padding: 10px;
+}
+
 h1 .shortLink {
-    font-size: 77%;
+    font-size: 40%;
     font-weight: 200;
 }
 
