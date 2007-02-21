@@ -11,7 +11,7 @@
   <link rel="alternate" type="text/html" title="Post on the Web" 
     href="http://example.org/2003/12/13/atom03" 
     tal:attributes="title string:Post in ${options/topicName};
-    href string:${options/siteURL}/groups/${options/groupId}/post.html?id=${id}"/>
+    href string:${options/siteURL}/r/post/${id}"/>
   <tal:block
     tal:condition="python:hasattr(post, 'x-xwfnotification-file-id')"
     tal:define="groupObj python:options['context'].Scripts.get.group_object();">
