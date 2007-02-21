@@ -97,12 +97,17 @@ h1 .shortLink {
 }
 pre.email-body {
   margin: 0px;
+  font-size: 92%;
 }
 
 .userimage {
     margin: 0px;
     padding: 0px 15px 15px 0px;
     float: left;
+}
+
+.userimage img {
+    width: 80px;
 }
 
 .email-metadata .author, .email-metadata .posted {
