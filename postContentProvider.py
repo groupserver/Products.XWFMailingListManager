@@ -184,7 +184,8 @@ class GSPostContentProvider(object):
               "Presentation/Tofu/MailingListManager/lscripts"."""
           retval = ''
           t = textwrap.TextWrapper(width=width, expand_tabs=False, 
-                                   replace_whitespace=False)
+                                   replace_whitespace=False,
+                                   break_long_words=False)
           retval = '\n'.join(map(lambda l: '\n'.join(t.wrap(l)), 
                                  messageText.split('\n')))
           return retval
