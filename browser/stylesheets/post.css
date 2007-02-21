@@ -7,10 +7,8 @@
 }
 }
 #topicsSummary .posts, #topicsSummary .date {
-    text-align: right;
-}
-#topicsSummary .posts {
     padding: 5px 10px 5px 10px;
+    text-align: right;
 }
 #topicsSummary caption {
   display: none;
