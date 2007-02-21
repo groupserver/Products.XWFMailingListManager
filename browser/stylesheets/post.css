@@ -3,6 +3,7 @@
 /* Summary for the Latest Topics page */
 #topicsSummary .topic, #topicsSummary th.posts, #topicsSummary th.date {
     text-align: left;
+    padding: 10px;
 }
 #topicsSummary .posts {
     padding-left: 1em;
@@ -20,10 +21,6 @@
 #topicSummary .label {
   font-size: 112%;
   font-weight: bold;
-}
-
-#topicSummary td {
-  padding: 10px;
 }
 
 h1 .shortLink {
