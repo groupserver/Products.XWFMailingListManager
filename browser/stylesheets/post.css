@@ -3,14 +3,17 @@
 /* Summary for the Latest Topics page */
 #topicsSummary .topic, #topicsSummary th.posts, #topicsSummary th.date {
     text-align: left;
-    padding: 10px;
+    padding: 5px 10px 5px 10px;
 }
-#topicsSummary .posts {
-    padding-left: 1em;
-    padding-right: 1em;
 }
 #topicsSummary .posts, #topicsSummary .date {
     text-align: right;
+}
+#topicsSummary .posts {
+    padding: 5px 10px 5px 10px;
+}
+#topicsSummary caption {
+  display: none;
 }
 
 /* Summary for All Posts in Topic page */
