@@ -5,8 +5,7 @@
     text-align: left;
     padding: 5px 10px 5px 10px;
 }
-}
-#topicsSummary .posts, #topicsSummary .date {
+#topicsSummary td.posts, #topicsSummary td.date {
     padding: 5px 10px 5px 10px;
     text-align: right;
 }
