@@ -7,6 +7,8 @@ import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 
+import textwrap
+
 import DocumentTemplate, Products.XWFMailingListManager
 
 import Products.GSContent, Products.XWFCore.XWFUtils
@@ -181,6 +183,14 @@ class GSPostContentProvider(object):
               Originally a stand-alone script in
               "Presentation/Tofu/MailingListManager/lscripts"."""
           retval = ''
+          t = textwrap.TextWrapper(width=width, expand_tabs=False, 
+                                   replace_whitespace=False)
+          print messageText
+          retval = '\n'.join(map(lambda l: '\n'.join(t.wrap(l)), messageText.split('\n')))
+          #retval = '\n'.join(lines)
+          print retval
+          return retval
+          
           remaining = messageText
           wrapped = []
           
