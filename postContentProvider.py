@@ -347,8 +347,9 @@ class GSPostContentProvider(object):
           text = ctct(body, contentType)  
           
           text = self.__remove_file_notification(text)
-          markedUpPost = self.__markup_text(text).strip()
-          retval = self.__wrap_message(markedUpPost)
+          wrappedText = self.__wrap_message(text)
+          markedUpPost = self.__markup_text(wrappedText).strip()
+          retval = markedUpPost
           
           #assert retval # Some messages may be blank
           return retval
