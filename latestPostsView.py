@@ -82,7 +82,7 @@ class GSLatestPostsView(Products.Five.BrowserView):
           return retval
 
       def get_posts(self):
-          assert self.posts
+          assert (self.posts or (self.posts == []))
           if len(self.posts) > self.start:
               retval = self.posts[self.start:self.end]
           else:
