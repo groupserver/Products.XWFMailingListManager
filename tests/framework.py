@@ -37,7 +37,7 @@
 #
 ##############################################################################
 
-__version__ = '0.2.1'
+__version__ = '0.2.3'
 
 # Save start state
 #
@@ -62,7 +62,7 @@ if not sys.modules.has_key('Testing'):
     while d:
         if os.path.isdir(os.path.join(p, 'Testing')):
             zope_home = os.path.dirname(os.path.dirname(p))
-            sys.path[:1] = [p0, os.pardir, p, zope_home]
+            sys.path[:1] = [p0, p, zope_home]
             break
         p, d = s and ('','') or os.path.split(p)
     else:
@@ -85,7 +85,7 @@ if 1:   # Create a new scope
         sys.exit(1)
 
     ztc_common = 'ztc_common.py'
-    ztc_common_global = os.path.join(p, ztc_common) 
+    ztc_common_global = os.path.join(p, ztc_common)
 
     f = 0
     if os.path.exists(ztc_common_global):
@@ -99,9 +99,9 @@ if 1:   # Create a new scope
         print 'Unable to locate %s.' % ztc_common
         sys.exit(1)
 
-
 # Debug
 #
 print 'SOFTWARE_HOME: %s' % os.environ.get('SOFTWARE_HOME', 'Not set')
 print 'INSTANCE_HOME: %s' % os.environ.get('INSTANCE_HOME', 'Not set')
+sys.stdout.flush()
 

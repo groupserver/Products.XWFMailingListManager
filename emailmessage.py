@@ -1,5 +1,5 @@
 import re
-import email
+from email import Parser, Header
 import zope.interface
 
 def parse_disposition( s ):
@@ -34,6 +34,17 @@ def compress_subject( subject ):
     """
     return re.sub('\s+', '', subject)
 
+class IRDBStorageForEmailMessage( zope.interface.Interface ):
+    pass
+
+class RDBEmailMessageStorage( object ): 
+    zope.interface.implements( IRDBStorageForEmailMessage )
+    def __init__( self, email_message ):
+        self.email_message = email_message
+
+    def hello_world( self ):
+        return 'hello'
+
 class IEmailMessage( zope.interface.Interface ):
     encoding = zope.interface.Attribute( "The encoding of the email and headers." )
     attachments = zope.interface.Attribute( "A list of attachment payloads, each structured "
@@ -51,11 +62,11 @@ class IEmailMessage( zope.interface.Interface ):
             
         """
 
-class EmailMessage:
+class EmailMessage( object ):
     zope.interface.implements( IEmailMessage )
 
     def __init__( self, message, list_title='' ):
-        parser = email.Parser.Parser()
+        parser = Parser.Parser()
         msg = parser.parsestr( message )
         
         self.message = msg
@@ -63,7 +74,7 @@ class EmailMessage:
         
     def get( self, name, default='' ):
         value = self.message.get( name, default )
-        value, encoding = email.Header.decode_header( value )[0]
+        value, encoding = Header.decode_header( value )[0]
         
         value = unicode( value, encoding or self.encoding, 'ignore' )
         
@@ -105,14 +116,21 @@ class EmailMessage:
                   'charset': self.message.get_charset(),
                   'maintype': self.message.get_content_maintype(),
                   'subtype': self.message.get_content_subtype(),
-                  'mimetype': self.message.get_content_type()
-                 )]
+                  'mimetype': self.message.get_content_type()}
+               ]
 
     @property
     def body( self ):
         for item in self.attachments:
-            if item[1] == '' and item[5] != 'html':
-                return unicode( item[0], self.encoding, 'ignore' )
+            if item['filename'] == '' and item['subtype'] != 'html':
+                return unicode( item['payload'], self.encoding, 'ignore' )
+        return ''
+
+    @property
+    def htmlbody( self ):
+        for item in self.attachments:
+            if item['filename'] == '' and item['subtype'] == 'html':
+                return unicode( item['payload'], self.encoding, 'ignore' )
         return ''
 
     @property
@@ -123,3 +141,4 @@ class EmailMessage:
     def compressedSubject( self ):
         return compress_subject( self.subject )
     
+

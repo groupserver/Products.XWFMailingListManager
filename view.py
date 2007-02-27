@@ -9,6 +9,7 @@ import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 import Products.PythonScripts.standard
+import transaction
 
 import DocumentTemplate
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
@@ -319,6 +320,7 @@ class GSTopicView(GSBaseMessageView, GSPostingInfo):
           result = process_post( self.context, self.request )
           if result:
               self.retval.update(result.items())
+          self.init_topic()
           self.init_topic()
           self.init_threads()
 

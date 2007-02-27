@@ -82,6 +82,9 @@
     provides="zope.contentprovider.interfaces.IContentProvider" 
     name="groupserver.PostMessageData" /-->
 
+  <adapter for=".emailmessage.IEmailMessage"
+    factory=".emailmessage.RDBEmailMessageStorage"
+    provides=".emailmessage.IRDBStorageForEmailMessage" />
   
   <!--Resources-->
   <browser:resource name="singlePost.css"
