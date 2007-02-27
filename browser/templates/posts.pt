@@ -171,18 +171,23 @@
           </ul>
         </div>
         
-        <div class="postList" 
-          tal:define="postList python:view.get_posts()">
-          <tal:block tal:repeat="post postList">
-            <p tal:define="position repeat/post/number; 
-              topicName post/mailSubject;
-              showPhoto python:(position==1) or (postList[position-1].mailUserId != postList[position-2].mailUserId)"
-              tal:replace="structure provider:groupserver.Post">
-              The email message is rendered by the Post content provider,
-              not by this page.
-            </p>
-          </tal:block>
-        </div><!--postList-->       
+        <tal:block tal:define="postList python:view.get_posts()">
+          <div class="postList" 
+            tal:condition="python:(len(postList)>0)">
+            <tal:block tal:repeat="post postList">
+              <p tal:define="position repeat/post/number; 
+                topicName post/mailSubject;
+                showPhoto python:(position==1) or (postList[position-1].mailUserId != postList[position-2].mailUserId)"
+                tal:replace="structure provider:groupserver.Post">
+                The email message is rendered by the Post content provider,
+                not by this page.
+              </p>
+            </tal:block>
+          </div><!--postList-->
+          <p tal:condition="python:not(len(postList)>0)">
+            There are no posts in this group.
+          </p>
+        </tal:block>
       </form><!-- The One True XForm-->
     </tal:block>
   </body>

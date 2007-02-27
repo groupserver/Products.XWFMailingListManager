@@ -159,61 +159,65 @@
           </ul>
         </div>
         
-        <table id="topicsSummary">
-          <caption>Latest topics in
-            <span class="group" 
-              tal:content="python:view.groupInfo.get_name()">a Group</span>
-          </caption>
-          <thead>
-            <tr>
-              <th class="topic">Topic</th>
-              <th class="posts">Posts</th>
-              <th class="date">Latest Post</th>
-            </tr>
-          </thead>
-          <tbody tal:define="topics python:view.get_topics();
-            stickyTopics python:view.get_sticky_topics();
-            lenSticky python:len(stickyTopics);
-            timezone python:context.Scripts.get.option('timezone')">
-            <tal:block tal:condition="stickyTopics">
-              <tal:block tal:repeat="stickyTopic stickyTopics">
-                <tr tal:define="position repeat/stickyTopic/number;"
-                  tal:attributes="id string:sticky-${stickyTopic/id};
-                  class python:((((position) % 2) == 0) and 'evenStickyTopic') or 'oddStickyTopic';">
-                  <td class="topic" title="Topic name" colspan="3">
-                    <strong>Sticky:</strong>
-                    <a href="#"
-                      tal:attributes="href string:topic.html?id=${stickyTopic/id}"
-                      tal:content="stickyTopic/name">Wibble</a>
+        <tal:block tal:define="topics python:view.get_topics();">
+          <table id="topicsSummary" tal:condition="python:len(topics)>0">
+            <caption>Latest topics in
+              <span class="group" 
+                tal:content="python:view.groupInfo.get_name()">a Group</span>
+            </caption>
+            <thead>
+              <tr>
+                <th class="topic">Topic</th>
+                <th class="posts">Posts</th>
+                <th class="date">Latest Post</th>
+              </tr>
+            </thead>
+            <tbody tal:define="stickyTopics python:view.get_sticky_topics();
+              lenSticky python:len(stickyTopics);
+              timezone python:context.Scripts.get.option('timezone')">
+              <tal:block tal:condition="stickyTopics">
+                <tal:block tal:repeat="stickyTopic stickyTopics">
+                  <tr tal:define="position repeat/stickyTopic/number;"
+                    tal:attributes="id string:sticky-${stickyTopic/id};
+                    class python:((((position) % 2) == 0) and 'evenStickyTopic') or 'oddStickyTopic';">
+                    <td class="topic" title="Topic name" colspan="3">
+                      <strong>Sticky:</strong>
+                      <a href="#"
+                        tal:attributes="href string:topic.html?id=${stickyTopic/id}"
+                        tal:content="stickyTopic/name">Wibble</a>
+                    </td>
+                  </tr>
+                </tal:block>
+              </tal:block>
+              <tal:block tal:repeat="topic topics">
+                <tr tal:define="position repeat/topic/number;"
+                  tal:attributes="id string:topic-${topic/id};
+                  class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';">
+                  <td class="topic" title="Topic name">
+                    <a tal:content="python:topic['name'][:50]"
+                      tal:attributes="href string:topic.html?id=${topic/id};
+                      title string:View the topic ${topic/name}"
+                      href="#">Wibble</a><span 
+                      tal:condition="python:len(topic['name'])&gt;50">&#8230;</span>
+                  </td>
+                  <td class="posts" title="Number of posts" 
+                    tal:content="topic/length">-1</td>
+                  <td class="date" title="Date of most recent post" 
+                    tal:define="date python:topic['date'].toZone(timezone).strftime('%F %H:%M')">
+                    <span 
+                      tal:replace="date">
+                      Today, Tomorrow, Timaru
+                    </span>
+                    (<span tal:replace="timezone"/>)
                   </td>
                 </tr>
               </tal:block>
-            </tal:block>
-            <tal:block tal:repeat="topic topics">
-              <tr tal:define="position repeat/topic/number;"
-                tal:attributes="id string:topic-${topic/id};
-                class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';">
-                <td class="topic" title="Topic name">
-                  <a tal:content="python:topic['name'][:50]"
-                    tal:attributes="href string:topic.html?id=${topic/id};
-                    title string:View the topic ${topic/name}"
-                    href="#">Wibble</a><span 
-                    tal:condition="python:len(topic['name'])&gt;50">&#8230;</span>
-                </td>
-                <td class="posts" title="Number of posts" 
-                  tal:content="topic/length">-1</td>
-                <td class="date" title="Date of most recent post" 
-                  tal:define="date python:topic['date'].toZone(timezone).strftime('%F %H:%M')">
-                  <span 
-                    tal:replace="date">
-                    Today, Tomorrow, Timaru
-                  </span>
-                  (<span tal:replace="timezone"/>)
-                </td>
-              </tr>
-            </tal:block>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+          <p tal:condition="python:not(len(topics)>0)">
+            There are no topics in this group.
+          </p>
+        </tal:block>
       </form><!-- The One True XForm-->
     </tal:block>
   </body>
