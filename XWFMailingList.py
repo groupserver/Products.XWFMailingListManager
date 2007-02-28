@@ -381,9 +381,12 @@ class XWFMailingList(MailBoxer):
                                               [ msg.to ],
                                               'lines')                
             elif key == 'received':
-                self.setMailBoxerMailProperty(mailObject, key,
-                                              [ msg.get( 'received' ) ],
-                                              'lines')               
+                try:
+                    self.setMailBoxerMailProperty(mailObject, key,
+                                                  [ msg.get( 'received' ) ],
+                                                  'lines')
+                except: # we only put one received line in for now
+                    pass
             else:
                 self.setMailBoxerMailProperty(mailObject, key,
                                               msg.get( key ),
