@@ -402,9 +402,9 @@ class XWFMailingList(MailBoxer):
                 pass
             elif attachment['filename'] == '' and attachment['subtype'] == 'html':
                 # We might want to do something with the HTML body some day
-                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (file['filename'], file['maintype']))
+                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
             elif attachment['contentid']:
-                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (file['filename'], file['maintype']))
+                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
             else:
                 LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (attachment['filename'], attachment['maintype']))
                 id = self.addMailBoxerFile(mailObject,
