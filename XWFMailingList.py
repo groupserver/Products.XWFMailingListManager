@@ -366,7 +366,7 @@ class XWFMailingList(MailBoxer):
         sender = self.mime_decode_header(header.get('from','No From'))
         sender = convert_encoding_to_default(sender, encoding)
         
-        title = "%s / %s" % (subject, sender)
+        title = str("%s / %s" % (subject, sender))
         
         # we use our IdFactory to get the next ID, rather than trying something
         # ad-hoc
@@ -384,16 +384,25 @@ class XWFMailingList(MailBoxer):
             mailBody = TextBody
         else:
             mailBody = self.HtmlToText(HtmlBody)
-             
+        
         # and now add some properties to our new mailobject
+        props = list(mailObject._properties)
+        for prop in props:
+            if prop['id'] == 'title':
+                prop['type'] = 'ustring'
+        mailObject._properties = tuple(props)
+        mailObject.title = title
+                
         self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender,
-                                      'string')
+                                      'ustring')
         self.setMailBoxerMailProperty(mailObject, 'mailSubject',
                                       subject,
-                                      'string')
+                                      'ustring')
         self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
-        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'text')
-        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'string')
+
+        mailBody = convert_encoding_to_default(mailBody, encoding)
+        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'utext')
+        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'ustring')
 
         types = {'date': ('date', convert_date),
                  'from': ('lines', convert_addrs),
@@ -408,10 +417,10 @@ class XWFMailingList(MailBoxer):
             else:
                 self.setMailBoxerMailProperty(mailObject, key,
                                               self.mime_decode_header(header.get(key,'')),
-                                              'text')
+                                              'utext')
         
         sender_id = self.get_mailUserId(mailObject.getProperty('from', []))
-        self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'string')
+        self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'ustring')
 
         ids = []
         for file in Attachments:
@@ -430,9 +439,9 @@ class XWFMailingList(MailBoxer):
                 ids.append(id)
         
         if ids:            
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'string')
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', len(mailBody.replace('\r', '')), 'string')
-                
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'ustring')
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', len(mailBody.replace('\r', '')), 'ustring')
+
         self.catalogMailBoxerMail(mailObject)
         
         return mailObject
