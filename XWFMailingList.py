@@ -332,7 +332,7 @@ class XWFMailingList(MailBoxer):
         if archive is None:
             return None
 
-        msg = EmailMessage( mailString )
+        msg = EmailMessage( mailString, list_title=self.getProperty('title','') )
         LOG('XWFMailingList', PROBLEM,
             '%s' % msg.sender)    
         # if 'keepdate' is set, get date from mail,
