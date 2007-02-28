@@ -92,7 +92,8 @@
         <form method="post" action=""
           enctype="multipart/form-data"
           tal:condition="python:canPost[1]"
-          tal:define="startNew python:True">
+          tal:define="startNew python:True"
+          tal:attributes="action request/URL">
       
           <p 
             tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"
