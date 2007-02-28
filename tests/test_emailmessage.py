@@ -40,6 +40,7 @@ def test_emailmessage():
       >>> email_attachments = file('emails/withattachments.eml').read()
       >>> email_b64attachments = file('emails/base64attachments.eml').read()
       >>> email_simple = file('emails/simple.eml').read()
+      >>> email_test1 = file('emails/testemail1.eml').read()
 
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
@@ -64,7 +65,17 @@ def test_emailmessage():
       u'richard@iopen.net'
       >>> simplemsg.message.get('from')
       '"" <richard@iopen.net>'
-
+     
+      >>> test1msg = emailmessage.EmailMessage(email_test1)
+      >>> test1msg.title
+      u'Email bounced / privacy@obscured.co.nz'
+      >>> test1msg.sender
+      u'privacy@obscured.co.nz'
+      >>> test1msg.message.get('from')
+      'privacy@obscured.co.nz'
+      >>> len(test1msg.headers)
+      2281
+            
     Adapt:
       >>> from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
       >>> msgstorage = IRDBStorageForEmailMessage( msg )
