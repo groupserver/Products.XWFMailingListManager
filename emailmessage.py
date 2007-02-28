@@ -126,6 +126,12 @@ class EmailMessage( object ):
                ]
 
     @property
+    def headers( self ):
+        # return a flattened version of the headers
+        header_string = '\n'.join(map(lambda x: '%s: %s' % (x[0], x[1]), self.message._headers))
+        return unicode( header_string, self.encoding, 'ignore' )
+
+    @property
     def body( self ):
         for item in self.attachments:
             if item['filename'] == '' and item['subtype'] != 'html':
@@ -168,10 +174,6 @@ class EmailMessage( object ):
     @property
     def title( self ):
         return '%s / %s' % ( self.subject, self.sender )
-
-    @property
-    def compressedSubject( self ):
-        return compress_subject( self.subject )	
 
     @property
     def date( self ):

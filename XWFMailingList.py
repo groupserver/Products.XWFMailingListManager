@@ -365,33 +365,9 @@ class XWFMailingList(MailBoxer):
         self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
         self.setMailBoxerMailProperty(mailObject, 'mailBody', msg.body, 'utext')
         self.setMailBoxerMailProperty(mailObject, 'compressedSubject', msg.compressedSubject, 'ustring')
-                
-        for key in msg.message.keys():
-            key = key.lower()
-            if key == 'date':
-                self.setMailBoxerMailProperty(mailObject, key,
-                                              DateTime( msg.date.isoformat() ),
-                                              'date')
-            elif key == 'from':
-                self.setMailBoxerMailProperty(mailObject, key,
-                                              [ msg.sender ],
-                                              'lines')                
-            elif key == 'to':
-                self.setMailBoxerMailProperty(mailObject, key,
-                                              [ msg.to ],
-                                              'lines')                
-            elif key == 'received':
-                try:
-                    self.setMailBoxerMailProperty(mailObject, key,
-                                                  [ msg.get( 'received' ) ],
-                                                  'lines')
-                except: # we only put one received line in for now
-                    pass
-            else:
-                self.setMailBoxerMailProperty(mailObject, key,
-                                              msg.get( key ),
-                                              'utext')
-
+        
+        self.setMailBoxerMailProperty(mailObject, 'headers', msg.headers, 'utext')
+        
         sender_id = self.get_mailUserId( [ msg.sender ] )
         self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'ustring')
         
