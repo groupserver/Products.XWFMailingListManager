@@ -19,6 +19,8 @@ from Products.MailBoxer.MailBoxer import *
 from Acquisition import ImplicitAcquisitionWrapper, aq_base, aq_parent
 from App.config import getConfiguration
 
+from emailmessage import EmailMessage
+
 from cgi import escape
 
 from zLOG import LOG, WARNING
@@ -320,29 +322,22 @@ class XWFMailingList(MailBoxer):
         
         """
         import re
+        LOG('XWFMailingList', PROBLEM,
+                    '%s' % mailString)
+
         archive = self.restrictedTraverse(self.getValueFor('storage'),
                                           default=None)
         
         # no archive available? then return immediately
         if archive is None:
             return None
-            
-        (header, body) = self.splitMail(mailString)
-        
-        # get the content type header, and re-encode the email to the default encoding
-        ct = header.get('content-type',None)
-        encoding = 'ascii'
-        if ct:
-            encoding_match = re.search('charset=[\'\"]?(.*?)[\'\"]?;', ct)            
-            encoding = encoding_match and encoding_match.groups()[0] or 'ascii'
-        
-        convert_encoding_to_default(mailString, encoding)
-        (header, body) = self.splitMail(mailString)
-        
+
+        msg = EmailMessage( mailString )
+        LOG('XWFMailingList', PROBLEM,
+            '%s' % msg.sender)    
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
-            timetuple = rfc822.parsedate_tz(header.get('date'))
-            time = DateTime(rfc822.mktime_tz(timetuple))
+            time = DateTime( msg.date.isoformat() )
         # ... take our own date, clients are always lying!
         else:
             time = DateTime()
@@ -350,97 +345,75 @@ class XWFMailingList(MailBoxer):
         # let's create the mailObject
         mailFolder = archive
         
-        subject = self.mime_decode_header(header.get('subject', 'No Subject'))
-        subject = convert_encoding_to_default(subject, encoding)
-        
-        # correct the subject
-        subject = self.tidy_subject(subject)
-        
-        if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
-            subject = subject[3:].strip()
-        elif len(subject) == 0:
-            subject = 'No Subject'
-        
-        compressedsubject = re.sub('\s+', '', subject)
-        
-        sender = self.mime_decode_header(header.get('from','No From'))
-        sender = convert_encoding_to_default(sender, encoding)
-        
-        title = str("%s / %s" % (subject, sender))
-        
         # we use our IdFactory to get the next ID, rather than trying something
         # ad-hoc
         id = str(self.get_nextId())
         
-        self.addMailBoxerMail(mailFolder, id, title)
+        self.addMailBoxerMail(mailFolder, id, msg.title)
         mailObject = getattr(mailFolder, id)
 
-        # unpack attachments
-        (TextBody, ContentType, HtmlBody, Attachments) = self.unpackMail(
-                                                              mailString)
-
-        # ContentType is only set for the TextBody
-        if ContentType:
-            mailBody = TextBody
-        else:
-            mailBody = self.HtmlToText(HtmlBody)
-        
         # and now add some properties to our new mailobject
         props = list(mailObject._properties)
         for prop in props:
             if prop['id'] == 'title':
                 prop['type'] = 'ustring'
         mailObject._properties = tuple(props)
-        mailObject.title = title
-                
-        self.setMailBoxerMailProperty(mailObject, 'mailFrom', sender,
-                                      'ustring')
-        self.setMailBoxerMailProperty(mailObject, 'mailSubject',
-                                      subject,
-                                      'ustring')
-        self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
-
-        mailBody = convert_encoding_to_default(mailBody, encoding)
-        self.setMailBoxerMailProperty(mailObject, 'mailBody', mailBody, 'utext')
-        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', compressedsubject, 'ustring')
-
-        types = {'date': ('date', convert_date),
-                 'from': ('lines', convert_addrs),
-                 'to': ('lines', convert_addrs),
-                 'received': ('lines', null_convert),}
+        mailObject.title = msg.title
         
-        for key in header.keys():
-            if key in types:
+        self.setMailBoxerMailProperty(mailObject, 'mailFrom', msg.sender, 'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'mailSubject', msg.subject, 'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
+        self.setMailBoxerMailProperty(mailObject, 'mailBody', msg.body, 'utext')
+        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', msg.compressedSubject, 'ustring')
+                
+        for key in msg.message.keys():
+            key = key.lower()
+            if key == 'date':
                 self.setMailBoxerMailProperty(mailObject, key,
-                                              types[key][1](self.mime_decode_header(header.get(key,''))),
-                                              types[key][0])
+                                              DateTime( msg.date.isoformat() ),
+                                              'date')
+            elif key == 'from':
+                self.setMailBoxerMailProperty(mailObject, key,
+                                              [ msg.sender ],
+                                              'lines')                
+            elif key == 'to':
+                self.setMailBoxerMailProperty(mailObject, key,
+                                              [ msg.to ],
+                                              'lines')                
+            elif key == 'received':
+                self.setMailBoxerMailProperty(mailObject, key,
+                                              [ msg.get( 'received' ) ],
+                                              'lines')               
             else:
                 self.setMailBoxerMailProperty(mailObject, key,
-                                              self.mime_decode_header(header.get(key,'')),
+                                              msg.get( key ),
                                               'utext')
-        
-        sender_id = self.get_mailUserId(mailObject.getProperty('from', []))
-        self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'ustring')
 
+        sender_id = self.get_mailUserId( [ msg.sender ] )
+        self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'ustring')
+        
         ids = []
-        for file in Attachments:
-            if HtmlBody == file['filebody']:
+        for attachment in msg.attachments:
+            if attachment['filename'] == '' and attachment['subtype'] == 'plain':
+                # We definately don't want to save the plain text body again!
+                pass
+            elif attachment['filename'] == '' and attachment['subtype'] == 'html':
                 # We might want to do something with the HTML body some day
                 LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (file['filename'], file['maintype']))
-            elif file['content-id']:
+            elif attachment['contentid']:
                 LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (file['filename'], file['maintype']))
             else:
-                LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (file['filename'], file['maintype']))
+                LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (attachment['filename'], attachment['maintype']))
                 id = self.addMailBoxerFile(mailObject,
                                   None,
-                                  file['filename'],
-                                  file['filebody'], 
-                                  file['maintype'] + '/' + file['subtype'])
+                                  attachment['filename'],
+                                  attachment['payload'], 
+                                  attachment['mimetype'])
                 ids.append(id)
         
         if ids:            
             self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'ustring')
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', len(mailBody.replace('\r', '')), 'ustring')
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', len(msg.body.replace('\r', '')), 'ustring')
 
         self.catalogMailBoxerMail(mailObject)
         

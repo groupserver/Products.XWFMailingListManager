@@ -1,9 +1,11 @@
 import re
 from email import Parser, Header
+from zope.app.datetimeutils import parseDatetimetz
+from rfc822 import AddressList, parsedate_tz, mktime_tz
 import zope.interface
 
 def parse_disposition( s ):
-    matchObj = re.search('(?i)filename="*(?P<filename>[^\s"]*)"*', s)
+    matchObj = re.search('(?i)filename="*(?P<filename>[^"]*)"*', s)
     name = ''
     if matchObj:
         name = matchObj.group('filename')
@@ -99,24 +101,28 @@ class EmailMessage( object ):
                     
             for msg in outmessages:
                 actual_payload = msg.get_payload( decode=True )
-                filename = parse_disposition( msg.get('content-disposition','') )
+                filename = unicode( parse_disposition( msg.get('content-disposition','') ),
+                                    self.encoding, 'ignore' )
                 out.append( {'payload': actual_payload,
                              'filename': filename,
                              'length': len(actual_payload),
                              'charset': msg.get_charset(),
                              'maintype': msg.get_content_maintype(),
                              'subtype': msg.get_content_subtype(),
-                             'mimetype': msg.get_content_type()} )
+                             'mimetype': msg.get_content_type(),
+                             'contentid': msg.get('content-id', '')} )
             return out
 
-        filename = parse_disposition( self.message.get('content-disposition','') )
+        filename = unicode( parse_disposition( self.message.get('content-disposition','') ),
+                            self.encoding, 'ignore' )
         return [ {'payload': payload,
                   'filename': filename,
                   'length': len(payload),
                   'charset': self.message.get_charset(),
                   'maintype': self.message.get_content_maintype(),
                   'subtype': self.message.get_content_subtype(),
-                  'mimetype': self.message.get_content_type()}
+                  'mimetype': self.message.get_content_type(),
+                  'contentid': self.message.get('content-id', '')}
                ]
 
     @property
@@ -140,5 +146,33 @@ class EmailMessage( object ):
     @property
     def compressedSubject( self ):
         return compress_subject( self.subject )
-    
 
+    @property
+    def sender( self ):
+        sender = self.get( 'from' )
+        
+        if sender:
+            name, sender = AddressList( sender )[0]
+        
+        return sender
+
+    @property
+    def to( self ):
+        to = self.get( 'to' )
+        
+        if to:
+            name, to = AddressList( to )[0]
+        
+        return to
+
+    @property
+    def title( self ):
+        return '%s / %s' % ( self.subject, self.sender )
+
+    @property
+    def compressedSubject( self ):
+        return compress_subject( self.subject )	
+
+    @property
+    def date( self ):
+        return parseDatetimetz( self.get( 'date' ) )
