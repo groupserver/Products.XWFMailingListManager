@@ -163,7 +163,7 @@ class GSPostContentProvider(object):
                  text)
           retval = text.replace('@', ' ( at ) ')
          
-          assert retval
+          # assert retval
           return retval
       
       def __wrap_message(self, messageText, width=79):
