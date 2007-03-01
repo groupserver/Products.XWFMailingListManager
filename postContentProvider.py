@@ -338,7 +338,9 @@ class GSPostContentProvider(object):
               None.  
           """
           assert self.post
-          assert self.post['mailBody']
+          # --==mpj17=-- 
+          #   I have to check up with rrw to see if posts support has_key
+          # assert self.post['mailBody']
 
           body = self.post['mailBody']
           
