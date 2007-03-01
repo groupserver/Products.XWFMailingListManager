@@ -63,8 +63,8 @@ class XWFMailingList(MailBoxer):
     
     # a tuple of properties that we _don't_ want to inherit from the parent
     # list manager
-    mailinglist_properties = ('title',
-                              'mailto',
+    mailinglist_properties = ('title', 
+                              'mailto', 
                               'hashkey')
     
     # track the checksum of the last email sent
@@ -93,7 +93,7 @@ class XWFMailingList(MailBoxer):
         the properties that have already been defined in the parent MailingListManager.
         
         """
-        delete_properties = filter(lambda x: x not in self.mailinglist_properties,
+        delete_properties = filter(lambda x: x not in self.mailinglist_properties, 
                                    self.propertyIds())
         props = []
         for item in self._properties:
@@ -127,7 +127,7 @@ class XWFMailingList(MailBoxer):
         # Use manage_changeProperties as default for setting properties
         prop_loc.manage_changeProperties({key:value})
         
-    security.declareProtected('Manage properties','get_memberUserObjects')
+    security.declareProtected('Manage properties', 'get_memberUserObjects')
     def get_memberUserObjects(self):
         """ Get the user objects corresponding to the membership list, assuming we can.
         
@@ -145,7 +145,7 @@ class XWFMailingList(MailBoxer):
                 
         return users
 
-    security.declareProtected('Manage properties','get_memberUserCount')
+    security.declareProtected('Manage properties', 'get_memberUserCount')
     def get_memberUserCount(self):
         """ Get a count of the number of users corresponding to the
             membership list, assuming we can.
@@ -159,7 +159,7 @@ class XWFMailingList(MailBoxer):
                 
         return len(uids)
     
-    security.declareProtected('Manage properties','get_moderatedUserObjects')
+    security.declareProtected('Manage properties', 'get_moderatedUserObjects')
     def get_moderatedUserObjects(self):
         """ Get the user objects corresponding to the moderated list, assuming we can.
         
@@ -180,7 +180,7 @@ class XWFMailingList(MailBoxer):
                 
         return users
     
-    security.declareProtected('Manage properties','get_moderatorUserObjects')
+    security.declareProtected('Manage properties', 'get_moderatorUserObjects')
     def get_moderatorUserObjects(self):
         """ Get the user objects corresponding to the moderator, assuming we can.
         
@@ -208,7 +208,7 @@ class XWFMailingList(MailBoxer):
         
         """
         pass_group_id = False
-        if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist','mailinlist'):
+        if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist', 'mailinlist'):
             maillist = []
             if key in ('digestmaillist', 'maillist'):
                 address_getter = 'get_deliveryEmailAddressesByKey'
@@ -221,14 +221,14 @@ class XWFMailingList(MailBoxer):
                 maillist_script = None
                 maillist = self.aq_inner.getProperty('moderator', [])
                 if not maillist:
-                    maillist = self.aq_parent.getProperty('moderator',[])
+                    maillist = self.aq_parent.getProperty('moderator', [])
             elif key in ('moderatedlist',):
                 address_getter = 'get_emailAddresses'
                 member_getter = 'get_moderatedUserObjects'
                 maillist_script = None
                 maillist = self.aq_inner.getProperty('moderatedlist', [])
                 if not maillist:
-                    maillist = self.aq_parent.getProperty('moderatedlist',[])
+                    maillist = self.aq_parent.getProperty('moderatedlist', [])
             else:
                 address_getter = 'get_emailAddresses'
                 member_getter = 'get_memberUserObjects'
@@ -260,7 +260,7 @@ class XWFMailingList(MailBoxer):
                         if email and email not in maillist:
                             maillist.append(email)
             except Exception, x:
-                LOG('XWFMailingList', PROBLEM,
+                LOG('XWFMailingList', PROBLEM, 
                     'A problem was experienced while getting values: %s' % x)
                 maillist = None
             
@@ -316,28 +316,28 @@ class XWFMailingList(MailBoxer):
             
         return subject
         
-    security.declareProtected('Add Folders','manage_addMail')
+    security.declareProtected('Add Folders', 'manage_addMail')
     def manage_addMail(self, mailString):
         """ Store mail & attachments in a folder and return it.
         
         """
         import re
-        LOG('XWFMailingList', PROBLEM,
+        LOG('XWFMailingList', PROBLEM, 
                     '%s' % mailString)
 
-        archive = self.restrictedTraverse(self.getValueFor('storage'),
+        archive = self.restrictedTraverse(self.getValueFor('storage'), 
                                           default=None)
         
         # no archive available? then return immediately
         if archive is None:
             return None
 
-        msg = EmailMessage( mailString, list_title=self.getProperty('title','') )
-        LOG('XWFMailingList', PROBLEM,
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''))
+        LOG('XWFMailingList', PROBLEM, 
             '%s' % msg.sender)    
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
-            time = DateTime( msg.date.isoformat() )
+            time = DateTime(msg.date.isoformat())
         # ... take our own date, clients are always lying!
         else:
             time = DateTime()
@@ -368,7 +368,7 @@ class XWFMailingList(MailBoxer):
         
         self.setMailBoxerMailProperty(mailObject, 'headers', msg.headers, 'utext')
         
-        sender_id = self.get_mailUserId( [ msg.sender ] )
+        sender_id = self.get_mailUserId([ msg.sender ])
         self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'ustring')
         
         ids = []
@@ -378,21 +378,29 @@ class XWFMailingList(MailBoxer):
                 pass
             elif attachment['filename'] == '' and attachment['subtype'] == 'html':
                 # We might want to do something with the HTML body some day
-                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
+                LOG('MailBoxer', INFO, 'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
             elif attachment['contentid']:
-                LOG('MailBoxer', INFO,  'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
+                LOG('MailBoxer', INFO, 'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
             else:
-                LOG('MailBoxer', INFO,  'stripped and archiving attachment %s %s' % (attachment['filename'], attachment['maintype']))
-                id = self.addMailBoxerFile(mailObject,
-                                  None,
-                                  attachment['filename'],
+                LOG('MailBoxer', INFO, 'stripped and archiving attachment %s %s' % (attachment['filename'], attachment['maintype']))
+                id = self.addMailBoxerFile(mailObject, 
+                                  None, 
+                                  attachment['filename'], 
                                   attachment['payload'], 
                                   attachment['mimetype'])
                 ids.append(id)
         
-        if ids:            
+        if ids:
             self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'ustring')
             self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', len(msg.body.replace('\r', '')), 'ustring')
+        else:
+            # see if we might have gotten an ids from somewhere else already
+            file_ids = msg.get('x-xwfnotification-file-id')
+            file_notification_message_length = msg.get('x-xwfnotification-message-length')
+            if file_ids and file_notification_message_length:
+                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', file_ids, 'ustring')
+                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
+                                              file_notification_message_length, 'ustring')
 
         self.catalogMailBoxerMail(mailObject)
         
@@ -442,7 +450,7 @@ class XWFMailingList(MailBoxer):
 
             if REMOTE_IP not in mtahosts:
                 message = 'Host %s is not allowed' % (REMOTE_IP)
-                LOG('MailBoxer', PROBLEM,  message)
+                LOG('MailBoxer', PROBLEM, message)
                 return message
 
         # Check for x-mailer-loop
@@ -457,17 +465,17 @@ class XWFMailingList(MailBoxer):
         # Check for empty return-path => automatic mail
         if header.get('return-path', '') == '<>':
             self.bounceMail(REQUEST)
-            message = 'Automated response detected from %s' % (header.get('from',
+            message = 'Automated response detected from %s' % (header.get('from', 
                                                                           '<>'))
             LOG('MailBoxer', PROBLEM, message)
             return message
         
         # A sanity check ... have we seen this email before?
-        checksum_string = header.get('from','')+body
+        checksum_string = header.get('from', '')+body
         last_email_checksum = md5.new(checksum_string).hexdigest()
         if self.last_email_checksum:
             if self.last_email_checksum == last_email_checksum:
-                message = 'detected duplicate message from "%s"' % header.get('from','')
+                message = 'detected duplicate message from "%s"' % header.get('from', '')
                 LOG('MailBoxer', PROBLEM, message)
                 return message
         self.last_email_checksum = last_email_checksum
@@ -513,8 +521,8 @@ class XWFMailingList(MailBoxer):
             if count >= senderlimit:
                 user = self.acl_users.get_userByEmail(email)
                 if user:
-                    user.send_notification('sender_limit_exceeded', self.listId(),
-                                            n_dict={'expiry_time': DateTime(earliest+senderinterval),
+                    user.send_notification('sender_limit_exceeded', self.listId(), 
+                                            n_dict={'expiry_time': DateTime(earliest+senderinterval), 
                                                     'email': mailString})
                     message = ('Sender %s has sent %s mails in %s seconds' %
                                               (sender, count, senderinterval))
@@ -548,7 +556,7 @@ class XWFMailingList(MailBoxer):
             if user and user.getId() in blocked_members:
                 message = 'Blocked user: %s from posting' % user.getId()
                 LOG('MailBoxer', PROBLEM, message)
-                user.send_notification('post_blocked', self.listId(),
+                user.send_notification('post_blocked', self.listId(), 
                                        n_dict={'email': mailString})
                 return message
             
@@ -561,7 +569,7 @@ class XWFMailingList(MailBoxer):
                 if not prop_val or prop_val == 'None':
                     message = 'Blocked user because of missing user properties: %s' % user.getId()
                     LOG('MailBoxer', PROBLEM, message)
-                    user.send_notification('missing_properties', self.listId(),
+                    user.send_notification('missing_properties', self.listId(), 
                                            n_dict={'email': mailString})
                     return message
     
@@ -579,10 +587,10 @@ class XWFMailingList(MailBoxer):
         (header, body) = self.splitMail(mailString)
 
         # get subject
-        subject = self.mime_decode_header(header.get('subject',''))
+        subject = self.mime_decode_header(header.get('subject', ''))
 
         # get email-address
-        sender = self.mime_decode_header(header.get('from',''))
+        sender = self.mime_decode_header(header.get('from', ''))
         (name, email) = self.parseaddr(sender)
         
         memberlist = self.lowerList(self.getValueFor('mailinlist'))
@@ -627,8 +635,8 @@ class XWFMailingList(MailBoxer):
                         else:
                             first_name = last_name = name
                         user_id, password, verification_code = \
-                                 self.acl_users.register_user(email=email,
-                                                              first_name=first_name,
+                                 self.acl_users.register_user(email=email, 
+                                                              first_name=first_name, 
                                                               last_name=last_name)
                         user = self.acl_users.getUser(user_id)
                         group_object = self.Scripts.get.group_by_id(self.getId())
@@ -682,7 +690,7 @@ class XWFMailingList(MailBoxer):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
         
-        digest = self.xwf_email_topic_digest(REQUEST, list_object=self,
+        digest = self.xwf_email_topic_digest(REQUEST, list_object=self, 
                                              getValueFor=self.getValueFor)
         
         if ((MaildropHostIsAvailable and
@@ -711,7 +719,7 @@ class XWFMailingList(MailBoxer):
             if TransactionalMailHost:
                 TransactionalMailHost._send(returnpath, maillist[0:batch], digest)
             else:
-                smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
+                smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                                           int(self.MailHost.smtp_port))
                 smtpserver.sendmail(returnpath, maillist[0:batch], digest)
                 smtpserver.quit()
@@ -719,7 +727,7 @@ class XWFMailingList(MailBoxer):
             # remove already bulked addresses
             maillist = maillist[batch:]
             	
-    security.declareProtected('Manage properties','manage_addMember')
+    security.declareProtected('Manage properties', 'manage_addMember')
     def manage_addMember(self, email):
         """ Add member to group. """
 
@@ -729,7 +737,7 @@ class XWFMailingList(MailBoxer):
         
         return 1
 
-    security.declareProtected('Manage properties','manage_delMember')
+    security.declareProtected('Manage properties', 'manage_delMember')
     def manage_delMember(self, email):
         """ Remove member from group. """
         
@@ -750,7 +758,7 @@ class XWFMailingList(MailBoxer):
                         
         return ''
     
-    security.declareProtected('Manage properties','reindex_mailObjects')
+    security.declareProtected('Manage properties', 'reindex_mailObjects')
     def reindex_mailObjects(self):
         """ Reindex the mailObjects that we contain.
              
@@ -763,7 +771,7 @@ class XWFMailingList(MailBoxer):
          
         return True
 
-    security.declareProtected('Manage properties','unindex_mailObjects')
+    security.declareProtected('Manage properties', 'unindex_mailObjects')
     def unindex_mailObjects(self):
         """ Unindex the mailObjects that we contain.
 
@@ -812,7 +820,7 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context,
+            reply_text = reply(REQUEST, list_object=context, 
                                mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
@@ -839,8 +847,8 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context,
-                                   getValueFor=self.getValueFor,
+            reply_text = reply(REQUEST, list_object=context, 
+                                   getValueFor=self.getValueFor, 
                                    mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
@@ -867,8 +875,8 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context,
-                                   getValueFor=self.getValueFor,
+            reply_text = reply(REQUEST, list_object=context, 
+                                   getValueFor=self.getValueFor, 
                                    mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
@@ -895,8 +903,8 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context,
-                                   getValueFor=self.getValueFor,
+            reply_text = reply(REQUEST, list_object=context, 
+                                   getValueFor=self.getValueFor, 
                                    mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
@@ -923,8 +931,8 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context,
-                                   getValueFor=self.getValueFor,
+            reply_text = reply(REQUEST, list_object=context, 
+                                   getValueFor=self.getValueFor, 
                                    mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
@@ -950,8 +958,8 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context,
-                                   getValueFor=self.getValueFor,
+            reply_text = reply(REQUEST, list_object=context, 
+                                   getValueFor=self.getValueFor, 
                                    mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
@@ -977,8 +985,8 @@ class XWFMailingList(MailBoxer):
         email_address = mail['from']
         
         if reply:
-            reply_text = reply(REQUEST, list_object=context,
-                                   getValueFor=self.getValueFor,
+            reply_text = reply(REQUEST, list_object=context, 
+                                   getValueFor=self.getValueFor, 
                                    mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
         else:
@@ -1000,7 +1008,7 @@ class XWFMailingList(MailBoxer):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
         
-        email_address = headers.get('from','')
+        email_address = headers.get('from', '')
         seen = []
         for code in event_codes:
             if code in seen: continue
@@ -1024,8 +1032,8 @@ class XWFMailingList(MailBoxer):
         """
         header = getattr(self, 'xwf_email_header', None)
         if header:
-            return header(REQUEST, list_object=context,
-                                   getValueFor=getValueFor,
+            return header(REQUEST, list_object=context, 
+                                   getValueFor=getValueFor, 
                                    title=title, mail=mail, body=body)
         else:
             return ""
@@ -1038,8 +1046,8 @@ class XWFMailingList(MailBoxer):
         """
         footer = getattr(self, 'xwf_email_footer', None)
         if footer:
-            return footer(REQUEST, list_object=context,
-                                   getValueFor=getValueFor,
+            return footer(REQUEST, list_object=context, 
+                                   getValueFor=getValueFor, 
                                    title=title, mail=mail, body=body)
         else:
             return ""
@@ -1057,20 +1065,19 @@ class XWFMailingList(MailBoxer):
         file = storage.get_file(id)
         topic = archiveObject.getProperty('mailSubject', '')
         creator = archiveObject.getProperty('mailUserId', '')
-        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'],
-                                     group_ids=[group_id], dc_creator=creator,
+        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'], 
+                                     group_ids=[group_id], dc_creator=creator, 
                                      topic=topic)
-
         file.reindex_file()
-
+        
         return id
     
 manage_addXWFMailingListForm = PageTemplateFile(
-    'management/manage_addXWFMailingListForm.zpt',
-    globals(),
+    'management/manage_addXWFMailingListForm.zpt', 
+    globals(), 
     __name__='manage_addXWFMailingListForm')
 
-def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
+def manage_addXWFMailingList(self, id, mailto, title='Mailing List', 
                                      REQUEST=None):
     """ Add an XWFMailingList to a container.
     
@@ -1082,15 +1089,15 @@ def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
     manage_addFolder(ob, 'archive', 'mailing list archives')
     
     if REQUEST is not None:
-        return self.manage_main(self,REQUEST)
+        return self.manage_main(self, REQUEST)
 
 InitializeClass(XWFMailingList)
 
 def initialize(context):
     context.registerClass(
-        XWFMailingList,
-        permission="Add XWF MailingList",
-        constructors=(manage_addXWFMailingListForm,
-                      manage_addXWFMailingList),
+        XWFMailingList, 
+        permission="Add XWF MailingList", 
+        constructors=(manage_addXWFMailingListForm, 
+                      manage_addXWFMailingList), 
         )
         
