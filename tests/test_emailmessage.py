@@ -39,6 +39,7 @@ def test_emailmessage():
 
       >>> email_attachments = file('emails/withattachments.eml').read()
       >>> email_b64attachments = file('emails/base64attachments.eml').read()
+      >>> email_b64 = file('emails/base64.eml').read()
       >>> email_simple = file('emails/simple.eml').read()
       >>> email_simple2 = file('emails/simple2.eml').read()
       >>> email_test1 = file('emails/testemail1.eml').read()
@@ -61,10 +62,15 @@ def test_emailmessage():
       >>> msg.inreplyto
       u''
 
-
+   An email that has a base 64 attachment:
       >>> b64msg = emailmessage.EmailMessage(email_b64attachments) 
       >>> b64msg.attachments[1]['filename']
       u'Delivery report.txt'
+
+   An email that has the entire body encoded as base64
+      >>> b64msg = emailmessage.EmailMessage(email_b64)
+      >>> b64msg.attachments[0]['md5']
+      '3c56c82af9e6604d31afba86b083444a'
 
       >>> simplemsg = emailmessage.EmailMessage(email_simple, 'Example Group')
       >>> simplemsg.title
