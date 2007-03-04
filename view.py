@@ -154,8 +154,14 @@ class GSPostingInfo:
                             self.groupInfo.get_id())
         assert user
         if user.getId() == None:
-            m = 'You must log in to post.'
+            m = '''Only members who are logged in can post, and you
+            are not logged in.'''
             retval = ((m, 2), False)
+        elif 'GroupMember' not in user.getRolesInContext(self.groupInfo.get_id()):
+            # Not a group member
+            m = '''Only members of this group can post, and you are not 
+            a member.'''
+            retval = ((m, 3), False)
         elif groupList.is_senderBlocked(user.getId())[0]:
             senderLimit = groupList.getValueFor('senderlimit')
             senderInterval = groupList.getValueFor('senderinterval')
@@ -172,10 +178,10 @@ class GSPostingInfo:
             timezone = self.context.Scripts.get.option('timezone')
             t = DateTime.DateTime(int(groupList.is_senderBlocked(user.getId())[1]))
             postingDate = t.toZone(timezone).strftime('%F %H:%M')
-            m = """You may only send %d messages every %s, and 
-            you have exceeded this limit. You may post again 
+            m = """Members may only send %d messages every %s, and 
+            you have exceeded this limit; you may post again 
             at %s."""  % (senderLimit, interval, postingDate)
-            retval = ((m, 3), False)
+            retval = ((m, 4), False)
         else:            
             # ...there is a local reason that allows the user to post
             retval = self.get_user_can_post_local(True)
