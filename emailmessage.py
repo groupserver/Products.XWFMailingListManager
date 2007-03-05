@@ -53,6 +53,11 @@ def compress_subject(subject):
     return re.sub('\s+', '', subject)
 
 def calculate_file_id(file_body, mime_type):
+    # --=mpj17=--  
+    # Two files will have the same ID if
+    # - They have the same MD5 Sum, and
+    # - They have the same length, and
+    # - They have the same MIME-type.
     length = len(file_body)
     
     md5_sum = md5.new()
@@ -234,7 +239,11 @@ class EmailMessage(object):
     @property
     def topic_id(self):
         # this is calculated from what we have/know
-        tid = md5.new(self.subject+':'+self.group_id+':'+self.site_id).hexdigest()
+        #
+        # --=mpj17=--
+        # A topic_id for two posts will clash if
+        #   - The subject, group and site all have the same ID.
+        tid = md5.new(items).hexdigest()
         
         return unicode(convert_int2b62(long(tid, 16)))
         
@@ -242,7 +251,18 @@ class EmailMessage(object):
     def post_id(self):
         # this is calculated from what we have/know
         len_payloads = sum([ x['length'] for x in self.attachments ])
-        pid = md5.new(self.topic_id+':'+self.get('subject')+':'+self.md5body+':'+self.sender+':'+
-                       self.inreplyto+':'+str(len_payloads)).hexdigest()
+
+        # --=mpj17=--
+        # A post_id for two posts will clash if
+        #    - The topic IDs are the same, and
+        #    - The body of the posts are the same, and
+        #    - The posts are from the same author, and
+        #    - The posts respond to the same message, and
+        #    - The posts have the same length of attachments.
+        # --=mpj17=-- Why add the subject, if we add the topic ID?
+        items = self.topic_id + ':' + self.get('subject') + ':' + \
+                self.md5body + ':' + self.sender + ':' + \
+                self.inreplyto + ':' + str(len_payloads)
+        pid = md5.new(items).hexdigest()
         return unicode(convert_int2b62(long(pid, 16)))
         
