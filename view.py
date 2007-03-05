@@ -153,14 +153,16 @@ class GSPostingInfo:
         groupList = getattr(self.context.ListManager.aq_explicit, 
                             self.groupInfo.get_id())
         assert user
+        userRoles = user.getRolesInContext(self.groupInfo.groupObj)
         if user.getId() == None:
             m = '''Only members who are logged in can post, and you
             are not logged in.'''
             retval = ((m, 2), False)
-        elif 'GroupMember' not in user.getRolesInContext(self.groupInfo.get_id()):
+        elif 'GroupMember' not in userRoles:
             # Not a group member
             m = '''Only members of this group can post, and you are not 
             a member.'''
+            m = '%s' % user.getRolesInContext(self.groupInfo.groupObj)
             retval = ((m, 3), False)
         elif groupList.is_senderBlocked(user.getId())[0]:
             senderLimit = groupList.getValueFor('senderlimit')
