@@ -162,7 +162,6 @@ class GSPostingInfo:
             # Not a group member
             m = '''Only members of this group can post, and you are not 
             a member.'''
-            m = '%s' % user.getRolesInContext(self.groupInfo.groupObj)
             retval = ((m, 3), False)
         elif groupList.is_senderBlocked(user.getId())[0]:
             senderLimit = groupList.getValueFor('senderlimit')
