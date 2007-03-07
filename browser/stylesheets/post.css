@@ -95,7 +95,7 @@ h1 .shortLink {
 #singlePostTopicNavigation.messages-nl .topicLink a {
     background-image: url('/++resource++postImages/arrow_up.png');
 }
-pre.email-body, .emailremainder pre {
+pre.email-body, .email-remainder pre {
   margin: 0px;
   font-size: 92%;
 }
