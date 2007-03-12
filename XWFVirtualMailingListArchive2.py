@@ -163,13 +163,17 @@ class XWFVirtualMailingListArchive2(Folder, XWFIdFactoryMixin):
             
         return presentation.sendemail(email_object=email_object)
         
-    def view_email(self, REQUEST, RESPONSE, id, show_thread=0):
+    def view_email(self, REQUEST, RESPONSE, id=-1, show_thread=0):
         """ """
-        thread = int(show_thread)
-        if thread:
-            url = '%s/topic.html?id=%s' % (REQUEST.BASE4, id)
+        
+        if (id == -1):
+            url = '%s/r/topic-none.xml' % REQUEST.BASE4
         else:
-            url = '%s/post.html?id=%s' % (REQUEST.BASE4, id)
+            thread = int(show_thread)
+            if thread:
+                url = '%s/topic.html?id=%s' % (REQUEST.BASE4, id)
+            else:
+                url = '%s/post.html?id=%s' % (REQUEST.BASE4, id)
             
         return RESPONSE.redirect(url)
 
