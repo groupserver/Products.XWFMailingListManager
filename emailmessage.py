@@ -1,5 +1,6 @@
 import re
 import md5
+import sqlalchemy
 import string
 from email import Parser, Header
 from zope.app.datetimeutils import parseDatetimetz
@@ -78,8 +79,72 @@ class RDBEmailMessageStorage(object):
     def __init__(self, email_message):
         self.email_message = email_message
 
-    def hello_world(self):
-        return 'hello'
+    def set_zalchemy_adaptor( self, da ):
+        session = da.getSession()
+        metadata = session.getMetaData()
+        
+        self.postTable = sqlalchemy.Table('post', metadata, autoload=True)
+        self.topicTable = sqlalchemy.Table('topic', metadata, autoload=True)
+        self.topic_word_countTable = sqlalchemy.Table('topic_word_count', metadata, autoload=True)
+        self.fileTable = sqlalchemy.Table('file', metadata, autoload=True)
+
+    def _get_topic( self ):
+        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
+
+        r = self.topicTable.select( and_(self.topicTable.c.topic_id == self.email_message.topic_id,
+                                        self.topicTable.c.group_id == self.email_message.group_id,
+                                        self.topicTable.c.site_id == self.email_message.site_id) ).execute()
+        
+        return r.fetchone()
+
+    def insert( self ):
+        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
+
+        i = self.postTable.insert()
+        i.execute( post_id=self.email_message.post_id,
+                   topic_id=self.email_message.topic_id,
+                   group_id=self.email_message.group_id,
+                   site_id=self.email_message.site_id,
+                   user_id=self.email_message.user_id,
+                   in_reply_to=self.email_message.inreplyto,
+                   subject=self.email_message.subject,
+                   date=self.email_message.date,
+                   body=self.email_message.body,
+                   htmlbody=self.email_message.htmlbody,
+                   header=self.email_message.headers,
+                   has_attachments=bool(self.email_message.attachment_count) )
+        
+        topic = self._get_topic()
+        if not topic:
+            i = self.topicTable.insert()
+            i.execute( topic_id=self.email_message.topic_id,
+                       group_id=self.email_message.group_id,
+                       site_id=self.email_message.site_id,
+                       original_subject=self.email_message.subject,
+                       first_post_id=self.email_message.post_id,
+                       last_post_id=self.email_message.post_id,
+                       last_post_date=self.email_message.date,
+                       num_posts=1 )
+        else:
+            num_posts = topic['num_posts']
+            self.topicTable.update( and_(self.topicTable.c.topic_id == self.email_message.topic_id,
+                                         self.topicTable.c.group_id == self.email_message.group_id,
+                                         self.topicTable.c.site_id == self.email_message.site_id)
+                                   ).execute( num_posts=num_posts+1,
+                                              last_post_id=self.email_message.post_id,
+                                              last_post_date=self.email_message.date )
+
+    def remove( self):
+        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
+        
+        topic = self._get_topic()
+        if topic['num_posts'] == 1:
+            self.topicTable.delete( self.topicTable.c.topic_id == self.email_message.topic_id ).execute()
+         
+
+        #self.topicTable.update( self.topicTable.c.first_post_id == self.email_message.post_id ).execute( first_post_id='' )
+        #self.topicTable.update( self.topicTable.c.last_post_id == self.email_message.post_id ).execute( last_post_id='' )
+        self.postTable.delete( self.postTable.c.post_id == self.email_message.post_id ).execute()    
 
 class IEmailMessage(zope.interface.Interface):
     encoding = zope.interface.Attribute("The encoding of the email and headers.")
@@ -120,6 +185,11 @@ class EmailMessage(object):
         value = unicode(value, encoding or self.encoding, 'ignore')
         
         return value
+
+    @property
+    def user_id( self ):
+        # FIXME
+        return ''
     
     @property
     def encoding(self):
@@ -127,19 +197,25 @@ class EmailMessage(object):
 
     @property
     def attachments(self):
+        def split_multipart( msg, pl ):
+            if msg.is_multipart():
+                for b in msg.get_payload():
+                    pl = split_multipart( b, pl )
+            else:
+                pl.append( msg )
+            
+            return pl           
+
         payload = self.message.get_payload()
         if isinstance(payload, list):
             outmessages = []
             out = []
             for i in payload:
-                if i.is_multipart():
-                    for b in i.get_payload():
-                        outmessages.append(b)
-                else:
-                    outmessages.append(i)
+                outmessages = split_multipart( i, outmessages )
                     
             for msg in outmessages:
                 actual_payload = msg.get_payload(decode=True)
+                
                 filename = unicode(parse_disposition(msg.get('content-disposition', '')), 
                                     self.encoding, 'ignore')
                 fileid, length, md5_sum = calculate_file_id(actual_payload, msg.get_content_type())
@@ -181,7 +257,42 @@ class EmailMessage(object):
         return unicode(header_string, self.encoding, 'ignore')
 
     @property
-    def body(self):
+    def attachment_count( self ):
+        count = 0
+        for item in self.attachments:
+            if item['filename']:
+                count += 1
+        
+        return count
+
+    @property
+    def language( self ):
+       # one day we might want to detect languages, primarily this
+       # will be used for stemming, stopwords and search
+       return 'english'
+    
+    @property
+    def word_count( self ):
+        wc = {}
+        for word in self.body.split():
+            word = word.lower()
+            skip = False
+            for letter in word:
+                if letter not in string.ascii_lowercase:
+                    skip = True
+                    break
+            if skip:
+                continue
+            
+            if wc.has_key(word):
+                wc[word] += 1
+            else:
+                wc[word] = 1
+        
+        return wc
+
+    @property
+    def body( self ):
         for item in self.attachments:
             if item['filename'] == '' and item['subtype'] != 'html':
                 return unicode(item['payload'], self.encoding, 'ignore')
@@ -243,6 +354,7 @@ class EmailMessage(object):
         # --=mpj17=--
         # A topic_id for two posts will clash if
         #   - The subject, group and site all have the same ID.
+        items = self.subject + ':' + self.group_id + ':' + self.site_id
         tid = md5.new(items).hexdigest()
         
         return unicode(convert_int2b62(long(tid, 16)))
@@ -251,7 +363,6 @@ class EmailMessage(object):
     def post_id(self):
         # this is calculated from what we have/know
         len_payloads = sum([ x['length'] for x in self.attachments ])
-
         # --=mpj17=--
         # A post_id for two posts will clash if
         #    - The topic IDs are the same, and
@@ -260,9 +371,9 @@ class EmailMessage(object):
         #    - The posts respond to the same message, and
         #    - The posts have the same length of attachments.
         # --=mpj17=-- Why add the subject, if we add the topic ID?
-        items = self.topic_id + ':' + self.get('subject') + ':' + \
-                self.md5body + ':' + self.sender + ':' + \
-                self.inreplyto + ':' + str(len_payloads)
+        items = ( self.topic_id + ':' + self.get('subject') + ':' +
+                  self.md5body + ':' + self.sender + ':' + 
+                  self.inreplyto + ':' + str(len_payloads) )
         pid = md5.new(items).hexdigest()
         return unicode(convert_int2b62(long(pid, 16)))
         
