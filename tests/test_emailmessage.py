@@ -33,6 +33,8 @@ def test_emailmessage():
       >>> import Products.XWFMailingListManager
       >>> from Products.XWFMailingListManager import emailmessage
       >>> from Products.Five import zcml
+      >>> from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
+
       >>> zcml.load_config('meta.zcml', Products.Five)
       >>> zcml.load_config('permissions.zcml', Products.Five)
       >>> zcml.load_config('configure.zcml', Products.XWFMailingListManager)
@@ -43,6 +45,7 @@ def test_emailmessage():
       >>> email_simple = file('emails/simple.eml').read()
       >>> email_simple2 = file('emails/simple2.eml').read()
       >>> email_test1 = file('emails/testemail1.eml').read()
+      >>> email_attachments2 = file('emails/7479421AFD9.eml').read()
 
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
@@ -61,9 +64,16 @@ def test_emailmessage():
       u'1Aa4fgicLuUNeXE6737X9K'
       >>> msg.inreplyto
       u''
+      >>> msg.word_count
 
+   A second attachments example:
+      >>> msg = emailmessage.EmailMessage(email_attachments2) 
+      >>> [ a['filename'] for a in msg.attachments ]
+      [u'', u'', u'', u'', u'image003.jpg', u'image001.jpg', u'Christchurch City Flyer 2007-2008.doc']
+      
    An email that has a base 64 attachment:
       >>> b64msg = emailmessage.EmailMessage(email_b64attachments) 
+      >>> b64msg.word_count
       >>> b64msg.attachments[1]['filename']
       u'Delivery report.txt'
 
@@ -97,12 +107,28 @@ def test_emailmessage():
       2281
       >>> test1msg.inreplyto
       u'<20070227111232.C25DDFFF1@orange.iopen.net>'
-            
+      >>> test1msg.word_count
+
+    Setup ZSQLAlchemy
+      >>> alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
+      >>> alchemy_adaptor.manage_changeProperties( hostname='localhost',
+      ...                                             port=5432,
+      ...                                             username='richard',
+      ...                                             password='',
+      ...                                             dbtype='postgres',
+      ...                                             database='onlinegroups.net')
+
     Adapt:
       >>> from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
-      >>> msgstorage = IRDBStorageForEmailMessage( msg )
-      >>> msgstorage.hello_world()
-      'hello'
+      >>> msgstorage = IRDBStorageForEmailMessage( simplemsg )
+      >>> msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
+      >>> msgstorage.insert()
+
+      >>> msgstorage = IRDBStorageForEmailMessage( simplemsg2 )
+      >>> msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
+      >>> msgstorage.insert()
+
+      ##>>> msgstorage.remove()
 
     Clean up:
       >>> tearDown()
