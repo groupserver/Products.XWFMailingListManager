@@ -118,9 +118,11 @@ class GSTopicIndexContentProvider(object):
               fileId = post['x-xwfnotification-file-id'].split()[0]
               filesArchive = self.context.files
               files = filesArchive.find_files({'id': fileId})
-              fileType = files[0].content_type
-              retval = (fileId, fileType)
+              if files:
+                  fileType = files[0].content_type
+                  retval = (fileId, fileType)
           return retval
+
 zope.component.provideAdapter(GSTopicIndexContentProvider, 
                               provides=zope.contentprovider.interfaces.IContentProvider,
                               name="groupserver.TopicIndex")
