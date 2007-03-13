@@ -7,8 +7,8 @@
   
   <title><span tal:replace="python:view.groupInfo.get_name()"/> Latest Posts</title>
   <updated 
-    tal:content="python:posts[0]['mailDate'].strftime('%Y-%m-%dT%H:%M:%SZ')">
-    2003-12-13T18:30:02Z
+    tal:content="python:posts and posts[0]['mailDate'].strftime('%Y-%m-%dT%H:%M:%SZ') or '2003-12-13T14:15:16Z'">
+    2003-12-13T14:15:16Z
   </updated>
   <author>
     <name tal:content="python:view.siteInfo.get_name()">OnlineGroups.Net</name>
