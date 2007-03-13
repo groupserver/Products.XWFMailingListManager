@@ -135,7 +135,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             LOG('XWFVirtualMailingListArchive', INFO,
                 'Sending moderated message\n\n%s' % m)
             mailto = curr_list.getValueFor('mailto')
-            listManager.MailHost.send(m, mto=mailto)
+            listManager.MailHost.send(m, mto=mailto, mfrom=email)
         else:
             groupList.manage_listboxer({'Mail': m})
 
