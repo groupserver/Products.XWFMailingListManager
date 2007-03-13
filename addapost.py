@@ -132,10 +132,10 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             # If the message is being moderated, we have to emulate
             #   a post via email so it can go through the moderation
             #   subsystem.
-            LOG('XWFVirtualMailingListArchive', INFO,
-                'Sending moderated message\n\n%s' % m)
             mailto = curr_list.getValueFor('mailto')
-            listManager.MailHost.send(m, mto=mailto, mfrom=email)
+            listManager.MailHost._send(mfrom=email,
+                                       mto=mailto,
+                                       messageText=m)
         else:
             groupList.manage_listboxer({'Mail': m})
 
