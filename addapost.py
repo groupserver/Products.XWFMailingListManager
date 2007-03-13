@@ -1,5 +1,5 @@
 from Products.PythonScripts.standard import html_quote
-#from zLOG import LOG, WARNING, PROBLEM, INFO
+from zLOG import LOG, WARNING, PROBLEM, INFO
 
 def tagProcess(tagsString):
     # --=mpj17=-- Not the most elegant function, but I did not want to
@@ -91,15 +91,15 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     if moderated and moderatedlist:
         for address in user.get_emailAddresses():
             if address in moderatedlist:
-                #LOG('XWFVirtualMailingListArchive', INFO,
-                #    'User "%s" posted from web while moderated' % 
-                #     user.getId())
+                LOG('XWFVirtualMailingListArchive', INFO,
+                    'User "%s" posted from web while moderated' % 
+                     user.getId())
                 via_mailserver = True
                 break
     # --=rrw=-- otherwise if we are moderated, everyone is moderated
     elif moderated:
-        #LOG('XWFVirtualMailingListArchive', INFO,
-        #    'User "%s" posted from web while moderated' % user.getId())
+        LOG('XWFVirtualMailingListArchive', INFO,
+            'User "%s" posted from web while moderated' % user.getId())
         via_mailserver = True
 
     # Step 3, Create the file object, if necessary
@@ -128,10 +128,15 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                             reply_to_id=emailMessageReplyToId,
                             n_type='new_file', n_id=groupObj.getId(),
                             file=fileObj)
-    if via_mailserver:
-        listManager.MailHost.send(m)
-    else:
-        groupList.manage_listboxer({'Mail': m})
+        if via_mailserver:
+            # If the message is being moderated, we have to emulate
+            #   a post via email so it can go through the moderation
+            #   subsystem.
+            LOG('XWFVirtualMailingListArchive', INFO,
+                'Sending moderated message\n\n%s' % m)
+            listManager.MailHost.send(m)
+        else:
+            groupList.manage_listboxer({'Mail': m})
 
     result = {}
     result['error'] = False
