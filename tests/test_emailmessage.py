@@ -29,6 +29,7 @@ def test_emailmessage():
     Set up:
       >>> from zope.app.testing.placelesssetup import setUp, tearDown
       >>> setUp()
+      >>> import time
       >>> import Products.Five
       >>> import Products.XWFMailingListManager
       >>> from Products.XWFMailingListManager import emailmessage
@@ -46,7 +47,7 @@ def test_emailmessage():
       >>> email_simple2 = file('emails/simple2.eml').read()
       >>> email_test1 = file('emails/testemail1.eml').read()
       >>> email_attachments2 = file('emails/7479421AFD9.eml').read()
-
+      >>> toptime = time.time()
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
       u'richard@iopen.net'
@@ -64,16 +65,14 @@ def test_emailmessage():
       u'1Aa4fgicLuUNeXE6737X9K'
       >>> msg.inreplyto
       u''
-      >>> msg.word_count
 
    A second attachments example:
-      >>> msg = emailmessage.EmailMessage(email_attachments2) 
-      >>> [ a['filename'] for a in msg.attachments ]
+      >>> msg2 = emailmessage.EmailMessage(email_attachments2) 
+      >>> [ a['filename'] for a in msg2.attachments ]
       [u'', u'', u'', u'', u'image003.jpg', u'image001.jpg', u'Christchurch City Flyer 2007-2008.doc']
       
    An email that has a base 64 attachment:
       >>> b64msg = emailmessage.EmailMessage(email_b64attachments) 
-      >>> b64msg.word_count
       >>> b64msg.attachments[1]['filename']
       u'Delivery report.txt'
 
@@ -107,8 +106,9 @@ def test_emailmessage():
       2281
       >>> test1msg.inreplyto
       u'<20070227111232.C25DDFFF1@orange.iopen.net>'
-      >>> test1msg.word_count
-
+      >>> test1msg.word_count['message']
+      4
+      
     Setup ZSQLAlchemy
       >>> alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
       >>> alchemy_adaptor.manage_changeProperties( hostname='localhost',
@@ -124,11 +124,18 @@ def test_emailmessage():
       >>> msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
       >>> msgstorage.insert()
 
-      >>> msgstorage = IRDBStorageForEmailMessage( simplemsg2 )
-      >>> msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
-      >>> msgstorage.insert()
+      #>>> msgstorage.remove()
 
-      ##>>> msgstorage.remove()
+      >>> msgstorage2 = IRDBStorageForEmailMessage( b64msg )
+      >>> msgstorage2.set_zalchemy_adaptor( alchemy_adaptor )
+      >>> msgstorage2.insert()
+
+      >>> msgstorage3 = IRDBStorageForEmailMessage( msg2 )
+      >>> msgstorage3.set_zalchemy_adaptor( alchemy_adaptor )
+      >>> msgstorage3.insert()
+
+      #>>> msgstorage2.remove()
+      >>> print time.time()-toptime
 
     Clean up:
       >>> tearDown()

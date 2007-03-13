@@ -134,13 +134,24 @@ class RDBEmailMessageStorage(object):
                                               last_post_id=self.email_message.post_id,
                                               last_post_date=self.email_message.date )
 
+        counts = self.email_message.word_count
+        for word in counts:
+            r = self.topic_word_countTable.select( and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id,
+                        self.topic_word_countTable.c.word == word) ).execute().fetchone() 
+            if r:
+                self.topic_word_countTable.update( and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id,
+                        self.topic_word_countTable.c.word == word) ).execute( count=r['count']+counts[word] )
+            else:
+                i = self.topic_word_countTable.insert()
+                i.execute( topic_id=self.email_message.topic_id,
+                           word=word,
+                           count=counts[word] )
+                           
     def remove( self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
-        
         topic = self._get_topic()
         if topic['num_posts'] == 1:
-            self.topicTable.delete( self.topicTable.c.topic_id == self.email_message.topic_id ).execute()
-         
+            self.topicTable.delete( self.topicTable.c.topic_id == self.email_message.topic_id ).execute()         
 
         #self.topicTable.update( self.topicTable.c.first_post_id == self.email_message.post_id ).execute( first_post_id='' )
         #self.topicTable.update( self.topicTable.c.last_post_id == self.email_message.post_id ).execute( last_post_id='' )
@@ -277,6 +288,8 @@ class EmailMessage(object):
         for word in self.body.split():
             word = word.lower()
             skip = False
+            if len(word) < 3 or len(word) > 18:
+                continue
             for letter in word:
                 if letter not in string.ascii_lowercase:
                     skip = True
