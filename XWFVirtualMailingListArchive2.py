@@ -165,7 +165,9 @@ class XWFVirtualMailingListArchive2(Folder, XWFIdFactoryMixin):
         
     def view_email(self, REQUEST, RESPONSE, id=-1, show_thread=0):
         """ """
-        
+        if show_thread not in ('0', '1'):
+            show_thread = 0
+            
         if (id == -1):
             url = '%s/r/topic-none.xml' % REQUEST.BASE4
         else:
