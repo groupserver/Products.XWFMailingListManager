@@ -19,7 +19,7 @@ from Products.MailBoxer.MailBoxer import *
 from Acquisition import ImplicitAcquisitionWrapper, aq_base, aq_parent
 from App.config import getConfiguration
 
-from emailmessage import EmailMessage
+from emailmessage import EmailMessage, IRDBStorageForEmailMessage
 
 from cgi import escape
 
@@ -327,7 +327,7 @@ class XWFMailingList(MailBoxer):
         # no archive available? then return immediately
         if archive is None:
             return None
-        
+
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
                                        group_id=self.getId(),
                                        site_id=self.getProperty('siteId', ''),
@@ -398,7 +398,12 @@ class XWFMailingList(MailBoxer):
                                               file_notification_message_length, 'ustring')
 
         self.catalogMailBoxerMail(mailObject)
-        
+
+        if self.getProperty('use_rdb', False):
+            msgstorage = IRDBStorageForEmailMessage( msg )
+            msgstorage.set_zalchemy_adaptor( self.site_root().zsqlalchemy )
+            msgstorage.insert()
+                
         return mailObject
     
     def is_senderBlocked(self, user_id):
