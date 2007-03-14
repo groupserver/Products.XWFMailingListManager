@@ -321,20 +321,18 @@ class XWFMailingList(MailBoxer):
         """ Store mail & attachments in a folder and return it.
         
         """
-        import re
-        LOG('XWFMailingList', PROBLEM, 
-                    '%s' % mailString)
-
         archive = self.restrictedTraverse(self.getValueFor('storage'), 
                                           default=None)
         
         # no archive available? then return immediately
         if archive is None:
             return None
-
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''))
-        LOG('XWFMailingList', PROBLEM, 
-            '%s' % msg.sender)    
+        
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
+                                       group_id=self.getId(),
+                                       site_id=self.getProperty('siteId', ''),
+                                       sender_id_cb=self.get_mailUserId)
+        
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
             time = DateTime(msg.date.isoformat())
@@ -364,12 +362,11 @@ class XWFMailingList(MailBoxer):
         self.setMailBoxerMailProperty(mailObject, 'mailSubject', msg.subject, 'ustring')
         self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
         self.setMailBoxerMailProperty(mailObject, 'mailBody', msg.body, 'utext')
-        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', msg.compressedSubject, 'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', msg.compressed_subject, 'ustring')
         
         self.setMailBoxerMailProperty(mailObject, 'headers', msg.headers, 'utext')
         
-        sender_id = self.get_mailUserId([ msg.sender ])
-        self.setMailBoxerMailProperty(mailObject, 'mailUserId', sender_id, 'ustring')
+        self.setMailBoxerMailProperty(mailObject, 'mailUserId', msg.sender_id, 'ustring')
         
         ids = []
         for attachment in msg.attachments:
@@ -747,15 +744,15 @@ class XWFMailingList(MailBoxer):
         
         return 1
     
-    def get_mailUserId(self, from_addrs=[]):
+    def get_mailUserId(self, addr):
+        addr = addr.lower().strip()
         member_users = self.get_memberUserObjects()
-        for addr in from_addrs:
-            for member_user in member_users:
-                addrs = member_user.getProperty('emailAddresses', [])
-                for member_addr in addrs:
-                    if member_addr.lower() == addr.lower():
-                        return member_user.getId()
-                        
+        for member_user in member_users:
+            addrs = member_user.getProperty('emailAddresses', [])
+            for member_addr in addrs:
+                if member_addr.lower() == addr:
+                    return member_user.getId()
+                    
         return ''
     
     security.declareProtected('Manage properties', 'reindex_mailObjects')

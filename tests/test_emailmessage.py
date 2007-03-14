@@ -29,7 +29,6 @@ def test_emailmessage():
     Set up:
       >>> from zope.app.testing.placelesssetup import setUp, tearDown
       >>> setUp()
-      >>> import time
       >>> import Products.Five
       >>> import Products.XWFMailingListManager
       >>> from Products.XWFMailingListManager import emailmessage
@@ -47,7 +46,7 @@ def test_emailmessage():
       >>> email_simple2 = file('emails/simple2.eml').read()
       >>> email_test1 = file('emails/testemail1.eml').read()
       >>> email_attachments2 = file('emails/7479421AFD9.eml').read()
-      >>> toptime = time.time()
+      
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
       u'richard@iopen.net'
@@ -60,9 +59,9 @@ def test_emailmessage():
       >>> msg.date.isoformat()
       '2007-02-26T16:53:19+13:00'
       >>> msg.post_id
-      u'7Lx559UTM0RJtoDhmzapyJ'
+      u'J28Au0rZjjB20Hoax7uUT'
       >>> msg.topic_id
-      u'1Aa4fgicLuUNeXE6737X9K'
+      u'6Ok4eFuiUzhn2xoPVohcz2'
       >>> msg.inreplyto
       u''
 
@@ -81,19 +80,23 @@ def test_emailmessage():
       >>> b64msg.attachments[0]['md5']
       '3c56c82af9e6604d31afba86b083444a'
 
-      >>> simplemsg = emailmessage.EmailMessage(email_simple, 'Example Group')
+      >>> simplemsg = emailmessage.EmailMessage(email_simple, 'Example Group', sender_id_cb=lambda x: 'richard')
       >>> simplemsg.title
       u'testing 7 / richard@iopen.net'
       >>> simplemsg.sender
       u'richard@iopen.net'
       >>> simplemsg.message.get('from')
       '"" <richard@iopen.net>'
+      >>> simplemsg.sender_id
+      'richard'
 
       >>> simplemsg2 = emailmessage.EmailMessage(email_simple2, 'Example Group')
       >>> simplemsg2.post_id == simplemsg.post_id
       False
       >>> simplemsg2.topic_id == simplemsg.topic_id
       True
+      >>> simplemsg2.language
+      'en'
      
       >>> test1msg = emailmessage.EmailMessage(email_test1)
       >>> test1msg.title
@@ -106,6 +109,8 @@ def test_emailmessage():
       2281
       >>> test1msg.inreplyto
       u'<20070227111232.C25DDFFF1@orange.iopen.net>'
+      >>> test1msg.language
+      'en'
       >>> test1msg.word_count['message']
       4
       
@@ -135,7 +140,6 @@ def test_emailmessage():
       >>> msgstorage3.insert()
 
       #>>> msgstorage2.remove()
-      >>> print time.time()-toptime
 
     Clean up:
       >>> tearDown()

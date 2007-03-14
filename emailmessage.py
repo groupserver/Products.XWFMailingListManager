@@ -2,10 +2,13 @@ import re
 import md5
 import sqlalchemy
 import string
+
 from email import Parser, Header
+from rfc822 import AddressList
+
+from zope.interface import Interface, Attribute, implements
+
 from zope.app.datetimeutils import parseDatetimetz
-from rfc822 import AddressList, parsedate_tz, mktime_tz
-import zope.interface
 
 def convert_int2b(num, alphabet, converted=[]):
     mod = num % len(alphabet); rem = num / len(alphabet)
@@ -47,11 +50,11 @@ def strip_subject(subject, list_title, remove_re=True):
     
     return subject
 
-def compress_subject(subject):
-    """ Compress subject, subject.
+def normalise_subject(subject):
+    """ Compress whitespace and lower-case subject 
         
     """
-    return re.sub('\s+', '', subject)
+    return re.sub('\s+', '', subject).lower()
 
 def calculate_file_id(file_body, mime_type):
     # --=mpj17=--  
@@ -71,15 +74,16 @@ def calculate_file_id(file_body, mime_type):
 
     return (unicode(convert_int2b62(long(md5_sum.hexdigest(), 16))), length, file_md5)
 
-class IRDBStorageForEmailMessage(zope.interface.Interface):
+class IRDBStorageForEmailMessage(Interface):
     pass
 
 class RDBEmailMessageStorage(object): 
-    zope.interface.implements(IRDBStorageForEmailMessage)
+    implements(IRDBStorageForEmailMessage)
+    
     def __init__(self, email_message):
         self.email_message = email_message
 
-    def set_zalchemy_adaptor( self, da ):
+    def set_zalchemy_adaptor(self, da):
         session = da.getSession()
         metadata = session.getMetaData()
         
@@ -88,99 +92,120 @@ class RDBEmailMessageStorage(object):
         self.topic_word_countTable = sqlalchemy.Table('topic_word_count', metadata, autoload=True)
         self.fileTable = sqlalchemy.Table('file', metadata, autoload=True)
 
-    def _get_topic( self ):
+    def _get_topic(self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
 
-        r = self.topicTable.select( and_(self.topicTable.c.topic_id == self.email_message.topic_id,
-                                        self.topicTable.c.group_id == self.email_message.group_id,
-                                        self.topicTable.c.site_id == self.email_message.site_id) ).execute()
+        r = self.topicTable.select(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
+                                        self.topicTable.c.group_id == self.email_message.group_id, 
+                                        self.topicTable.c.site_id == self.email_message.site_id)).execute()
         
         return r.fetchone()
 
-    def insert( self ):
+    def insert(self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
 
         i = self.postTable.insert()
-        i.execute( post_id=self.email_message.post_id,
-                   topic_id=self.email_message.topic_id,
-                   group_id=self.email_message.group_id,
-                   site_id=self.email_message.site_id,
-                   user_id=self.email_message.user_id,
-                   in_reply_to=self.email_message.inreplyto,
-                   subject=self.email_message.subject,
-                   date=self.email_message.date,
-                   body=self.email_message.body,
-                   htmlbody=self.email_message.htmlbody,
-                   header=self.email_message.headers,
-                   has_attachments=bool(self.email_message.attachment_count) )
+        i.execute(post_id=self.email_message.post_id, 
+                   topic_id=self.email_message.topic_id, 
+                   group_id=self.email_message.group_id, 
+                   site_id=self.email_message.site_id, 
+                   user_id=self.email_message.sender_id, 
+                   in_reply_to=self.email_message.inreplyto, 
+                   subject=self.email_message.subject, 
+                   date=self.email_message.date, 
+                   body=self.email_message.body, 
+                   html_body=self.email_message.html_body, 
+                   header=self.email_message.headers, 
+                   has_attachments=bool(self.email_message.attachment_count))
         
         topic = self._get_topic()
         if not topic:
             i = self.topicTable.insert()
-            i.execute( topic_id=self.email_message.topic_id,
-                       group_id=self.email_message.group_id,
-                       site_id=self.email_message.site_id,
-                       original_subject=self.email_message.subject,
-                       first_post_id=self.email_message.post_id,
-                       last_post_id=self.email_message.post_id,
-                       last_post_date=self.email_message.date,
-                       num_posts=1 )
+            i.execute(topic_id=self.email_message.topic_id, 
+                       group_id=self.email_message.group_id, 
+                       site_id=self.email_message.site_id, 
+                       original_subject=self.email_message.subject, 
+                       first_post_id=self.email_message.post_id, 
+                       last_post_id=self.email_message.post_id, 
+                       last_post_date=self.email_message.date, 
+                       num_posts=1)
         else:
             num_posts = topic['num_posts']
-            self.topicTable.update( and_(self.topicTable.c.topic_id == self.email_message.topic_id,
-                                         self.topicTable.c.group_id == self.email_message.group_id,
+            self.topicTable.update(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
+                                         self.topicTable.c.group_id == self.email_message.group_id, 
                                          self.topicTable.c.site_id == self.email_message.site_id)
-                                   ).execute( num_posts=num_posts+1,
-                                              last_post_id=self.email_message.post_id,
-                                              last_post_date=self.email_message.date )
+                                   ).execute(num_posts=num_posts+1, 
+                                              last_post_id=self.email_message.post_id, 
+                                              last_post_date=self.email_message.date)
 
         counts = self.email_message.word_count
         for word in counts:
-            r = self.topic_word_countTable.select( and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id,
-                        self.topic_word_countTable.c.word == word) ).execute().fetchone() 
+            r = self.topic_word_countTable.select(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
+                        self.topic_word_countTable.c.word == word)).execute().fetchone() 
             if r:
-                self.topic_word_countTable.update( and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id,
-                        self.topic_word_countTable.c.word == word) ).execute( count=r['count']+counts[word] )
+                self.topic_word_countTable.update(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
+                        self.topic_word_countTable.c.word == word)).execute(count=r['count']+counts[word])
             else:
                 i = self.topic_word_countTable.insert()
-                i.execute( topic_id=self.email_message.topic_id,
-                           word=word,
-                           count=counts[word] )
+                i.execute(topic_id=self.email_message.topic_id, 
+                           word=word, 
+                           count=counts[word])
                            
-    def remove( self):
+    def remove(self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
         topic = self._get_topic()
         if topic['num_posts'] == 1:
-            self.topicTable.delete( self.topicTable.c.topic_id == self.email_message.topic_id ).execute()         
+            self.topicTable.delete(self.topicTable.c.topic_id == self.email_message.topic_id).execute()         
 
         #self.topicTable.update( self.topicTable.c.first_post_id == self.email_message.post_id ).execute( first_post_id='' )
         #self.topicTable.update( self.topicTable.c.last_post_id == self.email_message.post_id ).execute( last_post_id='' )
-        self.postTable.delete( self.postTable.c.post_id == self.email_message.post_id ).execute()    
+        self.postTable.delete(self.postTable.c.post_id == self.email_message.post_id).execute()    
 
-class IEmailMessage(zope.interface.Interface):
-    encoding = zope.interface.Attribute("The encoding of the email and headers.")
-    attachments = zope.interface.Attribute("A list of attachment payloads, each structured "
-                                            "as a dictionary, from the email (both body and "
-                                            "attachments).")
-    body = zope.interface.Attribute("The plain text body of the email message.")
-    subject = zope.interface.Attribute("Get the subject of the email message, stripped of "
-                                        "additional details (such as re:, and list title)")
-    compressedSubject = zope.interface.Attribute("Get the compressed subject of the email "
-                                                  "message, with all whitespace removed.")
+class IEmailMessage(Interface):
+    """ A representation of an email message.
     
-    post_id = zope.interface.Attribute("The unique ID for the post, based on attributes of the message")
-    topic_id = zope.interface.Attribute("The unique ID for the topic, based on attributes of the message")
+    """
+    post_id = Attribute("The unique ID for the post, based on attributes of the message")
+    topic_id = Attribute("The unique ID for the topic, based on attributes of the message")
     
-    def get(name, default):
+    encoding = Attribute("The encoding of the email and headers.")
+    attachments = Attribute("A list of attachment payloads, each structured "
+                            "as a dictionary, from the email (both body and "
+                            "attachments).")
+    body = Attribute("The plain text body of the email message.")
+    html_body = Attribute("The html body of the email message, if one exists")
+    subject = Attribute("Get the subject of the email message, stripped of "
+                        "additional details (such as re:, and list title)")
+    compressed_subject = Attribute("Get the compressed subject of the email "
+                                  "message, with all whitespace removed.")
+    
+    sender_id = Attribute("The user ID of the message sender")
+    headers = Attribute("A flattened version of the email headers")
+    language = Attribute("The language in which the email has been composed")
+    inreplyto = Attribute("The value of the inreplyto header if it exists")
+    date = Attribute("The date on which the email was sent")
+    md5_body = Attribute("An md5 checksum of the plain text body of the email")
+    
+    to = Attribute("The email address the message was sent to")
+    sender = Attribute("The email address the message was sent from")
+    title = Attribute("An attempt at a title for the email")
+    
+    attachment_count = Attribute("A count of attachments which have a filename")
+    word_count = Attribute("A dictionary of words and their count within the document")
+    
+    def get(name, default): #@NoSelf
         """ Get the value of a header, changed to unicode using the
             encoding of the email.
-            
+        
+        @param name: identifier of header, eg. 'subject'
+        @param default: default value, if header does not exist. Defaults to '' if
+            left unspecified
         """
 
 class EmailMessage(object):
-    zope.interface.implements(IEmailMessage)
+    implements(IEmailMessage)
 
-    def __init__(self, message, list_title='', group_id='', site_id=''):
+    def __init__(self, message, list_title='', group_id='', site_id='', sender_id_cb=None):
         parser = Parser.Parser()
         msg = parser.parsestr(message)
         
@@ -188,6 +213,7 @@ class EmailMessage(object):
         self._list_title = list_title
         self.group_id = group_id
         self.site_id = site_id
+        self.sender_id_cb = sender_id_cb
         
     def get(self, name, default=''):
         value = self.message.get(name, default)
@@ -198,8 +224,10 @@ class EmailMessage(object):
         return value
 
     @property
-    def user_id( self ):
-        # FIXME
+    def sender_id(self):
+        if self.sender_id_cb:
+            return self.sender_id_cb( self.sender )
+        
         return ''
     
     @property
@@ -208,12 +236,12 @@ class EmailMessage(object):
 
     @property
     def attachments(self):
-        def split_multipart( msg, pl ):
+        def split_multipart(msg, pl):
             if msg.is_multipart():
                 for b in msg.get_payload():
-                    pl = split_multipart( b, pl )
+                    pl = split_multipart(b, pl)
             else:
-                pl.append( msg )
+                pl.append(msg)
             
             return pl           
 
@@ -222,7 +250,7 @@ class EmailMessage(object):
             outmessages = []
             out = []
             for i in payload:
-                outmessages = split_multipart( i, outmessages )
+                outmessages = split_multipart(i, outmessages)
                     
             for msg in outmessages:
                 actual_payload = msg.get_payload(decode=True)
@@ -268,7 +296,7 @@ class EmailMessage(object):
         return unicode(header_string, self.encoding, 'ignore')
 
     @property
-    def attachment_count( self ):
+    def attachment_count(self):
         count = 0
         for item in self.attachments:
             if item['filename']:
@@ -277,13 +305,13 @@ class EmailMessage(object):
         return count
 
     @property
-    def language( self ):
+    def language(self):
        # one day we might want to detect languages, primarily this
        # will be used for stemming, stopwords and search
-       return 'english'
+       return 'en'
     
     @property
-    def word_count( self ):
+    def word_count(self):
         wc = {}
         for word in self.body.split():
             word = word.lower()
@@ -305,14 +333,14 @@ class EmailMessage(object):
         return wc
 
     @property
-    def body( self ):
+    def body(self):
         for item in self.attachments:
             if item['filename'] == '' and item['subtype'] != 'html':
                 return unicode(item['payload'], self.encoding, 'ignore')
         return ''
 
     @property
-    def htmlbody(self):
+    def html_body(self):
         for item in self.attachments:
             if item['filename'] == '' and item['subtype'] == 'html':
                 return unicode(item['payload'], self.encoding, 'ignore')
@@ -323,8 +351,8 @@ class EmailMessage(object):
         return strip_subject(self.get('subject'), self._list_title)
 
     @property
-    def compressedSubject(self):
-        return compress_subject(self.subject)
+    def compressed_subject(self):
+        return normalise_subject(self.subject)
 
     @property
     def sender(self):
@@ -357,17 +385,16 @@ class EmailMessage(object):
         return parseDatetimetz(self.get('date'))
     
     @property
-    def md5body(self):
+    def md5_body(self):
         return md5.new(self.body).hexdigest()
     
     @property
     def topic_id(self):
         # this is calculated from what we have/know
-        #
-        # --=mpj17=--
+        
         # A topic_id for two posts will clash if
-        #   - The subject, group and site all have the same ID.
-        items = self.subject + ':' + self.group_id + ':' + self.site_id
+        #   - The compressedsubject, group ID and site ID are all identical
+        items = self.compressed_subject + ':' + self.group_id + ':' + self.site_id
         tid = md5.new(items).hexdigest()
         
         return unicode(convert_int2b62(long(tid, 16)))
@@ -376,17 +403,18 @@ class EmailMessage(object):
     def post_id(self):
         # this is calculated from what we have/know
         len_payloads = sum([ x['length'] for x in self.attachments ])
-        # --=mpj17=--
+        
         # A post_id for two posts will clash if
         #    - The topic IDs are the same, and
+        #    - The subject is the same (this may not be the same as 
+        #      compressed subject used in topic id)
         #    - The body of the posts are the same, and
         #    - The posts are from the same author, and
         #    - The posts respond to the same message, and
         #    - The posts have the same length of attachments.
-        # --=mpj17=-- Why add the subject, if we add the topic ID?
-        items = ( self.topic_id + ':' + self.get('subject') + ':' +
-                  self.md5body + ':' + self.sender + ':' + 
-                  self.inreplyto + ':' + str(len_payloads) )
+        items = (self.topic_id + ':' + self.subject + ':' +
+                  self.md5_body + ':' + self.sender + ':' + 
+                  self.inreplyto + ':' + str(len_payloads))
         pid = md5.new(items).hexdigest()
-        return unicode(convert_int2b62(long(pid, 16)))
         
+        return unicode(convert_int2b62(long(pid, 16)))
