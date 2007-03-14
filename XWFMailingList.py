@@ -343,8 +343,8 @@ class XWFMailingList(MailBoxer):
         # let's create the mailObject
         mailFolder = archive
         
-        self.addMailBoxerMail(mailFolder, msg.post_id, msg.title)
-        mailObject = getattr(mailFolder, msg.post_id)
+        self.addMailBoxerMail(mailFolder, str(msg.post_id), msg.title)
+        mailObject = getattr(mailFolder, str(msg.post_id))
 
         # and now add some properties to our new mailobject
         props = list(mailObject._properties)
