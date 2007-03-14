@@ -29,7 +29,8 @@
       </tal:block>
     </select>
   </div>
-  <p tal:condition="python:len(options['fromEmailAddresses'])==1" >
+  <p tal:condition="python:len(options['fromEmailAddresses'])==1" 
+    id="singleFrom">
     <strong>From:</strong>
     <span class="email" 
       tal:content="python:options['fromEmailAddresses'][0]">foo@example.com</span>

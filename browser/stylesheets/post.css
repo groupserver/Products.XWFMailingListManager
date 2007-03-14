@@ -165,14 +165,6 @@ table#results th.file {
     visibility: hidden;
 }
 
-#post-message {
-    padding-top: 30px;
-}
-
-#post-message h2 {
-    padding-top: 0px;
-}
-
 #toggleStickyTopic {
     float: right;
 }
@@ -209,6 +201,26 @@ a.shownArrow {
     display: none;
 }
 
+
+#post-message {
+    margin-top: 60px;
+}
+#post-message h2 {
+    padding-top: 0px;
+}
+#post-topic-field, #message-fields, #post-message p, #post-message .formelementbutton
+ {
+    padding-left: 30px;
+}
+#post-optional-fields {
+    padding-left: 60px;
+}
+#post-optional-fields legend {
+    margin-bottom: 10px;
+}
+#post-message #tags-fields {
+    margin-top: 10px;
+}
 /* Message entry box */
 #message {
     width: 100%;
