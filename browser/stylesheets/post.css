@@ -208,7 +208,7 @@ a.shownArrow {
 #post-message h2 {
     padding-top: 0px;
 }
-#post-topic-field, #message-fields, #post-message p, #post-message .formelementbutton
+#post-topic-field, #post-from-fields, #singleFrom, #message-fields, #post-message .formelementbutton
  {
     padding-left: 30px;
 }
