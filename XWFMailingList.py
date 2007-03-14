@@ -343,12 +343,8 @@ class XWFMailingList(MailBoxer):
         # let's create the mailObject
         mailFolder = archive
         
-        # we use our IdFactory to get the next ID, rather than trying something
-        # ad-hoc
-        id = str(self.get_nextId())
-        
-        self.addMailBoxerMail(mailFolder, id, msg.title)
-        mailObject = getattr(mailFolder, id)
+        self.addMailBoxerMail(mailFolder, msg.post_id, msg.title)
+        mailObject = getattr(mailFolder, msg.post_id)
 
         # and now add some properties to our new mailobject
         props = list(mailObject._properties)
@@ -357,6 +353,8 @@ class XWFMailingList(MailBoxer):
                 prop['type'] = 'ustring'
         mailObject._properties = tuple(props)
         mailObject.title = msg.title
+        
+        self.setMailBoxerMailProperty(mailObject, 'topic_id', msg.topic_id, 'ustring')
         
         self.setMailBoxerMailProperty(mailObject, 'mailFrom', msg.sender, 'ustring')
         self.setMailBoxerMailProperty(mailObject, 'mailSubject', msg.subject, 'ustring')
