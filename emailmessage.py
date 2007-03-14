@@ -382,8 +382,12 @@ class EmailMessage(object):
 
     @property
     def date(self):
-        return parseDatetimetz(self.get('date'))
-    
+        d = self.get('date', None)
+        if d:
+            return parseDatetimetz(self.get('date'))
+        
+        return datetime.datetime.now()        
+
     @property
     def md5_body(self):
         return md5.new(self.body).hexdigest()
