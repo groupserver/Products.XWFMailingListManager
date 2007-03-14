@@ -382,9 +382,9 @@ class EmailMessage(object):
 
     @property
     def date(self):
-        d = self.get('date', None)
+        d = self.get('date', '').strip()
         if d:
-            return parseDatetimetz(self.get('date'))
+            return parseDatetimetz(d)
         
         return datetime.datetime.now()        
 
