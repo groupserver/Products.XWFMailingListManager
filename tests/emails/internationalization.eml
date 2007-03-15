@@ -1,0 +1,88 @@
+Return-Path: <test+richard=iopen.net@onlinegroups.net>
+X-Original-To: richard@wellington.iopen.net
+Delivered-To: richard@wellington.iopen.net
+Received: from mail.iopen.co.nz (smtp.iopen.co.nz [202.6.116.226])
+	by wellington.iopen.net (Postfix) with ESMTP id 78AFE4144
+	for <richard@wellington.iopen.net>; Thu, 15 Mar 2007 16:35:56 +1300 (NZDT)
+Received: by mail.iopen.co.nz (Postfix)
+	id 7FBAF468065; Thu, 15 Mar 2007 16:29:29 +1300 (NZDT)
+Delivered-To: richard@mail.iopen.co.nz
+Received: from restricted-relay.aspadmin.com (restricted-relay.aspadmin.com [216.98.128.140])
+	by mail.iopen.co.nz (Postfix) with ESMTP id EE582468064
+	for <richard@iopen.net>; Thu, 15 Mar 2007 16:29:28 +1300 (NZDT)
+Received: from vida.onlinegroups.net (vida.onlinegroups.net [216.98.148.185])
+	by restricted-relay.aspadmin.com (8.13.8/8.13.8) with ESMTP id l2F3RAm8026006
+	for <richard@iopen.net>; Wed, 14 Mar 2007 20:27:10 -0700
+Received: from localhost (localhost [127.0.0.1])
+	by vida.onlinegroups.net (Postfix) with ESMTP id AF26D21AF7D
+	for <richard@iopen.net>; Thu, 15 Mar 2007 16:27:10 +1300 (NZDT)
+X-Virus-Scanned: amavisd-new at vida.onlinegroups.net
+Received: from vida.onlinegroups.net ([216.98.148.185])
+	by localhost (vida.onlinegroups.net [127.0.0.1]) (amavisd-new, port 10024)
+	with ESMTP id YdEvosHfp18A for <richard@iopen.net>;
+	Thu, 15 Mar 2007 16:27:10 +1300 (NZDT)
+Received: from orange.iopen.net (unknown [69.59.157.22])
+	by vida.onlinegroups.net (Postfix) with ESMTP id 794CD21AFA3
+	for <richard@iopen.net>; Thu, 15 Mar 2007 16:27:02 +1300 (NZDT)
+Received: from BIZ-RH9-NOCP.YOUR-DOMAIN-HERE.com (localhost.localdomain [127.0.0.1])
+	by orange.iopen.net (Postfix) with ESMTP
+	id 524BB10021; Thu, 15 Mar 2007 16:27:02 +1300 (NZDT)
+X-Original-To: test@onlinegroups.net
+Delivered-To: onlinegroups.net-attachments@vida.onlinegroups.net
+Received: from localhost (localhost [127.0.0.1])
+	by vida.onlinegroups.net (Postfix) with ESMTP id 10EED21AF7D
+	for <test@onlinegroups.net>; Thu, 15 Mar 2007 16:25:28 +1300 (NZDT)
+X-Virus-Scanned: amavisd-new at vida.onlinegroups.net
+Received: from vida.onlinegroups.net ([216.98.148.185])
+	by localhost (vida.onlinegroups.net [127.0.0.1]) (amavisd-new, port 10024)
+	with ESMTP id G1Bmy6tkrDyQ for <test@onlinegroups.net>;
+	Thu, 15 Mar 2007 16:25:27 +1300 (NZDT)
+Received: from mail.iopen.co.nz (smtp.iopen.co.nz [202.6.116.226])
+	by vida.onlinegroups.net (Postfix) with ESMTP id 6C73E21AF7B
+	for <test@onlinegroups.net>; Thu, 15 Mar 2007 16:25:27 +1300 (NZDT)
+Received: from [192.168.1.64] (203-167-188-214.dsl.clear.net.nz [203.167.188.214])
+	by mail.iopen.co.nz (Postfix) with ESMTP id 342ED468055
+	for <test@onlinegroups.net>; Thu, 15 Mar 2007 16:27:26 +1300 (NZDT)
+Message-ID: <45F8BC8E.4040207@iopen.net>
+Date: Thu, 15 Mar 2007 16:25:02 +1300
+From: Richard Waid <richard@iopen.net>
+User-Agent: Thunderbird 1.5.0.9 (X11/20070103)
+MIME-Version: 1.0
+To: test@onlinegroups.net
+Content-Transfer-Encoding: 8bit
+List-Id: test
+List-Post: mailto:test@onlinegroups.net
+Precedence: Bulk
+X-Loop: test@onlinegroups.net
+X-Beenthere: test@onlinegroups.net
+Reply-To: test@onlinegroups.net
+Content-Type: text/plain; charset=UTF-8; format=flowed
+X-Mailer: MailBoxer
+Subject: [test] unicode testing: =?UTF-8?B?ScOxdMOrcm7DonRpw7Ruw6BsaXrDpnRpw7hu?=
+X-Archive-Id: 2uid94exchQI8qklZNwPPj
+X-Spam-Checker-Version: SpamAssassin 3.0.5 (2005-11-28) on aroha.iopen.net
+X-Spam-Level: 
+X-Spam-Status: No, score=-2.6 required=4.5 tests=AWL,BAYES_00 autolearn=ham 
+	version=3.0.5
+Status: O
+X-UID: 48500
+Content-Length: 410
+X-Keywords:                                                                                                    
+
+Iñtërnâtiônàlizætiøn
+
+-----------------------------------------
+Full text of this topic:
+http://onlinegroups.net/topic/2uid94exchQI8qklZNwPPj
+
+Info about Test:
+http://onlinegroups.net/groups/test
+
+Info about Richard Waid:
+http://onlinegroups.net/contacts/richardw
+
+To leave Test, email
+test@onlinegroups.net with "unsubscribe" as the subject
+
+Test is powered by
+OnlineGroups.Net http://onlinegroups.net
