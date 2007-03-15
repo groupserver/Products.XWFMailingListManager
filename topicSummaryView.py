@@ -67,7 +67,8 @@ class GSTopicSummaryView( Products.Five.BrowserView, GSPostingInfo ):
           threads = []
                     
           for result in resultSet:
-              subj = result.mailSubject.lower() 
+              subj = result.getObject()['compressedSubject']
+              #subj = result.mailSubject.lower() 
               if subj != currThread:
                   currThread = subj
                   threadInfo = {'id':     result.id,
