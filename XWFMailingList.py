@@ -404,12 +404,13 @@ class XWFMailingList(MailBoxer):
         if self.getProperty('use_rdb', False):
             msgstorage = IRDBStorageForEmailMessage( msg )
             
-            zalchemy_adaptor = self.site_root().zsqlalchemy
+            da = self.site_root().zsqlalchemy
             
-            msgstorage.set_zalchemy_adaptor( zalchemy_adaptor )
+            msgstorage.set_zalchemy_adaptor( da )
             msgstorage.insert()
             
             filemetadatastorage = RDBFileMetadataStorage( self, msg, ids )
+            filemetadatastorage.set_zalchemy_adaptor(da)
             filemetadatastorage.insert()
             
         return mailObject
