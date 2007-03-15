@@ -89,6 +89,8 @@ def test_emailmessage():
       '"" <richard@iopen.net>'
       >>> simplemsg.sender_id
       'richard'
+      >>> simplemsg.tags
+      [u'one', u'two', u'three']
 
       >>> simplemsg2 = emailmessage.EmailMessage(email_simple2, 'Example Group')
       >>> simplemsg2.post_id == simplemsg.post_id

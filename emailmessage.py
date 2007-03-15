@@ -11,6 +11,8 @@ from zope.interface import Interface, Attribute, implements
 
 from zope.app.datetimeutils import parseDatetimetz
 
+from addapost import tagProcess
+
 def convert_int2b(num, alphabet, converted=[]):
     mod = num % len(alphabet); rem = num / len(alphabet)
     converted.append(alphabet[mod])
@@ -58,11 +60,12 @@ def normalise_subject(subject):
     return re.sub('\s+', '', subject).lower()
 
 def calculate_file_id(file_body, mime_type):
-    # --=mpj17=--  
+    #
     # Two files will have the same ID if
     # - They have the same MD5 Sum, and
     # - They have the same length, and
     # - They have the same MIME-type.
+    #
     length = len(file_body)
     
     md5_sum = md5.new()
@@ -78,6 +81,33 @@ def calculate_file_id(file_body, mime_type):
 class IRDBStorageForEmailMessage(Interface):
     pass
 
+class RDBFileMetadataStorage(object):
+    def __init__(self, context, email_message, file_ids):
+        self.context = context
+        self.email_message = email_message
+        self.file_ids = file_ids
+    
+    def set_zalchemy_adaptor(self, da):
+        session = da.getSession()
+        metadata = session.getMetaData()
+    
+        self.fileTable = sqlalchemy.Table('file', metadata, autoload=True)
+        
+    def insert(self):
+        # FIXME: references like this should *NOT* be hardcoded!
+        storage = self.context.FileLibrary2.get_fileStorage()
+        for id in self.file_ids:
+            # for each file, get the metadata and insert it into our RDB table
+            file = storage.get_file(id)
+            i = self.fileTable.insert()
+            i.execute(file_id=id,
+                      mime_type=file.getProperty('content_type',''),
+                      file_name=file.getProperty('title',''),
+                      file_size=getattr(file, 'size', 0),
+                      date=self.email_message.date,
+                      post_id=self.email_message.post_id,
+                      topic_id=self.email_message.topic_id)
+
 class RDBEmailMessageStorage(object): 
     implements(IRDBStorageForEmailMessage)
     
@@ -91,7 +121,7 @@ class RDBEmailMessageStorage(object):
         self.postTable = sqlalchemy.Table('post', metadata, autoload=True)
         self.topicTable = sqlalchemy.Table('topic', metadata, autoload=True)
         self.topic_word_countTable = sqlalchemy.Table('topic_word_count', metadata, autoload=True)
-        self.fileTable = sqlalchemy.Table('file', metadata, autoload=True)
+        self.post_tagTable = sqlalchemy.Table('post_tag', metadata, autoload=True)
 
     def _get_topic(self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
@@ -105,6 +135,9 @@ class RDBEmailMessageStorage(object):
     def insert(self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
 
+        #
+        # add the post itself
+        #
         i = self.postTable.insert()
         i.execute(post_id=self.email_message.post_id, 
                    topic_id=self.email_message.topic_id, 
@@ -118,7 +151,9 @@ class RDBEmailMessageStorage(object):
                    html_body=self.email_message.html_body, 
                    header=self.email_message.headers, 
                    has_attachments=bool(self.email_message.attachment_count))
-        
+        #
+        # add/update the topic
+        #
         topic = self._get_topic()
         if not topic:
             i = self.topicTable.insert()
@@ -138,9 +173,19 @@ class RDBEmailMessageStorage(object):
                                    ).execute(num_posts=num_posts+1, 
                                               last_post_id=self.email_message.post_id, 
                                               last_post_date=self.email_message.date)
-
+        #
+        # add any tags we have for the post
+        #
+        i = self.post_tagTable.insert()
+        for tag in self.email_message.tags:
+            i.execute(post_id=self.email_message.post_id,
+                      tag=tag)
+        #    
+        # add/update the word count for the topic
+        #
         counts = self.email_message.word_count
         for word in counts:
+            # determine if the word exists before inserting or updating
             r = self.topic_word_countTable.select(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
                         self.topic_word_countTable.c.word == word)).execute().fetchone() 
             if r:
@@ -190,6 +235,7 @@ class IEmailMessage(Interface):
     to = Attribute("The email address the message was sent to")
     sender = Attribute("The email address the message was sent from")
     title = Attribute("An attempt at a title for the email")
+    tags = Attribute("A list of tags that describe the email")
     
     attachment_count = Attribute("A count of attachments which have a filename")
     word_count = Attribute("A dictionary of words and their count within the document")
@@ -403,6 +449,17 @@ class EmailMessage(object):
         tid = md5.new(items).hexdigest()
         
         return unicode(convert_int2b62(long(tid, 16)))
+    
+    @property
+    def tags( self ):
+        keywords = self.get( 'keywords', '' )
+        if not keywords:
+            keywords = self.get('x-keywords', '')
+        
+        if keywords:   
+            return tagProcess( keywords )
+        
+        return []
         
     @property
     def post_id(self):

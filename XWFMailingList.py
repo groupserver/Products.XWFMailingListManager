@@ -8,6 +8,7 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
+from emailmessage import RDBFileMetadataStorage
 from AccessControl import getSecurityManager, ClassSecurityInfo
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
@@ -391,6 +392,7 @@ class XWFMailingList(MailBoxer):
         else:
             # see if we might have gotten an ids from somewhere else already
             file_ids = msg.get('x-xwfnotification-file-id')
+            ids = filter(None, file_ids.strip().split())
             file_notification_message_length = msg.get('x-xwfnotification-message-length')
             if file_ids and file_notification_message_length:
                 self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', file_ids, 'ustring')
@@ -401,9 +403,15 @@ class XWFMailingList(MailBoxer):
 
         if self.getProperty('use_rdb', False):
             msgstorage = IRDBStorageForEmailMessage( msg )
-            msgstorage.set_zalchemy_adaptor( self.site_root().zsqlalchemy )
+            
+            zalchemy_adaptor = self.site_root().zsqlalchemy
+            
+            msgstorage.set_zalchemy_adaptor( zalchemy_adaptor )
             msgstorage.insert()
-                
+            
+            filemetadatastorage = RDBFileMetadataStorage( self, msg, ids )
+            filemetadatastorage.insert()
+            
         return mailObject
     
     def is_senderBlocked(self, user_id):
