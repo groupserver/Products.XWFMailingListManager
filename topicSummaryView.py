@@ -13,6 +13,7 @@ import Products.GSContent, Products.XWFCore.XWFUtils
 from view import GSGroupInfo, GSPostingInfo
 
 class GSTopicSummaryView( Products.Five.BrowserView, GSPostingInfo ):
+      """List of latest topics in the group."""
       __groupInfo = None
       def __init__(self, context, request):
           self.context = context
