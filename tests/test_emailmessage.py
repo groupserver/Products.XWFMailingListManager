@@ -46,6 +46,7 @@ def test_emailmessage():
       >>> email_simple2 = file('emails/simple2.eml').read()
       >>> email_test1 = file('emails/testemail1.eml').read()
       >>> email_attachments2 = file('emails/7479421AFD9.eml').read()
+      >>> email_internationalization = file('emails/internationalization.eml').read()
       
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
@@ -115,6 +116,10 @@ def test_emailmessage():
       'en'
       >>> test1msg.word_count['message']
       4
+      
+      >>> imsg = emailmessage.EmailMessage(email_internationalization, 'test')
+      >>> imsg.subject
+      u'unicode testing: I\xf1t\xebrn\xe2ti\xf4n\xe0liz\xe6ti\xf8n'
       
     Setup ZSQLAlchemy
       >>> alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')

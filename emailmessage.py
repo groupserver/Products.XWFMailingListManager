@@ -264,11 +264,11 @@ class EmailMessage(object):
         
     def get(self, name, default=''):
         value = self.message.get(name, default)
-        value, encoding = Header.decode_header(value)[0]
+        header_parts = []
+        for value, encoding in Header.decode_header(value):
+            header_parts.append(unicode(value, encoding or self.encoding, 'ignore'))
         
-        value = unicode(value, encoding or self.encoding, 'ignore')
-        
-        return value
+        return u' '.join(header_parts)
 
     @property
     def sender_id(self):
