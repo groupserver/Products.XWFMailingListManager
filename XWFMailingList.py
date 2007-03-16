@@ -8,6 +8,7 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
+from export import export_archive_as_mbox
 from emailmessage import RDBFileMetadataStorage
 from AccessControl import getSecurityManager, ClassSecurityInfo
 
@@ -1080,6 +1081,14 @@ class XWFMailingList(MailBoxer):
         file.reindex_file()
         
         return id
+    
+    def export_as_mbox( self ):
+        archive = self.restrictedTraverse(self.getValueFor('storage'), 
+                                          default=None)
+        
+        self.REQUEST.RESPONSE.setHeader('Content-Type', 'application/mbox')
+        
+        return export_archive_as_mbox( archive )
     
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt', 
