@@ -431,6 +431,9 @@ class EmailMessage(object):
     def date(self):
         d = self.get('date', '').strip()
         if d:
+            # if we have the format Sat, 10 Mar 2007 22:47:20 +1300 (NZDT)
+            # strip the (NZDT) bit before parsing, otherwise we break the parser
+            d = re.sub(' \(.*?\)','', d)
             return parseDatetimetz(d)
         
         return datetime.datetime.now()        

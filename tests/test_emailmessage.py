@@ -1,3 +1,4 @@
+# coding=utf-8
 ##############################################################################
 #
 # Copyright (c) 2004, 2005 Zope Corporation and Contributors.
@@ -26,6 +27,7 @@ def test_emailmessage():
     Set up:
       >>> from zope.app.testing.placelesssetup import setUp, tearDown
       >>> setUp()
+      >>> import md5
       >>> import Products.Five
       >>> import Products.XWFMailingListManager
       >>> from Products.XWFMailingListManager import emailmessage
@@ -44,6 +46,7 @@ def test_emailmessage():
       >>> email_test1 = file('emails/testemail1.eml').read()
       >>> email_attachments2 = file('emails/7479421AFD9.eml').read()
       >>> email_internationalization = file('emails/internationalization.eml').read()
+      >>> email_date = file('emails/date.eml').read()
       
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
@@ -115,10 +118,15 @@ def test_emailmessage():
       4
       
       >>> imsg = emailmessage.EmailMessage(email_internationalization, 'test')
-      >>> imsg.subject
-      u'unicode testing: I\xf1t\xebrn\xe2ti\xf4n\xe0liz\xe6ti\xf8n'
+      >>> sum(map(ord, imsg.subject)) # crude checksum
+      4689
       
-    Setup ZSQLAlchemy
+    An unexpected date format:
+      >>> dmsg = emailmessage.EmailMessage(email_date)
+      >>> dmsg.date.isoformat()
+      '2007-03-16T11:32:38+13:00'
+      
+    Setup ZSQLAlchemy:
       >>> alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
       >>> alchemy_adaptor.manage_changeProperties( hostname='localhost',
       ...                                             port=5432,
