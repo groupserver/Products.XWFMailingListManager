@@ -55,11 +55,10 @@ class GSTopicSummaryView( Products.Five.BrowserView, GSPostingInfo ):
           assert self.end >= self.start
           query = {}
           resultSet = self.archive.find_email(query)
+          sortFields = (('mailSubject', 'nocase'),
+                        ('mailDate', 'cmp','desc'))
           resultSet = DocumentTemplate.sequence.sort(resultSet,
-                                                     (('mailSubject',
-                                                       'nocase'),
-                                                      ('mailDate', 
-                                                       'cmp', 'desc')))
+                                                     sortFields)
 
           threads = []
           currThread = None
@@ -67,7 +66,7 @@ class GSTopicSummaryView( Products.Five.BrowserView, GSPostingInfo ):
           threads = []
                     
           for result in resultSet:
-              subj = result.getObject()['compressedSubject']
+              subj = result.getObject()['compressedSubject'].lower()
               #subj = result.mailSubject.lower() 
               if subj != currThread:
                   currThread = subj

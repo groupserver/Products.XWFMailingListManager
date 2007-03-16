@@ -293,10 +293,21 @@ class GSBaseMessageView(Products.Five.BrowserView):
           
           query = {'compressedTopic': '%s' % self.email.compressedSubject}
           result = self.archive.find_email(query)
-          assert result
           
-          self.topic = map(lambda x: x.getObject(), result)
-          self.topic.sort(self.post_date_storter)
+          query = {}
+          resultSet = self.archive.find_email(query)
+          sortFields = (('mailSubject', 'nocase'),
+                        ('mailDate', 'cmp','desc'))
+          result = DocumentTemplate.sequence.sort(resultSet,
+                                                   sortFields)
+          assert result
+          r = [p.getObject() for p in result]
+          cs = self.email.compressedSubject.lower()
+          self.topic = [p for p in r 
+                        if p['compressedSubject'].lower() == cs]
+          self.topic.reverse()
+          #self.topic = map(lambda x: x.getObject(), result)
+          #self.topic.sort(self.post_date_storter)
           
           assert self.topic
           assert self.topic.append
