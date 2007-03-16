@@ -41,7 +41,13 @@ def export_archive_as_mbox( archive ):
                 except:
                     newout += line.decode('iso-8859-15', 'ignore')+'\n'
         
-        result += 'From %s %s\n' % (object.getProperty('from') or object.getProperty('mailFrom'), object.getProperty('mailDate').rfc822())
+        mailfrom = object.getProperty('from')
+        if isinstance(mailfrom, list):
+            mailfrom = mailfrom[0]
+        else:
+            mailfrom = object.getProperty('mailFrom')
+            
+        result += 'From %s %s\n' % (mailfrom, object.getProperty('mailDate').rfc822())
         for line in newout.split('\n'):
             if line.find('From ') == 0:
                 result += '>'+line+'\n'
