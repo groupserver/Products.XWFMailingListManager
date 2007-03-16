@@ -1,4 +1,4 @@
-def export_archive_as_mbox( archive ):
+def export_archive_as_mbox( archive, writer=None ):
     result = ''
     for object in archive.objectValues('Folder'):
         out = []
@@ -7,7 +7,7 @@ def export_archive_as_mbox( archive ):
             out.append(headers)
             if object.getProperty('x-xwfnotification-file-id') and headers.find('X-XWFNotification-File-Id') == -1:
                 out.append('X-XWFNotification-File-Id: %s' % object.getProperty('x-xwfnotification-file-id'))
-                out.append('X-Xwfnotification: File')
+                out.append('X-XWFNotification: File')
     
             out.append('X-GSOriginal-ID: %s' % object.getId())
         else:
@@ -46,12 +46,16 @@ def export_archive_as_mbox( archive ):
             mailfrom = mailfrom[0]
         else:
             mailfrom = object.getProperty('mailFrom')
-            
+        
         result += 'From %s %s\n' % (mailfrom, object.getProperty('mailDate').rfc822())
         for line in newout.split('\n'):
             if line.find('From ') == 0:
                 result += '>'+line+'\n'
             else:
                 result += line+'\n'
-    
+        
+        if writer:
+            writer.write( result )
+            result = ''
+            
     return result
