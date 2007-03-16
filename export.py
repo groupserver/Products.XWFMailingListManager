@@ -42,7 +42,7 @@ def export_archive_as_mbox( archive ):
                     newout += line.decode('iso-8859-15', 'ignore')+'\n'
         
         mailfrom = object.getProperty('from')
-        if isinstance(mailfrom, list):
+        if isinstance(mailfrom, list) or isinstance(mailfrom, tuple):
             mailfrom = mailfrom[0]
         else:
             mailfrom = object.getProperty('mailFrom')
