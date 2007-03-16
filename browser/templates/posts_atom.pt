@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   tal:define="posts python:view.get_posts(); 
   pageTemplateFileName string:browser/templates/email_atom.pt;
-  feedURL python:'%s/posts.atom' % view.groupInfo.get_url()">
+  feedURL python:'%s/messages/posts.atom' % view.groupInfo.get_url()">
   
   <title><span tal:replace="python:view.groupInfo.get_name()"/> Latest Posts</title>
   <updated 
