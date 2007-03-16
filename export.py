@@ -55,7 +55,7 @@ def export_archive_as_mbox( archive, writer=None ):
                 result += line+'\n'
         
         if writer:
-            writer.write( result )
+            writer.write( str(result) )
             result = ''
             
     return result
