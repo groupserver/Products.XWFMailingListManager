@@ -24,13 +24,12 @@ def export_archive_as_mbox( archive, writer=None ):
             out.append('Date: %s' % object.getProperty('mailDate').rfc822())
     
         out.append('X-GSUser-Id: %s' % object.getProperty('mailUserId', ''))
-        out.append('\n')
+        out.append('')
         
         body = object.getProperty('mailBody')
     
         out.append(body)
-        out.append('')
-    
+        
         newout = ''
         for line in out:
             try:
