@@ -1083,6 +1083,9 @@ class XWFMailingList(MailBoxer):
         return id
     
     def export_as_mbox( self ):
+        """ Export our mailing list archives into mbox format, as best we can.
+        
+        """
         archive = self.restrictedTraverse(self.getValueFor('storage'), 
                                           default=None)
         
