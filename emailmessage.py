@@ -440,7 +440,7 @@ class EmailMessage(object):
 
     @property
     def md5_body(self):
-        return md5.new(self.body).hexdigest()
+        return md5.new(self.body.encode('utf-8')).hexdigest()
     
     @property
     def topic_id(self):

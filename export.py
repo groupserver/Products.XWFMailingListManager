@@ -8,8 +8,6 @@ def export_archive_as_mbox( archive, writer=None ):
             if object.getProperty('x-xwfnotification-file-id') and headers.find('X-XWFNotification-File-Id') == -1:
                 out.append('X-XWFNotification-File-Id: %s' % object.getProperty('x-xwfnotification-file-id'))
                 out.append('X-XWFNotification: File')
-    
-            out.append('X-GSOriginal-ID: %s' % object.getId())
         else:
             for item in object.propertyMap():
                 propertyId = item['id']
@@ -23,6 +21,7 @@ def export_archive_as_mbox( archive, writer=None ):
     
             out.append('Date: %s' % object.getProperty('mailDate').rfc822())
     
+        out.append('X-GSOriginal-ID: %s' % object.getId())
         out.append('X-GSUser-Id: %s' % object.getProperty('mailUserId', ''))
         out.append('')
         
