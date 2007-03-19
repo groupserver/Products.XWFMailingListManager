@@ -401,6 +401,11 @@ class EmailMessage(object):
 
         for word in process_body.split():
             word = word.lower()
+            subs = (("'s",""), (".",""), (",",""),("'",""))
+            for repstr, substr in subs:
+                word = word.replace(repstr, substr)
+            
+            # check for stopwords
             if word in stopwords.en:
                 continue
             
