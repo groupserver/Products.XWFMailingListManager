@@ -397,7 +397,7 @@ class EmailMessage(object):
         process_body = ''
         for line in cropped_body.split('\n'):
             if line and line[0] != '>':
-                process_body += line
+                process_body += line+'\n'
 
         for word in process_body.split():
             word = word.lower()
