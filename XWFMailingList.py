@@ -1091,7 +1091,10 @@ class XWFMailingList(MailBoxer):
         
         self.REQUEST.RESPONSE.setHeader('Content-Type', 'application/mbox')
         
-        export_archive_as_mbox( archive, writer=self.REQUEST.RESPONSE )
+        export_archive_as_mbox( archive, group_id=self.getId(),
+                                site_id=self.getProperty('siteId', ''),
+                                group_title=self.getProperty('title',''),
+                                writer=self.REQUEST.RESPONSE )
     
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt', 

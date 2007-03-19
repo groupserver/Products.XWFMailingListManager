@@ -1,8 +1,10 @@
+from sqlalchemy.exceptions import SQLError
 import re
 import md5
 import sqlalchemy
 import string
-import datetime
+import datetime, time
+import codecs
 
 from email import Parser, Header
 from rfc822 import AddressList
@@ -12,6 +14,8 @@ from zope.interface import Interface, Attribute, implements
 from zope.app.datetimeutils import parseDatetimetz
 
 from addapost import tagProcess
+from crop_email import crop_email
+import stopwords
 
 def convert_int2b(num, alphabet, converted=[]):
     mod = num % len(alphabet); rem = num / len(alphabet)
@@ -167,12 +171,17 @@ class RDBEmailMessageStorage(object):
                        num_posts=1)
         else:
             num_posts = topic['num_posts']
+            if time.mktime(topic['last_post_date'].timetuple()) > time.mktime(self.email_message.date.timetuple()):
+                last_post_date = topic['last_post_date']
+            else:
+                last_post_date = self.email_message.date
+                
             self.topicTable.update(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
                                          self.topicTable.c.group_id == self.email_message.group_id, 
                                          self.topicTable.c.site_id == self.email_message.site_id)
                                    ).execute(num_posts=num_posts+1, 
                                               last_post_id=self.email_message.post_id, 
-                                              last_post_date=self.email_message.date)
+                                              last_post_date=last_post_date)
         #
         # add any tags we have for the post
         #
@@ -180,22 +189,28 @@ class RDBEmailMessageStorage(object):
         for tag in self.email_message.tags:
             i.execute(post_id=self.email_message.post_id,
                       tag=tag)
+
+    def insert_keyword_count( self ):
+        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
         #    
         # add/update the word count for the topic
         #
         counts = self.email_message.word_count
         for word in counts:
-            # determine if the word exists before inserting or updating
-            r = self.topic_word_countTable.select(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
-                        self.topic_word_countTable.c.word == word)).execute().fetchone() 
-            if r:
-                self.topic_word_countTable.update(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
-                        self.topic_word_countTable.c.word == word)).execute(count=r['count']+counts[word])
-            else:
+            # determine if the word exists before inserting or updating. It, despite appearances, is was actually
+            # significantly faster in a real-world trial to do it this way (at least 20% faster).
+            try:
                 i = self.topic_word_countTable.insert()
                 i.execute(topic_id=self.email_message.topic_id, 
                            word=word, 
                            count=counts[word])
+            except SQLError:
+                # otherwise select and update
+                r = self.topic_word_countTable.select(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
+                                                           self.topic_word_countTable.c.word == word)).execute().fetchone() 
+                if r:
+                    self.topic_word_countTable.update(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
+                                                           self.topic_word_countTable.c.word == word)).execute(count=r['count']+counts[word])
                            
     def remove(self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
@@ -249,6 +264,21 @@ class IEmailMessage(Interface):
             left unspecified
         """
 
+def check_encoding(encoding):
+    # a slightly wierd encoding that isn't in the standard encoding table
+    if encoding.lower() == 'macintosh':
+        encoding = 'mac_roman'
+        
+    try:
+        codecs.lookup(encoding)
+    except:
+        # play it pretty safe ... we're going to be ignoring errors in
+        # the encoding anyway, and UTF-8 is going to be right more of the time
+        # in the very, very rare case that we have to force this!
+        encoding = 'utf-8'
+    
+    return encoding
+
 class EmailMessage(object):
     implements(IEmailMessage)
 
@@ -266,7 +296,8 @@ class EmailMessage(object):
         value = self.message.get(name, default)
         header_parts = []
         for value, encoding in Header.decode_header(value):
-            header_parts.append(unicode(value, encoding or self.encoding, 'ignore'))
+            encoding = encoding and check_encoding(encoding) or self.encoding
+            header_parts.append(unicode(value, encoding, 'ignore'))
         
         return u' '.join(header_parts)
 
@@ -279,7 +310,9 @@ class EmailMessage(object):
     
     @property
     def encoding(self):
-        return self.message.get_param('charset', 'ascii')
+        encoding = check_encoding(self.message.get_param('charset', 'ascii'))
+        
+        return encoding
 
     @property
     def attachments(self):
@@ -360,15 +393,23 @@ class EmailMessage(object):
     @property
     def word_count(self):
         wc = {}
-        for word in self.body.split():
+        cropped_body, rest = crop_email(self.body)
+        process_body = ''
+        for line in cropped_body.split('\n'):
+            if line and line[0] != '>':
+                process_body += line
+
+        for word in process_body.split():
             word = word.lower()
-            skip = False
-            if len(word) < 3 or len(word) > 18:
+            if word in stopwords.en:
                 continue
+            
+            skip = False
             for letter in word:
-                if letter not in string.ascii_lowercase:
+                if letter not in string.ascii_lowercase+string.digits:
                     skip = True
                     break
+
             if skip:
                 continue
             
@@ -449,7 +490,7 @@ class EmailMessage(object):
         # A topic_id for two posts will clash if
         #   - The compressedsubject, group ID and site ID are all identical
         items = self.compressed_subject + ':' + self.group_id + ':' + self.site_id
-        tid = md5.new(items).hexdigest()
+        tid = md5.new(items.encode('utf-8')).hexdigest()
         
         return unicode(convert_int2b62(long(tid, 16)))
     
@@ -480,6 +521,6 @@ class EmailMessage(object):
         items = (self.topic_id + ':' + self.subject + ':' +
                   self.md5_body + ':' + self.sender + ':' + 
                   self.inreplyto + ':' + str(len_payloads))
-        pid = md5.new(items).hexdigest()
+        pid = md5.new(items.encode('utf-8')).hexdigest()
         
         return unicode(convert_int2b62(long(pid, 16)))

@@ -114,8 +114,8 @@ def test_emailmessage():
       u'<20070227111232.C25DDFFF1@orange.iopen.net>'
       >>> test1msg.language
       'en'
-      >>> test1msg.word_count['message']
-      4
+      >>> test1msg.word_count['obscured']
+      2
       
       >>> imsg = emailmessage.EmailMessage(email_internationalization, 'test')
       >>> sum(map(ord, imsg.subject)) # crude checksum

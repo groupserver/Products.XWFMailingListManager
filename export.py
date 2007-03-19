@@ -1,4 +1,4 @@
-def export_archive_as_mbox( archive, writer=None ):
+def export_archive_as_mbox( archive, group_id='', site_id='', group_title='', writer=None ):
     result = ''
     for object in archive.objectValues('Folder'):
         out = []
@@ -21,6 +21,9 @@ def export_archive_as_mbox( archive, writer=None ):
     
             out.append('Date: %s' % object.getProperty('mailDate').rfc822())
     
+        out.append('X-GSGroup-Title: %s' % group_title)
+        out.append('X-GSGroup-Id: %s' % group_id)
+        out.append('X-GSSite-Id: %s' % site_id)
         out.append('X-GSOriginal-ID: %s' % object.getId())
         out.append('X-GSUser-Id: %s' % object.getProperty('mailUserId', ''))
         out.append('')
