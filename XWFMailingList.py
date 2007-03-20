@@ -409,6 +409,7 @@ class XWFMailingList(MailBoxer):
             
             msgstorage.set_zalchemy_adaptor( da )
             msgstorage.insert()
+            msgstorage.insert_keyword_count()
             
             filemetadatastorage = RDBFileMetadataStorage( self, msg, ids )
             filemetadatastorage.set_zalchemy_adaptor(da)

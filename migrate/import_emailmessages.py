@@ -69,7 +69,7 @@ for fname in os.listdir( importDir )[position:]:
      msgstorage = IRDBStorageForEmailMessage( msg )
      msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
      try:
-         #msgstorage.insert()
+         msgstorage.insert()
          msgstorage.insert_keyword_count()
          print '.',
      except SQLError, x:
