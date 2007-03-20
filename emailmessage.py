@@ -401,9 +401,9 @@ class EmailMessage(object):
 
         for word in process_body.split():
             word = word.lower()
-            subs = (("'s",""), (".",""), (",",""),("'",""))
+            subs = (("'s$",""), ("\.$",""), (",$",""),("'$",""))
             for repstr, substr in subs:
-                word = word.replace(repstr, substr)
+                word = re.sub(repstr, substr, word)
             
             # check for stopwords
             if word in stopwords.en:
