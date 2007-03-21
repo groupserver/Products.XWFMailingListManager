@@ -17,34 +17,9 @@
 $Id: test_size.py 61072 2005-10-31 17:43:51Z philikon $
 """
 import os, sys
-if __name__ == '__main__':
-    execfile(os.path.join(sys.path[0], 'framework.py'))
 
-from Testing.ZopeTestCase import base
-app = base.app()
+from Products.XWFMailingListManager import emailmessage #@UnresolvedImport
 
-import md5, os, sys
-import Products.Five
-import Products.XWFMailingListManager
-from Products.XWFMailingListManager import emailmessage
-from Products.Five import zcml
-from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
-
-zcml.load_config('meta.zcml', Products.Five)
-zcml.load_config('permissions.zcml', Products.Five)
-zcml.load_config('configure.zcml', Products.XWFMailingListManager)
-
-alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
-alchemy_adaptor.manage_changeProperties( hostname='localhost',
-                                         port=5432,
-                                         username='richard',
-                                         password='',
-                                         dbtype='postgres',
-                                         database='onlinegroups.net')
-
-from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
-from sqlalchemy.exceptions import SQLError
-     
 importDir = sys.argv[1]
 try:
     onlyIds = bool(int(sys.argv[2]))
