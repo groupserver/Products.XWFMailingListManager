@@ -46,9 +46,18 @@ from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessa
 from sqlalchemy.exceptions import SQLError
      
 importDir = sys.argv[1]
+try:
+    onlyIds = bool(int(sys.argv[2]))
+except:
+    onlyIds = False
+
 for fname in os.listdir( importDir ):
     email = file( os.path.join( importDir, fname ) ).read()
     msg = emailmessage.EmailMessage( email )
     msg = emailmessage.EmailMessage( email, msg.get('x-gsgroup-title',''), msg.get('x-gsgroup-id',''), msg.get('x-gssite-id', ''), lambda x: msg.get('x-gsuser-id', ''))
     if msg.get('x-xwfnotification-file-id',''):
-        print('%s,%s,%s' % (msg.topic_id, msg.post_id, ','.join(msg.get('x-xwfnotification-file-id','').split())))
+        if onlyIds:
+            for fid in msg.get('x-xwfnotification-file-id', '').split():
+                print fid
+        else:
+            print('%s,%s,%s' % (msg.topic_id, msg.post_id, ','.join(msg.get('x-xwfnotification-file-id','').split())))
