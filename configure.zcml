@@ -31,7 +31,7 @@
     template="browser/templates/post.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="topic.html"
-    class=".view.GSTopicView"
+    class=".gsTopicView.GSTopicView"
     template="browser/templates/topic.pt" permission="zope2.View" />
   
   <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"

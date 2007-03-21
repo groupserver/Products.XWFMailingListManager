@@ -13,6 +13,7 @@ import transaction
 
 import DocumentTemplate
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
+import queries
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 from interfaces import IGSUserInfo
@@ -228,7 +229,7 @@ class GSNewTopicView(Products.Five.BrowserView, GSPostingInfo):
 
 
 class GSBaseMessageView(Products.Five.BrowserView):
-      def __init__(self, context, request):
+      def __init__(self, context, request, dummy=False):
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
           self.groupInfo = GSGroupInfo( context )
           
@@ -238,7 +239,8 @@ class GSBaseMessageView(Products.Five.BrowserView):
           self.set_archive(context.messages)
           self.set_emailId(request.form.get('id', None))
           self.init_email()
-          self.init_topic()
+          if not dummy:
+              self.init_topic()
       
       def set_archive(self, archive):
           """Set the email message archive to "archive"."""
@@ -274,16 +276,6 @@ class GSBaseMessageView(Products.Five.BrowserView):
           return retval
 
       # topic
-      def post_date_storter(self, a, b):
-          if a['mailDate'] > b['mailDate']:
-              retval = 1
-          elif a['mailDate'] == b['mailDate']:
-              retval = 0
-          else:
-              retval = -1
-          assert retval in (1, 0, -1)
-          return retval
-          
       def init_topic(self):
           assert self.emailId
           assert self.archive
@@ -325,86 +317,6 @@ class GSBaseMessageView(Products.Five.BrowserView):
           
           return retval
           
-class GSTopicView(GSBaseMessageView, GSPostingInfo):
-      """View of a GroupServer Topic"""
-      def __init__(self, context, request):
-          GSBaseMessageView.__init__(self, context, request)
-          self.retval = {}
-
-      def update(self):
-          result = process_form( self.context, self.request )
-          if result:
-              self.retval.update(result.items())
-          result = process_post( self.context, self.request )
-          if result:
-              self.retval.update(result.items())
-          self.init_topic()
-          self.init_topic()
-          self.init_threads()
-
-      def init_threads(self):
-          """Find out the threads that are temporally related to this
-          topic, so we can show the previous and next links to the user.
-          Painfully intensive."""
-          
-          assert self.topic
-          assert self.archive
-
-          self.threads  = self.archive.get_all_threads({}, 'mailDate', 'asc')
-          self.threadNames = map(lambda thread: thread[1][0]['mailSubject'], 
-                                 self.threads)
-          currThreadName = self.get_topic_name()
-          assert currThreadName in self.threadNames
-          self.currThreadIndex = self.threadNames.index(currThreadName)         
-          
-      def get_next_topic(self):
-          assert self.threads
-          
-          retval = None
-          
-          nextThreadIndex = self.currThreadIndex - 1
-          if nextThreadIndex >= 0:
-              ntID = self.threads[nextThreadIndex][1][0]['id']
-              ntName = self.threads[nextThreadIndex][1][0]['mailSubject']
-              retval = (ntID, ntName)
-          else:
-              retval = (None, None)
-      
-          assert len(retval) == 2
-          return retval
-          
-      def get_previous_topic(self):
-          assert self.threads
-          
-          retval = None
-
-          previousThreadIndex = self.currThreadIndex + 1
-          if previousThreadIndex < len(self.threads):
-              ptID = self.threads[previousThreadIndex][1][0]['id']
-              ptName = self.threads[previousThreadIndex][1][0]['mailSubject']
-              retval = (ptID, ptName)
-          else:
-              retval = (None, None)
-      
-          assert len(retval) == 2
-          return retval
-          
-      def get_sticky_topics(self):
-          assert self.threads
-          
-          retval = []
-          
-          stickyTopicsIds = self.groupInfo.get_property('sticky_topics')
-          if stickyTopicsIds:
-              for stickyTopicId in stickyTopicsIds:
-                  query = {'id': stickyTopicId}
-                  result = self.archive.find_email(query)[0]
-                  threadInfo = {'id':     result.id,
-                                'name':   result.mailSubject,
-                                'date':   result.mailDate,
-                                'length': ''}
-                  retval.append(threadInfo)
-          return retval
           
         
 class GSPostView(GSBaseMessageView):
