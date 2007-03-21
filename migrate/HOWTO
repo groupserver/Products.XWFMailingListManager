@@ -9,7 +9,7 @@ A (very) rough guide to migration of messages from ZODB to RDB
 5) create a folder on the filesystem called (say) exported_email, and run this command,
    substituting the upper case variables to match your site:
    
-     $ cat IDS_FILE | grep -v " 0" | cut -f1 -d" " | \
+     $ grep -v " 0" IDS_FILE | cut -f1 -d" " | \
          xargs -n1 --replace={} wget -O{}.mbox \
          http://ZOPEHOST:ZOPEPORT/sites/SITEID/ListManager/{}/export_as_mbox
      
