@@ -1,0 +1,48 @@
+A (very) rough guide to migration of messages from ZODB to RDB
+--------------------------------------------------------------
+
+1) place migration_scripts in ListManager folder
+2) run migration_scripts/update_site_id to make sure all lists have siteIds
+3) switch on RDB message storage using migration_scripts/switch_on_rdb
+4) generate a list of group IDs and their message counts for migration using
+   migration_scripts/generate_group_ids, and save this to a file.
+5) create a folder on the filesystem called (say) exported_email, and run this command,
+   substituting the upper case variables to match your site:
+   
+     $ cat IDS_FILE | grep -v " 0" | cut -f1 -d" " | \
+         xargs -n1 --replace={} wget -O{}.mbox \
+         http://ZOPEHOST:ZOPEPORT/sites/SITEID/ListManager/{}/export_as_mbox
+     
+At this stage you should now have all your exported email on the filesystem, in mbox format.
+The processing script requires that this email be in maildir format (or at least, one email
+per file). My suggestion at this stage is to concatenate all the mbox files and run mb2md
+on them (on ubuntu you can do apt-get install mb2md) to create a maildir folder.
+
+6) edit the import_emailmessages.py script in this directory to match your settings
+   for your postgresql install
+7) run the import script:
+    $ export PYTHONPATH=.
+    $ export SOFTWARE_HOME=/path/to/zope-install/lib/python
+    $ export INSTANCE_HOME=/path/to/zope-instance
+    $ ZOPE_PYTHON_INSTALL/bin/python -u import_emailmessages.py \
+        /path/to/maildir/cur somelogfile.txt
+
+8) have many, many coffees (if you have a lot of messages)
+9) Check your error log file. You may have lots of duplicate messages, this is
+kinda normal, but you should *not* have any BODY DIFF sections ... that would be
+a symptom of an md5 clash. If you have an example of that, please email me.
+
+10) run the generate_fileids script. This will generate a list for the file metadata import script
+    to use.
+    
+    $  ZOPE_PYTHON_INSTALL/bin/python generate_fileids.py /path/to/maildir/cur/ > post_topic_fileids.csv
+
+    Annoyingly, you will need to remove the first two lines of cruft from the file.
+    
+11) run migration_scripts/generate_file_metadata, and save the output to a file
+12) tweak the settings in import_filemetadata.py for your local database, then run:
+
+    $ ZOPE_PYTHON_INSTALL/bin/python -u import_filemetadata.py \
+        file_metadata.csv post_topic_fileids.csv 
+        
+And hopefully you're done!
