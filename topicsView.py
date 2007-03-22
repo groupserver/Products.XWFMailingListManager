@@ -28,11 +28,10 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
           self.messageQuery = queries.MessageQuery(context, da)
 
           # HACK because I stuffed up my local box.
-          print self.siteInfo.get_id()
           if self.siteInfo.get_id() == 'example_division':
               print self.groupInfo.get_id()
-              self.topics = self.messageQuery.latest_topics('ogs', 'team',
-                                                            limit=20, offset=0)
+              self.topics = self.messageQuery.latest_topics('ogs', 
+                                                            self.groupInfo.get_id())
               print self.topics
           else:
               self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(), 
