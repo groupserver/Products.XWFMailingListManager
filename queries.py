@@ -31,7 +31,8 @@ class MessageQuery( object ):
         """
             Returns: 
              ({'topic_id': ID, 'subject': String, 'first_post_id': ID,
-               'last_post_id': ID, 'count': Int, 'last_post_date': Date}, ...)
+               'last_post_id': ID, 'count': Int, 'last_post_date': Date,
+               'group_id': ID, 'site_id': ID}, ...)
 
         """
         tt = self.topicTable
@@ -50,6 +51,8 @@ class MessageQuery( object ):
         
         if r.rowcount:
             return [ {'topic_id': x['topic_id'],
+                      'site_id': x['site_id'],
+                      'group_id': x['group_id'],
                       'subject': unicode(x['original_subject'], 'utf-8'),
                       'first_post_id': x['first_post_id'],
                       'last_post_id': x['last_post_id'],
