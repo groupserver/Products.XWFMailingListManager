@@ -21,7 +21,12 @@ DBPASSWORD=''
 DBNAME='somedatabasename'
 
 # Shouldn't need to change below here
+import os, sys
 
+import sqlalchemy
+if __name__ == '__main__':
+    execfile(os.path.join(sys.path[0], 'framework.py'))
+    
 from Products.Five import zcml
 from Products.XWFMailingListManager import emailmessage
 from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
@@ -32,11 +37,6 @@ import Products.Five
 import Products.XWFMailingListManager
 
 import csv
-import os, sys
-
-import sqlalchemy
-if __name__ == '__main__':
-    execfile(os.path.join(sys.path[0], 'framework.py'))
 
 app = base.app()
 

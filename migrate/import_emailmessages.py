@@ -21,6 +21,9 @@ DBPASSWORD=''
 DBNAME='somedatabasename'
 
 # You shouldn't need to change below here
+import os, sys
+if __name__ == '__main__':
+    execfile(os.path.join(sys.path[0], 'framework.py'))
 
 from Products.Five import zcml
 from Products.XWFMailingListManager import emailmessage
@@ -33,12 +36,8 @@ import Products.Five
 import Products.XWFMailingListManager
 
 import difflib
-import os, sys
 import sqlalchemy
 import time
-
-if __name__ == '__main__':
-    execfile(os.path.join(sys.path[0], 'framework.py'))
 
 app = base.app()
 
