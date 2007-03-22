@@ -87,10 +87,10 @@ class GSPostContentProvider(object):
           
           self.__updated = True
           
-          self.authorId = self.post.mailUserId;
-          self.authorName = self.get_author_realnames();
-          self.authorExists = self.author_exists();
-          self.authored = self.authorExists and self.user_authored();
+          self.authorId = self.post['author_id']
+          self.authorName = self.get_author_realnames()
+          self.authorExists = self.author_exists()
+          self.authored = self.authorExists and self.user_authored()
           self.authorImage = self.get_author_image()
          
           ir = self.get_email_intro_and_remainder()
@@ -342,11 +342,11 @@ class GSPostContentProvider(object):
           #   I have to check up with rrw to see if posts support has_key
           # assert self.post['mailBody']
 
-          body = self.post['mailBody']
+          text = self.post['body']
           
-          contentType = getattr(self.post, 'content-type', None)
-          ctct = Products.XWFCore.XWFUtils.convertTextUsingContentType
-          text = ctct(body, contentType)  
+          #contentType = getattr(self.post, 'content-type', None)
+          #ctct = Products.XWFCore.XWFUtils.convertTextUsingContentType
+          #text = ctct(body, contentType)  
           
           text = self.__remove_file_notification(text)
           wrappedText = self.__wrap_message(text)
@@ -405,7 +405,7 @@ class GSPostContentProvider(object):
           assert self.request
           
           user = self.request.AUTHENTICATED_USER
-          retval = user.getId() == self.post['mailUserId']
+          retval = user.getId() == self.post['author_id']
           
           assert retval in (True, False)
           return retval
@@ -423,7 +423,7 @@ class GSPostContentProvider(object):
           assert self.post
           retval = False
           
-          authorId = self.post['mailUserId']
+          authorId = self.post['author_id']
           retval = self.context.Scripts.get.user_exists(authorId)
           
           assert retval in (True, False)
@@ -443,7 +443,7 @@ class GSPostContentProvider(object):
 
           retval = None          
           if self.author_exists():
-              authorId = self.post['mailUserId']
+              authorId = self.post['author_id']
               retval = self.context.Scripts.get.user_image(authorId)
           return retval
            
@@ -458,7 +458,7 @@ class GSPostContentProvider(object):
           """
           assert self.post
           
-          authorId = self.post['mailUserId']
+          authorId = self.post['author_id']
           retval = self.context.Scripts.get.user_realnames(authorId)
           
           return retval

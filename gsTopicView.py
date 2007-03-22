@@ -31,15 +31,14 @@ class GSTopicView(view.GSPostingInfo):
          
           self.archive = context.messages
           self.emailId = request.form.get('id', None)
-          print self.emailId
           da = context.zsqlalchemy 
+          assert da
           self.messageQuery = queries.MessageQuery(context, da)
           self.topicId = self.messageQuery.topic_id_from_post_id(self.emailId)
-          print self.topicId
           self.topic = self.messageQuery.topic_posts(self.topicId)
           assert self.topic
-          print self.topic
-
+          self.lastPostId = self.topic[-1]['post_id']
+          
       def update(self):
           result = view.process_form( self.context, self.request )
           if result:
@@ -47,11 +46,10 @@ class GSTopicView(view.GSPostingInfo):
           result = view.process_post( self.context, self.request )
           if result:
               self.retval.update(result.items())
-          #self.currThreadIndex = self.threadNames.index(currThreadName)         
-
+          self.topic = self.messageQuery.topic_posts(self.topicId)
+          
       def get_topic(self):
           assert self.topic
-          print self.topic
           return self.topic
       
       def get_topic_name(self):
@@ -62,19 +60,27 @@ class GSTopicView(view.GSPostingInfo):
       def get_next_topic(self):
           assert self.messageQuery
           r = self.messageQuery.next_topic(self.topicId)
-          retval = (r['last_post_id'], r['subject'])
+          if r:
+              retval = (r['last_post_id'], r['subject'])
+          else:
+              retval = (None,None)
           return retval
           
       def get_previous_topic(self):
           assert self.messageQuery
           r = self.messageQuery.previous_topic(self.topicId)
-          retval = (r['last_post_id'], r['subject'])
+          if r:
+              retval = (r['last_post_id'], r['subject'])
+          else:
+              retval = (None,None)
           return retval
           
       def get_sticky_topics(self):
-          assert self.threads
-          
           retval = []
+
+
+          return retval
+          
           
           stickyTopicsIds = self.groupInfo.get_property('sticky_topics')
           if stickyTopicsIds:

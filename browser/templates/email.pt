@@ -1,4 +1,5 @@
 <tal:block tal:define="post python:options['post'];
+  postId python:post['post_id'];
   authorId python:options['authorId']; 
   authorName python:options['authorName'];
   authorExists python:options['authorExists'];
@@ -8,10 +9,10 @@
   postIntro options/postIntro;
   postRemainder options/postRemainder;
   timezone python:options['context'].Scripts.get.option('timezone')">
-  <div tal:attributes="class options/cssClass; id string:post-${post/id};">
+  <div tal:attributes="class options/cssClass; id string:post-${postId};">
     <p class="email-metadata">
       <a class="topic" tal:condition="options/topicName"
-        tal:attributes="href string:/r/topic/${post/id};"
+        tal:attributes="href string:/r/topic/${postId};"
         tal:content="options/topicName">A Topic</a>
       <span class="author">
         <strong>From:</strong>
@@ -25,7 +26,7 @@
       <span class="posted">
         <strong>Date:</strong>
         <span class="date" 
-          tal:define="date python:post.mailDate.toZone(timezone).strftime('%F %H:%M')">
+          tal:define="date python:post['date'].strftime('%F %H:%M')">
           <span 
             tal:replace="date">
             Today, Tomorrow, Timaru
@@ -34,7 +35,7 @@
         </span>
       </span>
       <a class="email-link"
-        tal:attributes="href string:/r/post/${post/id};"
+        tal:attributes="href string:/r/post/${postId};"
         title="A short link to this post">Short link</a>
       </p><!--email-metadata-->
     <div tal:condition="python:showPhoto and authorImage" 
@@ -48,8 +49,8 @@
       </p>
     </pre><!--email-body-->
     <div class="email-remainder"
-      tal:define="remId string:emailRemainder${post/id}; 
-      discloseId string:emailDiscloseButton${post/id}">
+      tal:define="remId string:emailRemainder${postId}; 
+      discloseId string:emailDiscloseButton${postId}">
       <div class="emailshowremainder" 
         tal:condition="options/postRemainder">
         <a tal:define="fn string:showHideInline('${remId}','${discloseId}')"

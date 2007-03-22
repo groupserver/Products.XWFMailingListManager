@@ -9,7 +9,7 @@
     
     <!--Todo: add the division name.-->
     <title metal:fill-slot="title">
-      Latest Topics in <span tal:replace="python:view.groupInfo.get_name()">a Group</span>:
+      Topics in <span tal:replace="python:view.groupInfo.get_name()">a Group</span>:
       <span tal:replace="python:view.siteInfo.get_name()"/>
     </title>
     
@@ -115,7 +115,7 @@
           <input type="hidden" name="__submission_method+sitesearch+search"
             value="get"/>
         </div>
-        <h1>Latest Topics in 
+        <h1>Topics in 
           <span class="group" 
             tal:content="python:view.groupInfo.get_name()">a Group</span></h1>
 
@@ -200,16 +200,16 @@
                   tal:attributes="id string:topic-${topic/id};
                   class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';">
                   <td class="topic" title="Topic name">
-                    <a tal:content="python:topic['name'][:50]"
+                    <a tal:content="python:topic['subject'][:50]"
                       tal:attributes="href string:topic.html?id=${topic/id};
-                      title string:View the topic ${topic/name}"
+                      title string:View the topic ${topic/subject}"
                       href="#">Wibble</a><span 
-                      tal:condition="python:len(topic['name'])&gt;50">&#8230;</span>
+                      tal:condition="python:len(topic['subject'])&gt;50">&#8230;</span>
                   </td>
                   <td class="posts" title="Number of posts" 
-                    tal:content="topic/length">-1</td>
+                    tal:content="topic/count">-1</td>
                   <td class="date" title="Date of most recent post" 
-                    tal:define="date python:topic['date'].toZone(timezone).strftime('%F %H:%M')">
+                    tal:define="date python:topic['last_post_date'].strftime('%F %H:%M')">
                     <span 
                       tal:replace="date">
                       Today, Tomorrow, Timaru

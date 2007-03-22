@@ -51,9 +51,9 @@ class GSTopicSummaryContentProvider(object):
       def update(self):
           self.__updated = True
           self.lastPost = self.topic[-1]
-          self.authorId = self.lastPost.mailUserId;
-          self.authorName = self.get_author_realnames();
-          self.authorExists = self.author_exists();
+          self.authorId = self.lastPost['author_id']
+          self.authorName = self.get_author_realnames()
+          self.authorExists = self.author_exists()
          
           self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
           self.groupInfo = GSGroupInfo( self.context )
@@ -75,8 +75,8 @@ class GSTopicSummaryContentProvider(object):
           pageTemplate = VPTF(self.pageTemplateFileName)          
 
           return pageTemplate(length=len(self.topic),
-                              lastPostId = self.lastPost['id'],
-                              lastPostDate = self.lastPost['mailDate'],
+                              lastPostId = self.lastPost['post_id'],
+                              lastPostDate = self.lastPost['date'],
                               authorId=self.authorId, 
                               authorName=self.authorName,
                               authorExists=self.authorExists,
@@ -104,9 +104,10 @@ class GSTopicSummaryContentProvider(object):
               None."""
           assert self.lastPost
           assert self.request
+          assert self.authorId
           
           user = self.request.AUTHENTICATED_USER
-          retval = user.getId() == self.lastPost['mailUserId']
+          retval = user.getId() == self.authorId
           
           assert retval in (True, False)
           return retval
@@ -120,12 +121,10 @@ class GSTopicSummaryContentProvider(object):
               
           SIDE EFFECTS
               None."""
-      
-          assert self.lastPost
-          retval = False
-          
-          authorId = self.lastPost['mailUserId']
-          retval = self.context.Scripts.get.user_exists(authorId)
+          assert self.authorId
+
+          retval = False          
+          retval = self.context.Scripts.get.user_exists(self.authorId)
           
           assert retval in (True, False)
           return retval
@@ -139,12 +138,10 @@ class GSTopicSummaryContentProvider(object):
           SIDE EFFECTS
              None.
           """
-          assert self.lastPost
-          
-          authorId = self.lastPost['mailUserId']
-          retval = self.context.Scripts.get.user_realnames(authorId)
+          retval = self.context.Scripts.get.user_realnames(self.authorId)
           
           return retval
+          
 # State that the GSPostContentProvider is a Content Provider, and attach
 #     to "groupserver.Post".
 zope.component.provideAdapter(GSTopicSummaryContentProvider,

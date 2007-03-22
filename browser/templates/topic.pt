@@ -25,7 +25,7 @@
       <meta name="date" content="2006-10-25"/>
       
       <tal:block metal:fill-slot="metadata" 
-        tal:define="topicName python:view.get_email()['mailSubject'];
+        tal:define="topicName view/get_topic_name;
         global postURLPrefix string:post.html?id=;
         global topicURLPrefix string:topic.html?id=">
         <!-- The documents related to this post -->
@@ -114,8 +114,8 @@
           <a href="#" title="A short link to this topic" class="shortLink"
             tal:define="siteUrl python:view.siteInfo.get_url();
             topicName python:view.get_topic_name();
-            topicId python:topicList[-1]['id']"
-            tal:attributes="href string:${siteUrl}/r/topic/${topicId};
+            lastPostId python:topicList[-1]['post_id']"
+            tal:attributes="href string:${siteUrl}/r/topic/${lastPostId};
             title string:A short link to all posts in ${topicName}">(Short 
             link)</a>
         </h1>
@@ -124,7 +124,6 @@
           class="adminTasks" id="toggleStickyTopic"
           tal:attributes="action request/URL"
           tal:define="topic python:view.get_topic_name();
-          topicId python:topicList[-1]['id'];
           groupInfo python:view.groupInfo;
           siteInfo python:view.siteInfo;
           group_object context/Scripts/get/group_object;
@@ -186,7 +185,7 @@
         <div class="postList">
           <tal:block tal:repeat="post topicList">
             <p tal:define="position repeat/post/number;
-              showPhoto python:(position==1) or (topicList[position-1].mailUserId != topicList[position-2].mailUserId)"
+              showPhoto python:(position==1) or (topicList[position-1]['author_id'] != topicList[position-2]['author_id'])"
               tal:replace="structure provider:groupserver.Post">
               The email message is rendered by the Post content provider,
               not by this page.
@@ -201,7 +200,7 @@
             enctype="multipart/form-data"
             tal:define="startNew python:False; 
             topic python:view.get_topic_name();
-            replyToId python:topicList[-1]['id'];">
+            replyToId python:topicList[-1]['post_id'];">
           
             <p style="display: none;" 
               tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"

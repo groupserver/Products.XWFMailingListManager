@@ -35,9 +35,8 @@ class GSTopicIndexContentProvider(object):
       def update(self):
           # The entries list is made up of 4-tuples representing the
           #   post ID, files, author, user authored, and post-date.
-          self.topicId = self.view.get_emailId() 
-          hr = 'topic.html?id=%s' % self.topicId
-          self.entries = [{'href':  '%s#post-%s' % (hr, post['id']),
+          hr = 'topic.html?id=%s' % self.view.lastPostId
+          self.entries = [{'href':  '%s#post-%s' % (hr, post['post_id']),
                            'files': self.get_file_from_post(post),
                            'name':  self.get_author_realnames_from_post(post),
                            'user':  self.get_user_authored_from_post(post),
@@ -78,7 +77,7 @@ class GSTopicIndexContentProvider(object):
           assert post
           
           retval = ''
-          authorId = post['mailUserId']
+          authorId = post['author_id']
           retval = self.context.Scripts.get.user_realnames(authorId)
 
           return retval
@@ -99,14 +98,14 @@ class GSTopicIndexContentProvider(object):
           assert self.request
           
           user = self.request.AUTHENTICATED_USER
-          retval = user.getId() == post['mailUserId']
+          retval = user.getId() == post['author_id']
           
           assert retval in (True, False)
           return retval
 
       def get_date_from_post(self, post):
           assert post
-          retval = post['mailDate']
+          retval = post['date']
           assert retval
           return retval
       

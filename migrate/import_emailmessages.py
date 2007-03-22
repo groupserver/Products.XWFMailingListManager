@@ -15,10 +15,10 @@
 
 # CHANGE THESE
 DBHOSTNAME='localhost'
-DBPORT=5432
-DBUSERNAME='someuser'
+DBPORT=5433
+DBUSERNAME='onlinegroups'
 DBPASSWORD=''
-DBNAME='somedatabasename'
+DBNAME='onlinegroups.net'
 
 # You shouldn't need to change below here
 import os, sys
