@@ -22,29 +22,51 @@ class GSLatestPostsView(Products.Five.BrowserView):
           self.context = context
           self.request = request
           
+          self.start = int(self.request.form.get('start', 0))
+          self.end = int(self.request.form.get('end', 20))
+          # Swap the start and end, if necessary
+          if self.start > self.end:
+              tmp = self.end
+              self.end = self.start
+              self.start = tmp
+              
           da = context.zsqlalchemy 
           assert da
           self.messageQuery = queries.MessageQuery(context, da)
-            
+          
           messages = self.context.messages
           lists = messages.getProperty('xwf_mailing_list_ids')
+                   
           if self.siteInfo.get_id() == 'example_division':
+              limit = self.get_chunk_length()
+              self.numPosts = self.messageQuery.post_count('ogs', lists)
               self.posts = self.messageQuery.latest_posts('ogs',
-                                                          lists, limit=20)
+                                                          lists, limit=limit,
+                                                          offset=self.start)
           else:
+              self.numPosts = self.messageQuery.post_count(self.siteInfo.get_id(),
+                                                          lists)
               self.posts = self.messageQuery.latest_posts(self.siteInfo.get_id(), 
-                                                          lists, limit=20)
+                                                          lists, limit=limit,
+                                                          offset=self.start)
 
       def get_posts(self):
           assert self.posts
           return self.posts
 
       def get_chunk_length(self):
-          return 20;
+          assert hasattr(self, 'start')
+          assert hasattr(self, 'end')
+          assert self.start <= self.end
+          
+          retval = self.end - self.start
+          
+          assert retval >= 0
+          return retval;
           
       def get_previous_chunk_url(self):
-          return ''
-      
+          assert hasattr(self, 'start')
+
           newStart = self.start - self.get_chunk_length()
           if newStart < 0:
               newStart = 0
@@ -59,21 +81,19 @@ class GSLatestPostsView(Products.Five.BrowserView):
           return retval
 
       def get_next_chunk_url(self):
-          return ''
-      
+          assert hasattr(self, 'end')
+
           newStart = self.end
           newEnd = newStart + self.get_chunk_length()
-          if newStart < len(self.posts):
+          if newStart < self.numPosts:
               retval = 'posts.html?start=%d&end=%d' % (newStart, newEnd)
           else:
               retval = ''
           return retval
 
       def get_last_chunk_url(self):
-          return ''
-          
-          newStart = len(self.posts) - self.get_chunk_length()
-          newEnd = len(self.posts)
+          newStart = self.numPosts - self.get_chunk_length()
+          newEnd = self.numPosts
           return 'posts.html?start=%d&end=%d' % (newStart, newEnd)
 
       def process_form(self):

@@ -129,7 +129,7 @@
             value="get"/>
         </div>
 
-        <h1>Latest Posts in       
+        <h1>Posts in
           <span class="group"
             tal:content="python:view.groupInfo.get_name()"/></h1>
 
@@ -159,7 +159,7 @@
           <p class="label">Useful Links</p>
           <ul>
             <li class="topics">
-              <a href="topics.html">Latest of topics in
+              <a href="topics.html">Topics in
                 <span tal:replace="python:view.groupInfo.get_name()" />
               </a>
             </li>

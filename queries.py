@@ -39,7 +39,7 @@ class MessageQuery( object ):
 
         r = statement.execute()
         
-        retval = None
+        retval = []
         if r.rowcount:
             retval = [ {'post_id': x['post_id'],
                         'topic_id': x['topic_id'],
@@ -50,7 +50,18 @@ class MessageQuery( object ):
                         'has_attachments': x['has_attachments']} for x in r ]
             
         return retval
-        
+    
+    def post_count( self, site_id, group_ids=[] ):
+        statement = self.postTable.select()
+        statement.append_whereclause(self.postTable.c.site_id==site_id)
+        if group_ids:
+            statement.append_whereclause(self.postTable.c.group_id.in_(*group_ids))
+
+        r = statement.execute()
+        retval =  r.rowcount
+        assert retval >= 0
+        return retval
+            
     def latest_topics( self, site_id, group_ids=[], limit=None, offset=0 ):
         """
             Returns: 
@@ -72,18 +83,18 @@ class MessageQuery( object ):
         statement.order_by(sa.desc(tt.c.last_post_date))
         
         r = statement.execute()
-        
+
+        retval = []        
         if r.rowcount:
-            return [ {'topic_id': x['topic_id'],
-                      'site_id': x['site_id'],
-                      'group_id': x['group_id'],
-                      'subject': unicode(x['original_subject'], 'utf-8'),
-                      'first_post_id': x['first_post_id'],
-                      'last_post_id': x['last_post_id'],
-                      'count': x['num_posts'],
-                      'last_post_date': x['last_post_date']} for x in r ]
-        
-        return None
+            retval = [ {'topic_id': x['topic_id'],
+                        'site_id': x['site_id'],
+                        'group_id': x['group_id'],
+                        'subject': unicode(x['original_subject'], 'utf-8'),
+                        'first_post_id': x['first_post_id'],
+                        'last_post_id': x['last_post_id'],
+                        'count': x['num_posts'],
+                        'last_post_date': x['last_post_date']} for x in r ]
+        return retval
 
     def _nav_post( self, curr_post_id, direction, topic_id=None ):
         op = direction == 'prev' and '<=' or '>='
