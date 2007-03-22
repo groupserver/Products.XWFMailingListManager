@@ -26,6 +26,30 @@ class MessageQuery( object ):
             topic_id = result['topic_id']
         
         return topic_id
+
+    def latest_posts( self, site_id, group_ids=[], limit=None, offset=0 ):
+        statement = self.postTable.select()
+        statement.append_whereclause(self.postTable.c.site_id==site_id)
+        if group_ids:
+            statement.append_whereclause(self.postTable.c.group_id.in_(*group_ids))
+
+        statement.limit = limit
+        statement.offset = offset
+        statement.order_by(sa.desc(self.postTable.c.date))
+
+        r = statement.execute()
+        
+        retval = None
+        if r.rowcount:
+            retval = [ {'post_id': x['post_id'],
+                        'topic_id': x['topic_id'],
+                        'subject': unicode(x['subject'], 'utf-8'),
+                        'date': x['date'],
+                        'author_id': x['user_id'],
+                        'body': x['body'],
+                        'has_attachments': x['has_attachments']} for x in r ]
+            
+        return retval
         
     def latest_topics( self, site_id, group_ids=[], limit=None, offset=0 ):
         """

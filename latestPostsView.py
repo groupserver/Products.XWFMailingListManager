@@ -12,7 +12,8 @@ from view import GSGroupInfo
 import DocumentTemplate, Products.XWFMailingListManager
 
 import Products.GSContent, Products.XWFCore.XWFUtils
-         
+import queries
+
 class GSLatestPostsView(Products.Five.BrowserView):
       def __init__(self, context, request):
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
@@ -21,77 +22,29 @@ class GSLatestPostsView(Products.Five.BrowserView):
           self.context = context
           self.request = request
           
-          self.set_archive(self.context.messages)
-          self.init_start_and_end()
-          self.init_posts()
-                
-      def set_archive(self, archive):
-          """Set the email message archive to "archive"."""
-          assert archive
-          self.archive = archive
-          assert self.archive
-      
-      def get_archive(self):
-          """Get the email message archive."""
-          assert self.archive
-          return self.archive
-          
-      def init_start_and_end(self):
-          assert self.request
-          self.start = int(self.request.form.get('start', 0))
-          if self.start < 0:
-              self.start = 0
-          self.end = int(self.request.form.get('end', 20))
-          if self.start > self.end:
-              self.end = self.start + 1
-              
-          assert self.start >= 0
-          assert self.end
-          assert self.start < self.end
-
-      def init_posts(self):
-          assert self.start >= 0
-          assert self.end >= self.start
-          query = {}
-          resultSet = self.archive.find_email(query)
-          resultSet = DocumentTemplate.sequence.sort(resultSet,
-                                                     (('mailDate', 
-                                                       'cmp', 'desc'),
-                                                      ('mailSubject',
-                                                       'nocase')))
-          self.posts = [post.getObject() for post in resultSet]
-          
-      def get_posts_length(self):
-          assert self.start >= 0
-          assert self.end
-          
-          retval = self.end - self.start
-          
-          assert retval
-          assert retval > 0
-          return retval
-
-      def get_chunk_length(self):
-          assert self.start >= 0
-          assert self.end
-          
-          retval = self.end - self.start
-          
-          assert retval
-          assert retval > 0
-          return retval
+          da = context.zsqlalchemy 
+          assert da
+          self.messageQuery = queries.MessageQuery(context, da)
+            
+          messages = self.context.messages
+          lists = messages.getProperty('xwf_mailing_list_ids')
+          if self.siteInfo.get_id() == 'example_division':
+              self.posts = self.messageQuery.latest_posts('ogs',
+                                                          lists, limit=20)
+          else:
+              self.posts = self.messageQuery.latest_posts(self.siteInfo.get_id(), 
+                                                          lists, limit=20)
 
       def get_posts(self):
-          assert (self.posts or (self.posts == []))
-          if len(self.posts) > self.start:
-              retval = self.posts[self.start:self.end]
-          else:
-              retval = []
-          assert retval.append
-          assert len(retval) <= self.get_posts_length()
-          return retval
-         
+          assert self.posts
+          return self.posts
+
+      def get_chunk_length(self):
+          return 20;
+          
       def get_previous_chunk_url(self):
+          return ''
+      
           newStart = self.start - self.get_chunk_length()
           if newStart < 0:
               newStart = 0
@@ -106,6 +59,8 @@ class GSLatestPostsView(Products.Five.BrowserView):
           return retval
 
       def get_next_chunk_url(self):
+          return ''
+      
           newStart = self.end
           newEnd = newStart + self.get_chunk_length()
           if newStart < len(self.posts):
@@ -115,6 +70,8 @@ class GSLatestPostsView(Products.Five.BrowserView):
           return retval
 
       def get_last_chunk_url(self):
+          return ''
+          
           newStart = len(self.posts) - self.get_chunk_length()
           newEnd = len(self.posts)
           return 'posts.html?start=%d&end=%d' % (newStart, newEnd)

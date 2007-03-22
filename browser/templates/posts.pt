@@ -176,8 +176,8 @@
             tal:condition="python:(len(postList)>0)">
             <tal:block tal:repeat="post postList">
               <p tal:define="position repeat/post/number; 
-                topicName post/mailSubject;
-                showPhoto python:(position==1) or (postList[position-1].mailUserId != postList[position-2].mailUserId)"
+                topicName post/subject;
+                showPhoto python:(position==1) or (postList[position-1]['author_id'] != postList[position-2]['author_id'])"
                 tal:replace="structure provider:groupserver.Post">
                 The email message is rendered by the Post content provider,
                 not by this page.

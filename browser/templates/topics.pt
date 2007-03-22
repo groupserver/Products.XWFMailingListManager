@@ -197,11 +197,11 @@
               </tal:block>
               <tal:block tal:repeat="topic topics">
                 <tr tal:define="position repeat/topic/number;"
-                  tal:attributes="id string:topic-${topic/id};
+                  tal:attributes="id string:topic-${topic/last_post_id};
                   class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';">
                   <td class="topic" title="Topic name">
                     <a tal:content="python:topic['subject'][:50]"
-                      tal:attributes="href string:topic.html?id=${topic/id};
+                      tal:attributes="href string:topic.html?id=${topic/last_post_id};
                       title string:View the topic ${topic/subject}"
                       href="#">Wibble</a><span 
                       tal:condition="python:len(topic['subject'])&gt;50">&#8230;</span>

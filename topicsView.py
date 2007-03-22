@@ -29,15 +29,15 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
 
           # HACK because I stuffed up my local box.
           if self.siteInfo.get_id() == 'example_division':
-              print self.groupInfo.get_id()
-              self.topics = self.messageQuery.latest_topics('ogs', 
-                                                            self.groupInfo.get_id())
-              print self.topics
+              self.topics = self.messageQuery.latest_topics('ogs',
+                                                            [self.groupInfo.get_id()],
+                                                            limit=20)
           else:
               self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(), 
-                                                            self.groupInfo.get_id())
+                                                            [self.groupInfo.get_id()],
+                                                            limit=20)
           assert self.topics
-                
+
       def get_previous_summary_url(self):
           return ''
       
