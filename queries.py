@@ -11,6 +11,34 @@ class MessageQuery( object ):
         self.postTable = sa.Table('post', metadata, autoload=True)
         self.fileTable = sa.Table('file', metadata, autoload=True)
 
+    def __add_std_where_clauses_topic( self, statement, table, 
+                                       site_id, group_ids=[] ):
+        '''Add the stanard "where" clauses to an SQL statement
+        
+        DESCRIPTION
+            It is very common to only search a table for an
+            object from a partular set of groups, on a particular site.
+            This method add the appropriate where-clauses to do this.
+        
+        ARGUMENTS
+            "statement":  An SQL statement.
+            "site_id":    The IS for the site that is being searched.
+            "group_ids":  A list of IDs of the groups that are being 
+                          searched.
+        RETURNS
+            The SQL statement, with the site-restrection and group
+            restrictions appended to the "WHERE" clause.
+            
+        SIDE EFFECTS
+        '''
+        statement.append_whereclause(table.c.site_id==site_id)
+        if group_ids:
+            inStatement = table.c.group_id.in_(*group_ids)
+            statement.append_whereclause(inStatement)
+
+        assert statement
+        return statement
+
     def topic_id_from_post_id( self, post_id ):
         """ Given a post_id, determine which topic it came from.
         
@@ -29,10 +57,8 @@ class MessageQuery( object ):
 
     def latest_posts( self, site_id, group_ids=[], limit=None, offset=0 ):
         statement = self.postTable.select()
-        statement.append_whereclause(self.postTable.c.site_id==site_id)
-        if group_ids:
-            statement.append_whereclause(self.postTable.c.group_id.in_(*group_ids))
-
+        self.__add_std_where_clauses_topic(statement, self.postTable,
+                                           site_id, group_ids)
         statement.limit = limit
         statement.offset = offset
         statement.order_by(sa.desc(self.postTable.c.date))
@@ -53,17 +79,24 @@ class MessageQuery( object ):
     
     def post_count( self, site_id, group_ids=[] ):
         statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)])
-        statement.append_whereclause(self.topicTable.c.site_id==site_id)
-        if group_ids:
-            inStatement = self.topicTable.c.group_id.in_(*group_ids)
-            statement.append_whereclause(inStatement)
-
+        self.__add_std_where_clauses_topic(statement, self.topicTable,
+                                           site_id, group_ids)
         r = statement.execute()
 
         retval = r.scalar()
         assert retval >= 0
         return retval
             
+    def topic_count( self, site_id, group_ids=[] ):
+        statement = sa.select([sa.func.count(self.topicTable.c.topic_id)])
+        self.__add_std_where_clauses_topic(statement, self.topicTable,
+                                           site_id, group_ids)
+        r = statement.execute()
+
+        retval = r.scalar()
+        assert retval >= 0
+        return retval
+
     def latest_topics( self, site_id, group_ids=[], limit=None, offset=0 ):
         """
             Returns: 
@@ -75,11 +108,9 @@ class MessageQuery( object ):
         tt = self.topicTable
         
         statement = tt.select()
-
-        statement.append_whereclause(tt.c.site_id==site_id)
-        if group_ids:
-            statement.append_whereclause(tt.c.group_id.in_(*group_ids))
-        
+        self.__add_std_where_clauses_topic(statement, self.topicTable,
+                                           site_id, group_ids)
+                
         statement.limit = limit
         statement.offset = offset
         statement.order_by(sa.desc(tt.c.last_post_date))
