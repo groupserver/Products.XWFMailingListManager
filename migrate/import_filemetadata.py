@@ -12,40 +12,47 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""Size adapters for testing
 
-$Id: test_size.py 61072 2005-10-31 17:43:51Z philikon $
-"""
+# CHANGE THESE
+DBHOSTNAME='localhost'
+DBPORT=5432
+DBUSERNAME='someuser'
+DBPASSWORD=''
+DBNAME='somedatabasename'
+
+# Shouldn't need to change below here
+
+from Products.Five import zcml
+from Products.XWFMailingListManager import emailmessage
+from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
+from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
+from Testing.ZopeTestCase import base
+
+import Products.Five
+import Products.XWFMailingListManager
+
+import csv
 import os, sys
+
+import sqlalchemy
 if __name__ == '__main__':
     execfile(os.path.join(sys.path[0], 'framework.py'))
 
-from Testing.ZopeTestCase import base
 app = base.app()
 
-import md5, os, sys
-import Products.Five
-import Products.XWFMailingListManager
-from Products.XWFMailingListManager import emailmessage
-from Products.Five import zcml
-from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
 
 zcml.load_config('meta.zcml', Products.Five)
 zcml.load_config('permissions.zcml', Products.Five)
 zcml.load_config('configure.zcml', Products.XWFMailingListManager)
 
 alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
-alchemy_adaptor.manage_changeProperties( hostname='localhost',
-                                         port=5432,
-                                         username='richard',
-                                         password='',
+alchemy_adaptor.manage_changeProperties( hostname=DBHOSTNAME,
+                                         port=DBPORT,
+                                         username=DBUSERNAME,
+                                         password=DBPASSWORD,
                                          dbtype='postgres',
-                                         database='onlinegroups.net')
+                                         database=DBNAME)
 
-from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
-from sqlalchemy.exceptions import SQLError
-import sqlalchemy
-import csv
      
 filemetadata_csv = file(sys.argv[1])
 filegroup_csv = file(sys.argv[2])
@@ -85,5 +92,4 @@ for fid, topic_id, post_id, mtype, title, size, date in fmetadata_out:
               topic_id=topic_id)
     
     postTable.update(postTable.c.post_id == post_id).execute(has_attachments=True)
-            
-print fmetadata_out
+    

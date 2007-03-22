@@ -12,41 +12,49 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ##############################################################################
-"""Size adapters for testing
 
-$Id: test_size.py 61072 2005-10-31 17:43:51Z philikon $
-"""
+# CHANGE THESE
+DBHOSTNAME='localhost'
+DBPORT=5432
+DBUSERNAME='someuser'
+DBPASSWORD=''
+DBNAME='somedatabasename'
+
+# You shouldn't need to change below here
+
+from Products.Five import zcml
+from Products.XWFMailingListManager import emailmessage
+from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
+from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
+from Testing.ZopeTestCase import base
+from sqlalchemy.exceptions import SQLError
+
+import Products.Five
+import Products.XWFMailingListManager
+
+import difflib
 import os, sys
+import sqlalchemy
+import time
+
 if __name__ == '__main__':
     execfile(os.path.join(sys.path[0], 'framework.py'))
 
-from Testing.ZopeTestCase import base
 app = base.app()
 
-import md5, os, sys
-import Products.Five
-import Products.XWFMailingListManager
-from Products.XWFMailingListManager import emailmessage
-from Products.Five import zcml
-from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
 
 zcml.load_config('meta.zcml', Products.Five)
 zcml.load_config('permissions.zcml', Products.Five)
 zcml.load_config('configure.zcml', Products.XWFMailingListManager)
 
 alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
-alchemy_adaptor.manage_changeProperties( hostname='localhost',
-                                         port=5432,
-                                         username='richard',
-                                         password='',
+alchemy_adaptor.manage_changeProperties( hostname=DBHOSTNAME,
+                                         port=DBPORT,
+                                         username=DBUSERNAME,
+                                         password=DBPASSWORD,
                                          dbtype='postgres',
-                                         database='onlinegroups.net')
+                                         database=DBNAME)
 
-from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
-from sqlalchemy.exceptions import SQLError
-import sqlalchemy
-import csv
-import time
 
 importDir = sys.argv[1]
 count = 0
@@ -56,7 +64,6 @@ metadata = session.getMetaData()
 and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
 postTable = sqlalchemy.Table('post', metadata, autoload=True)
 log = file(sys.argv[2], 'a+')
-import difflib
 try:
     position = int(sys.argv[3])
 except:
