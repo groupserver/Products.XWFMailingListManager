@@ -52,6 +52,14 @@ class MessageQuery( object ):
         return retval
     
     def post_count( self, site_id, group_ids=[] ):
+        statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)])
+        statement.append_whereclause(self.postTable.c.site_id==site_id)
+        if group_ids:
+            statement.append_whereclause(self.topicTable.c.group_id.in_(*group_ids))
+        print statement
+        r = statement.execute()
+        print r.scalar()
+        
         statement = self.postTable.select()
         statement.append_whereclause(self.postTable.c.site_id==site_id)
         if group_ids:
