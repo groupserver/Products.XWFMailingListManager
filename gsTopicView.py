@@ -39,7 +39,6 @@ class GSTopicView(view.GSPostingInfo):
           self.topicId = self.messageQuery.topic_id_from_post_id(self.emailId)
           
       def update(self):
-          print '\nStart update'
           result = view.process_form( self.context, self.request )
           if result:
               self.retval.update(result.items())
@@ -48,7 +47,6 @@ class GSTopicView(view.GSPostingInfo):
               self.retval.update(result.items())
           self.topic = self.messageQuery.topic_posts(self.topicId)
           self.lastPostId = self.topic[-1]['post_id']
-          print 'End update\n'
           
       def get_topic(self):
           assert self.topic
