@@ -461,11 +461,8 @@ class GSPostContentProvider(object):
              None.
           
           """
-          user = self.get_author()
-          retval = None
-          if user:
-              retval = get_user_realnames(user)
-              
+          retval = get_user_realnames( self.get_author(), self.authorId )
+          
           return retval
           
 # State that the GSPostContentProvider is a Content Provider, and attach
