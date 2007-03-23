@@ -17,7 +17,9 @@ from interfaces import IGSPostContentProvider
 from view import GSGroupInfo
 
 # <zope-3 weirdness="high">
-          
+
+COOKED_TEMPLATES = {}
+
 class GSPostContentProvider(object):
       """GroupServer Post Content Provider: display a single post
       
@@ -114,10 +116,14 @@ class GSPostContentProvider(object):
               An HTML-snippet that represents the post."""
           if not self.__updated:
               raise interfaces.UpdateNotCalled
-      
-          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-          pageTemplate = VPTF(self.pageTemplateFileName)          
-
+          
+          if COOKED_TEMPLATES.has_key(self.pageTemplateFileName):
+              pageTemplate = COOKED_TEMPLATES[self.pageTemplateFileName]
+          else:
+              VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
+              pageTemplate = VPTF(self.pageTemplateFileName)    
+              COOKED_TEMPLATES[self.pageTemplateFileName] = pageTemplate      
+          
           return pageTemplate(authorId=self.authorId, 
                               authorName=self.authorName,
                               authorExists=self.authorExists,
