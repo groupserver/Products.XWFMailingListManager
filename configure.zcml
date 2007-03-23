@@ -71,17 +71,6 @@
   <interface interface=".interfaces.IGSStickyTopicToggleContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
 
-  <!-- Adapters -->
-  <!--adapter for=".interfaces.IGSTopicIndexContentProvider"
-    provides="zope.contentprovider.interfaces.IContentProvider"
-    factory=".topicIndexContentProvider.GSTopicIndexContentProvider" 
-    name="groupserver.TopicIndex" />
-
-  <adapter for=".interfaces.IGSPostMessageContentProvider"
-    factory=".postMessageContentProvider.GSPostMessageDataContentProvider"
-    provides="zope.contentprovider.interfaces.IContentProvider" 
-    name="groupserver.PostMessageData" /-->
-
   <adapter for=".emailmessage.IEmailMessage"
     factory=".emailmessage.RDBEmailMessageStorage"
     provides=".emailmessage.IRDBStorageForEmailMessage" />

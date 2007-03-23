@@ -1,26 +1,15 @@
 '''GroupServer-Content View Class
 '''
-import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
-import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
-import zope.pagetemplate.pagetemplatefile
-import zope.interface, zope.component, zope.publisher.interfaces
-import zope.viewlet.interfaces, zope.contentprovider.interfaces 
-import Products.PythonScripts.standard
-import transaction
-
-import DocumentTemplate
+from interfaces import IGSTopicView
+from zope.interface import implements
+import Products.GSContent, Products.XWFCore.XWFUtils
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
-
-import Products.GSContent, Products.XWFCore.XWFUtils
-from interfaces import IGSUserInfo
-import addapost, view
+import view
 
 class GSTopicView(view.GSPostingInfo):
       """View of a GroupServer Topic"""
+      implements(IGSTopicView)
       def __init__(self, context, request):
           self.retval = {}
           self.context = context
@@ -28,7 +17,7 @@ class GSTopicView(view.GSPostingInfo):
 
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
           self.groupInfo = view.GSGroupInfo( context )
-         
+          
           self.archive = context.messages
           self.emailId = request.form.get('id', None)
 

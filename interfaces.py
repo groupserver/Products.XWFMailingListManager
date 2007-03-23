@@ -5,6 +5,9 @@ from zope.schema import *
 class IGSMessagesFolder(zope.interface.Interface):
     pass
 
+class IGSTopicView(zope.interface.Interface):
+    pass
+
 # <zope-3 weirdness="high">
 
 class IGSPostContentProvider(zope.interface.Interface):

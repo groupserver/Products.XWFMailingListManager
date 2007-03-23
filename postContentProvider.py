@@ -1,20 +1,14 @@
-import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
-import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
-import zope.pagetemplate.pagetemplatefile
-import zope.interface, zope.component, zope.publisher.interfaces
-import zope.viewlet.interfaces, zope.contentprovider.interfaces 
-
-import textwrap
-
-import DocumentTemplate, Products.XWFMailingListManager
-
-import Products.GSContent, Products.XWFCore.XWFUtils
-
+from Products.GSContent.view import GSSiteInfo
+from Products.XWFCore.XWFUtils import get_user, get_user_realnames
 from interfaces import IGSPostContentProvider
 from view import GSGroupInfo
+import textwrap
+
+from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
+from zope.interface import implements, Interface
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+from zope.component import adapts, provideAdapter
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
 # <zope-3 weirdness="high">
 
@@ -38,10 +32,11 @@ class GSPostContentProvider(object):
          </p>
       """
 
-      zope.interface.implements( IGSPostContentProvider )
-      zope.component.adapts(zope.interface.Interface,
-                            zope.publisher.interfaces.browser.IDefaultBrowserLayer,
-                            zope.interface.Interface)
+      implements(IGSPostContentProvider)
+      adapts(Interface,
+             IDefaultBrowserLayer, 
+             Interface)
+      
       post = None
       def __init__(self, context, request, view):
           """Create a GSPostContentProvider instance.
@@ -65,7 +60,6 @@ class GSPostContentProvider(object):
       
           self.context = context
           self.request = request
-          
 
       def update(self):
           """Update the internal state of the post content-provider.
@@ -92,8 +86,8 @@ class GSPostContentProvider(object):
           
           self.authorId = self.post['author_id']
           self.authorName = self.get_author_realnames()
+          self.authored = self.user_authored()
           self.authorExists = self.author_exists()
-          self.authored = self.authorExists and self.user_authored()
           self.authorImage = self.get_author_image()
          
           ir = self.get_email_intro_and_remainder()
@@ -101,8 +95,8 @@ class GSPostContentProvider(object):
           
           self.cssClass = self.get_cssClass()
 
-          self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
-          self.groupInfo = GSGroupInfo( self.context )
+          self.siteInfo = GSSiteInfo(self.context)
+          self.groupInfo = GSGroupInfo(self.context)
            
           assert self.__updated
           
@@ -115,29 +109,28 @@ class GSPostContentProvider(object):
           RETURNS
               An HTML-snippet that represents the post."""
           if not self.__updated:
-              raise interfaces.UpdateNotCalled
+              raise UpdateNotCalled
           
           if COOKED_TEMPLATES.has_key(self.pageTemplateFileName):
               pageTemplate = COOKED_TEMPLATES[self.pageTemplateFileName]
           else:
-              VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-              pageTemplate = VPTF(self.pageTemplateFileName)    
+              pageTemplate = PageTemplateFile(self.pageTemplateFileName)    
               COOKED_TEMPLATES[self.pageTemplateFileName] = pageTemplate      
           
           return pageTemplate(authorId=self.authorId, 
-                              authorName=self.authorName,
-                              authorExists=self.authorExists,
-                              authorImage=self.authorImage,
-                              showPhoto=self.showPhoto,
-                              authored=self.authored,
-                              postIntro=self.postIntro,
-                              postRemainder=self.postRemainder,
-                              cssClass=self.cssClass,
-                              topicName=self.topicName,
-                              post=self.post,
-                              context=self.context,
-                              siteName = self.siteInfo.get_name(),
-                              siteURL = self.siteInfo.get_url(),
+                              authorName=self.authorName, 
+                              authorImage=self.authorImage, 
+                              authorExists=self.authorExists, 
+                              showPhoto=self.showPhoto, 
+                              authored=self.authored, 
+                              postIntro=self.postIntro, 
+                              postRemainder=self.postRemainder, 
+                              cssClass=self.cssClass, 
+                              topicName=self.topicName, 
+                              post=self.post, 
+                              context=self.context, 
+                              siteName = self.siteInfo.get_name(), 
+                              siteURL = self.siteInfo.get_url(), 
                               groupId = self.groupInfo.get_id())
 
       #########################################
@@ -165,8 +158,8 @@ class GSPostContentProvider(object):
           retval = ''
           
           text = cgi.escape(messageText)
-          text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)',
-                 '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>',
+          text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
+                 '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
                  text)
           retval = text.replace('@', ' ( at ) ')
          
@@ -191,7 +184,7 @@ class GSPostContentProvider(object):
               "Presentation/Tofu/MailingListManager/lscripts"."""
           retval = ''
           t = textwrap.TextWrapper(width=width, expand_tabs=False, 
-                                   replace_whitespace=False,
+                                   replace_whitespace=False, 
                                    break_long_words=False)
           retval = '\n'.join(map(lambda l: '\n'.join(t.wrap(l)), 
                                  messageText.split('\n')))
@@ -407,34 +400,38 @@ class GSPostContentProvider(object):
               email message, "False" otherwise.
               
           SIDE EFFECTS
-              None."""
-          assert self.post
-          assert self.request
-          
+              None.
+              
+          """
           user = self.request.AUTHENTICATED_USER
-          retval = user.getId() == self.post['author_id']
-          
+          retval = False
+          if user.getId():
+              retval = user.getId() == self.authorId
+              
           assert retval in (True, False)
           return retval
 
-      def author_exists(self):
-          """Does the author of the post exist?
+      def get_author(self):
+          """ Get the user object associated with the author.
           
           RETURNS
-             True if the author of the post exists on the system, False
-             otherwise.
+             The user object if the author has an account, otherwise None.
+          
+          """
+          author_cache = getattr(self.view, '__author_object_cache', {})
+          user = author_cache.get(self.authorId, None)
+          if not user:
+              user = get_user(self.context, self.authorId)
+              author_cache[self.authorId] = user
+              self.view.__author_object_cache = author_cache
               
-          SIDE EFFECTS
-              None."""
-      
-          assert self.post
-          retval = False
+          return user
+
+      def author_exists(self):
+          """ Does the author exist?
           
-          authorId = self.post['author_id']
-          retval = self.context.Scripts.get.user_exists(authorId)
-          
-          assert retval in (True, False)
-          return retval
+          """
+          return self.get_author() and True or False
       
       def get_author_image(self):
           """Get the URL for the image of the post's author.
@@ -445,13 +442,13 @@ class GSPostContentProvider(object):
              
           SIDE EFFECTS
              None.
+          
           """
-          assert self.post
-
-          retval = None          
-          if self.author_exists():
-              authorId = self.post['author_id']
-              retval = self.context.Scripts.get.user_image(authorId)
+          user = self.get_author()
+          retval = None
+          if user:
+              retval = user.get_image()
+              
           return retval
            
       def get_author_realnames(self):
@@ -462,20 +459,22 @@ class GSPostContentProvider(object):
           
           SIDE EFFECTS
              None.
+          
           """
-          assert self.post
-          
-          authorId = self.post['author_id']
-          retval = self.context.Scripts.get.user_realnames(authorId)
-          
+          user = self.get_author()
+          retval = None
+          if user:
+              retval = get_user_realnames(user)
+              
           return retval
+          
 # State that the GSPostContentProvider is a Content Provider, and attach
 #     to "groupserver.Post".
-zope.component.provideAdapter(GSPostContentProvider, 
-                              provides=zope.contentprovider.interfaces.IContentProvider,
-                              name="groupserver.Post")
+provideAdapter(GSPostContentProvider, 
+               provides=IContentProvider, 
+               name="groupserver.Post")
 
-zope.component.provideAdapter(GSPostContentProvider, 
-                              provides=zope.contentprovider.interfaces.IContentProvider,
-                              name="groupserver.PostAtom")
+provideAdapter(GSPostContentProvider, 
+               provides=IContentProvider, 
+               name="groupserver.PostAtom")
 # </zope-3 weirdness="high">
