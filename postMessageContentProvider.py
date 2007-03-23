@@ -14,6 +14,8 @@ import Products.GSContent, Products.XWFCore.XWFUtils
 from view import GSGroupInfo
 from interfaces import IGSPostMessageContentProvider
 
+COOKED_TEMPLATES = {}
+
 class GSPostMessageContentProvider(object):
       """GroupServer Post Message Content Provider
       """
@@ -58,15 +60,22 @@ class GSPostMessageContentProvider(object):
               raise interfaces.UpdateNotCalled
           VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
           self.pageTemplate = VPTF(self.pageTemplateFileName)
+
+          if COOKED_TEMPLATES.has_key(self.pageTemplateFileName):
+              pageTemplate = COOKED_TEMPLATES[self.pageTemplateFileName]
+          else:
+              VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
+              pageTemplate = VPTF(self.pageTemplateFileName)    
+              COOKED_TEMPLATES[self.pageTemplateFileName] = pageTemplate      
           
-          return self.pageTemplate(startNew=self.startNew,
-                                   topic=self.topic,
-                                   groupName=self.groupName,
-                                   groupId=self.groupId,
-                                   siteId=self.siteId,
-                                   replyToId=self.replyToId,
-                                   fromEmailAddresses=self.fromEmailAddresses,
-                                   preferredEmailAddress=self.preferredEmailAddress)
+          return pageTemplate(startNew=self.startNew,
+                              topic=self.topic,
+                              groupName=self.groupName,
+                              groupId=self.groupId,
+                              siteId=self.siteId,
+                              replyToId=self.replyToId,
+                              fromEmailAddresses=self.fromEmailAddresses,
+                              preferredEmailAddress=self.preferredEmailAddress)
           
       #########################################
       # Non standard methods below this point #

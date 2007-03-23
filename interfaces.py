@@ -87,7 +87,7 @@ class IGSTopicIndexContentProvider(zope.interface.Interface):
         pass
 
 class IGSPostMessageContentProvider(zope.interface.Interface):
-    """A content provider for the post-topic form"""
+    """A content provider for the "Add to Topic" and "Start Topic" forms"""
     startNew = Bool(title=u'Start a New Topic',
                     description=u'Set to "True" if a new topic is started',
                     required=False,
