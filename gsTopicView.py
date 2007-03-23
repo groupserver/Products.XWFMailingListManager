@@ -59,7 +59,7 @@ class GSTopicView(view.GSPostingInfo):
           
       def get_next_topic(self):
           assert self.messageQuery
-          r = self.messageQuery.next_topic(self.topicId)
+          r = self.messageQuery.later_topic(self.topicId)
           if r:
               retval = (r['last_post_id'], r['subject'])
           else:
@@ -68,7 +68,7 @@ class GSTopicView(view.GSPostingInfo):
           
       def get_previous_topic(self):
           assert self.messageQuery
-          r = self.messageQuery.previous_topic(self.topicId)
+          r = self.messageQuery.earlier_topic(self.topicId)
           if r:
               retval = (r['last_post_id'], r['subject'])
           else:

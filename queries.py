@@ -212,7 +212,7 @@ class MessageQuery( object ):
                      'date': r['date']}
         return None
 
-    def next_topic( self, curr_topic_id ):
+    def later_topic( self, curr_topic_id ):
         """ Find the topic prior to the given topic ID.
 
             Returns:
@@ -224,7 +224,7 @@ class MessageQuery( object ):
         """
         return self._nav_topic(curr_topic_id, 'prev')
 
-    def previous_topic( self, curr_topic_id ):
+    def earlier_topic( self, curr_topic_id ):
         """ Find the topic after the given topic ID.
 
             Returns:
