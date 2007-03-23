@@ -212,7 +212,7 @@ class MessageQuery( object ):
                      'date': r['date']}
         return None
 
-    def previous_topic( self, curr_topic_id ):
+    def next_topic( self, curr_topic_id ):
         """ Find the topic prior to the given topic ID.
 
             Returns:
@@ -224,7 +224,7 @@ class MessageQuery( object ):
         """
         return self._nav_topic(curr_topic_id, 'prev')
 
-    def next_topic( self, curr_topic_id ):
+    def previous_topic( self, curr_topic_id ):
         """ Find the topic after the given topic ID.
 
             Returns:
@@ -302,14 +302,14 @@ class MessageQuery( object ):
         statement.order_by(sa.asc(pt.c.date))
         
         r = statement.execute()
+        retval = []
         if r.rowcount:
-            return [ {'post_id': x['post_id'],
-                      'subject': unicode(x['subject'], 'utf-8'),
-                      'date': x['date'],
-                      'author_id': x['user_id'],
-                      'body': unicode(x['body'], 'utf-8')} for x in r ]
-        
-        return None
+            retval = [ {'post_id': x['post_id'],
+                        'subject': unicode(x['subject'], 'utf-8'),
+                        'date': x['date'],
+                        'author_id': x['user_id'],
+                        'body': unicode(x['body'], 'utf-8')} for x in r ]
+        return retval
 
     def post( self, post_id ):
         """ Retrieve a particular post.

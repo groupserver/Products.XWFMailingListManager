@@ -63,6 +63,7 @@ class GSPostContentProvider(object):
       
           self.context = context
           self.request = request
+          
 
       def update(self):
           """Update the internal state of the post content-provider.
@@ -88,6 +89,7 @@ class GSPostContentProvider(object):
           self.__updated = True
           
           self.authorId = self.post['author_id']
+          print 'Updating post %d by %s' % (self.position, self.authorId)
           self.authorName = self.get_author_realnames()
           self.authorExists = self.author_exists()
           self.authored = self.authorExists and self.user_authored()

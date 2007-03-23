@@ -31,15 +31,15 @@ class GSTopicView(view.GSPostingInfo):
          
           self.archive = context.messages
           self.emailId = request.form.get('id', None)
+
           da = context.zsqlalchemy 
-          assert da
+          assert da, 'No data-adaptor found'
+          
           self.messageQuery = queries.MessageQuery(context, da)
           self.topicId = self.messageQuery.topic_id_from_post_id(self.emailId)
-          self.topic = self.messageQuery.topic_posts(self.topicId)
-          assert self.topic
-          self.lastPostId = self.topic[-1]['post_id']
           
       def update(self):
+          print '\nStart update'
           result = view.process_form( self.context, self.request )
           if result:
               self.retval.update(result.items())
@@ -47,6 +47,8 @@ class GSTopicView(view.GSPostingInfo):
           if result:
               self.retval.update(result.items())
           self.topic = self.messageQuery.topic_posts(self.topicId)
+          self.lastPostId = self.topic[-1]['post_id']
+          print 'End update\n'
           
       def get_topic(self):
           assert self.topic
