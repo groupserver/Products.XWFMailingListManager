@@ -26,21 +26,35 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
           da = context.zsqlalchemy 
           assert da
           self.messageQuery = queries.MessageQuery(context, da)
+  
+          self.start = int(self.request.form.get('start', 0))
+          self.end = int(self.request.form.get('end', 20))
+          # Swap the start and end, if necessary
+          if self.start > self.end:
+              tmp = self.end
+              self.end = self.start
+              self.start = tmp
+          
+          messages = self.context.messages
+          lists = messages.getProperty('xwf_mailing_list_ids')
+
+          limit = self.get_summary_length()
 
           # HACK because I stuffed up my local box.
           if self.siteInfo.get_id() == 'example_division':
-              self.topics = self.messageQuery.latest_topics('ogs',
-                                                            [self.groupInfo.get_id()],
-                                                            limit=20)
+              self.numTopics = self.messageQuery.topic_count('ogs', lists)
+              self.topics = self.messageQuery.latest_topics('ogs', lists,
+                                                            limit=limit,
+                                                            offset=self.start)
           else:
-              self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(), 
-                                                            [self.groupInfo.get_id()],
-                                                            limit=20)
+              self.numTopics = self.messageQuery.topic_count(self.siteInfo.get_id(), lists)
+              self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(),
+                                                            lists,
+                                                            limit=limit,
+                                                            offset=self.start)
           assert self.topics
 
       def get_previous_summary_url(self):
-          return ''
-      
           newStart = self.start - self.get_summary_length()
           if newStart < 0:
               newStart = 0
@@ -55,29 +69,34 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
           return retval
       
       def get_next_summary_url(self):
-          return ''
-          
           newStart = self.end
           newEnd = newStart + self.get_summary_length()
-          if newStart < len(self.threads):
+          if newStart < self.numTopics:
               retval = 'topics.html?start=%d&end=%d' % (newStart, newEnd)
           else:
               retval = ''
           return retval
       
       def get_last_summary_url(self):
-          return ''
-          newStart = len(self.threads) - self.get_summary_length()
-          newEnd = len(self.threads)
+          newStart = self.numTopics - self.get_summary_length()
+          newEnd = self.numTopics
           return 'topics.html?start=%d&end=%d' % (newStart, newEnd)
+
+      def get_summary_length(self):
+          assert hasattr(self, 'start')
+          assert hasattr(self, 'end')
+          assert self.start <= self.end
+          
+          retval = self.end - self.start
+          
+          assert retval >= 0
+          return retval;
           
       def get_topics(self):
           assert self.topics
           return self.topics
 
       def get_sticky_topics(self):
-          #assert self.threads
-          
           retval = []
           return retval
                     
@@ -92,9 +111,6 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
                                 'length': ''}
                   retval.append(threadInfo)
           return retval
-          
-      def get_summary_length(self):
-          return 20
-                    
+                              
       def process_form(self, *args):
           pass

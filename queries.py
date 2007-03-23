@@ -11,7 +11,7 @@ class MessageQuery( object ):
         self.postTable = sa.Table('post', metadata, autoload=True)
         self.fileTable = sa.Table('file', metadata, autoload=True)
 
-    def __add_std_where_clauses_topic( self, statement, table, 
+    def __add_std_where_clauses( self, statement, table, 
                                        site_id, group_ids=[] ):
         '''Add the stanard "where" clauses to an SQL statement
         
@@ -57,8 +57,8 @@ class MessageQuery( object ):
 
     def latest_posts( self, site_id, group_ids=[], limit=None, offset=0 ):
         statement = self.postTable.select()
-        self.__add_std_where_clauses_topic(statement, self.postTable,
-                                           site_id, group_ids)
+        self.__add_std_where_clauses(statement, self.postTable,
+                                     site_id, group_ids)
         statement.limit = limit
         statement.offset = offset
         statement.order_by(sa.desc(self.postTable.c.date))
@@ -79,7 +79,7 @@ class MessageQuery( object ):
     
     def post_count( self, site_id, group_ids=[] ):
         statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)])
-        self.__add_std_where_clauses_topic(statement, self.topicTable,
+        self.__add_std_where_clauses(statement, self.topicTable,
                                            site_id, group_ids)
         r = statement.execute()
 
@@ -89,8 +89,8 @@ class MessageQuery( object ):
             
     def topic_count( self, site_id, group_ids=[] ):
         statement = sa.select([sa.func.count(self.topicTable.c.topic_id)])
-        self.__add_std_where_clauses_topic(statement, self.topicTable,
-                                           site_id, group_ids)
+        self.__add_std_where_clauses(statement, self.topicTable,
+                                     site_id, group_ids)
         r = statement.execute()
 
         retval = r.scalar()
@@ -108,8 +108,8 @@ class MessageQuery( object ):
         tt = self.topicTable
         
         statement = tt.select()
-        self.__add_std_where_clauses_topic(statement, self.topicTable,
-                                           site_id, group_ids)
+        self.__add_std_where_clauses(statement, self.topicTable,
+                                     site_id, group_ids)
                 
         statement.limit = limit
         statement.offset = offset
