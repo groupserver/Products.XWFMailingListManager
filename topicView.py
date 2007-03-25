@@ -8,7 +8,7 @@ import queries
 import view
 
 class GSTopicView(view.GSPostingInfo):
-      """View of a GroupServer Topic"""
+      """View of a single GroupServer Topic"""
       implements(IGSTopicView)
       def __init__(self, context, request):
           self.retval = {}

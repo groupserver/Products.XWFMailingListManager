@@ -27,11 +27,11 @@
   
   <!--View of the index-pages -->
   <browser:page for=".interfaces.IGSMessagesFolder" name="post.html"
-    class=".view.GSPostView"
+    class=".postView.GSPostView"
     template="browser/templates/post.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="topic.html"
-    class=".gsTopicView.GSTopicView"
+    class=".topicView.GSTopicView"
     template="browser/templates/topic.pt" permission="zope2.View" />
   
   <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"
