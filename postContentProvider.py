@@ -36,15 +36,17 @@ class GSPostContentProvider(object):
              IDefaultBrowserLayer, 
              Interface)
       
-      # these are CLASS attributes because we want the cache to be accessible across all
-      # instances!
+      # These following are *CLASS* attributes, because we want the cache to
+      # be accessible across all instances!
       
-      # we just want a really simple cache for templates, because there aren't many of them
+      # We want a really simple cache for templates, because there aren't
+      #  many of them
       cookedTemplates = SimpleCache()
       
-      # setup a least recently used expiry cache for results
+      # Setup a least recently used expiry cache for results, with a K
+      #   of posts, maximum.
       cookedResult = LRUCache()
-      cookedResult.set_cache_size(1000) # 1000 items in the cache, maximum
+      cookedResult.set_cache_size(1024)
       
       post = None
       def __init__(self, context, request, view):
