@@ -1,5 +1,6 @@
 from Products.GSContent.view import GSSiteInfo
 from Products.XWFCore.XWFUtils import get_user, get_user_realnames
+from Products.XWFCore.cache import LRUCache, SimpleCache
 from interfaces import IGSPostContentProvider
 from view import GSGroupInfo
 import textwrap
@@ -11,8 +12,6 @@ from zope.component import adapts, provideAdapter
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
 # <zope-3 weirdness="high">
-
-COOKED_TEMPLATES = {}
 
 class GSPostContentProvider(object):
       """GroupServer Post Content Provider: display a single post
@@ -36,6 +35,16 @@ class GSPostContentProvider(object):
       adapts(Interface,
              IDefaultBrowserLayer, 
              Interface)
+      
+      # these are CLASS attributes because we want the cache to be accessible across all
+      # instances!
+      
+      # we just want a really simple cache for templates, because there aren't many of them
+      cookedTemplates = SimpleCache()
+      
+      # setup a least recently used expiry cache for results
+      cookedResult = LRUCache()
+      cookedResult.set_cache_size(1000) # 1000 items in the cache, maximum
       
       post = None
       def __init__(self, context, request, view):
@@ -111,27 +120,32 @@ class GSPostContentProvider(object):
           if not self.__updated:
               raise UpdateNotCalled
           
-          if COOKED_TEMPLATES.has_key(self.pageTemplateFileName):
-              pageTemplate = COOKED_TEMPLATES[self.pageTemplateFileName]
-          else:
-              pageTemplate = PageTemplateFile(self.pageTemplateFileName)    
-              COOKED_TEMPLATES[self.pageTemplateFileName] = pageTemplate      
+          r = self.cookedResult.get(self.post['post_id'])
+          if not r:
+              pageTemplate = self.cookedTemplates.get(self.pageTemplateFileName)
+              if not pageTemplate:
+                  pageTemplate = PageTemplateFile(self.pageTemplateFileName)    
+                  self.cookedTemplates.add(self.pageTemplateFileName, pageTemplate)
+              
+              r = pageTemplate(authorId=self.authorId, 
+                                  authorName=self.authorName, 
+                                  authorImage=self.authorImage, 
+                                  authorExists=self.authorExists, 
+                                  showPhoto=self.showPhoto, 
+                                  authored=self.authored, 
+                                  postIntro=self.postIntro, 
+                                  postRemainder=self.postRemainder, 
+                                  cssClass=self.cssClass, 
+                                  topicName=self.topicName, 
+                                  post=self.post, 
+                                  context=self.context, 
+                                  siteName = self.siteInfo.get_name(), 
+                                  siteURL = self.siteInfo.get_url(), 
+                                  groupId = self.groupInfo.get_id())
+              
+              self.cookedResult.add(self.post['post_id'], r)
           
-          return pageTemplate(authorId=self.authorId, 
-                              authorName=self.authorName, 
-                              authorImage=self.authorImage, 
-                              authorExists=self.authorExists, 
-                              showPhoto=self.showPhoto, 
-                              authored=self.authored, 
-                              postIntro=self.postIntro, 
-                              postRemainder=self.postRemainder, 
-                              cssClass=self.cssClass, 
-                              topicName=self.topicName, 
-                              post=self.post, 
-                              context=self.context, 
-                              siteName = self.siteInfo.get_name(), 
-                              siteURL = self.siteInfo.get_url(), 
-                              groupId = self.groupInfo.get_id())
+          return r
 
       #########################################
       # Non-standard methods below this point #
@@ -223,7 +237,6 @@ class GSPostContentProvider(object):
               Originally a stand-alone script in
               "Presentation/Tofu/MailingListManager/lscripts".
           """
-          retval = ('', '')
           slines = messageText.split('\n')
 
           intro = []; body = []; i = 1;
