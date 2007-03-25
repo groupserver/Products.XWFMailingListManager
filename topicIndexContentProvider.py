@@ -1,29 +1,25 @@
-import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
-import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
-import zope.pagetemplate.pagetemplatefile
-import zope.interface, zope.component, zope.publisher.interfaces
-import zope.viewlet.interfaces, zope.contentprovider.interfaces 
-
-import DocumentTemplate, Products.XWFMailingListManager
-
-import Products.GSContent, Products.XWFCore.XWFUtils
-
 from interfaces import IGSTopicIndexContentProvider
 from view import GSGroupInfo
+from zope.component import adapts
+from zope.component import provideAdapter
+from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
+from zope.interface import implements
+from zope.interface.interface import Interface
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+
+import Products.GSContent
+import Products.XWFCore.XWFUtils
+import Products.XWFMailingListManager
 
 class GSTopicIndexContentProvider(object):
       """GroupServer Topic Index Content Provider
       
       """
-
-      zope.interface.implements( IGSTopicIndexContentProvider )
-      zope.component.adapts(zope.interface.Interface,
-                            zope.publisher.interfaces.browser.IDefaultBrowserLayer,
-                            zope.interface.Interface)
-      
+      implements( IGSTopicIndexContentProvider )
+      adapts(Interface,
+             IDefaultBrowserLayer,
+             Interface)
       
       def __init__(self, context, request, view):
           self.__parent = view
@@ -50,10 +46,10 @@ class GSTopicIndexContentProvider(object):
           
       def render(self):
           if not self.__updated:
-              raise interfaces.UpdateNotCalled
+              raise UpdateNotCalled
+          
           pageTemplateFileName = "browser/templates/topicIndex.pt"
-          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-          self.pageTemplate = VPTF(pageTemplateFileName)
+          self.pageTemplate = PageTemplateFile(pageTemplateFileName)
           
           return self.pageTemplate(entries=self.entries, 
                                    context=self.context)
@@ -76,7 +72,6 @@ class GSTopicIndexContentProvider(object):
           """
           assert post
           
-          retval = ''
           authorId = post['author_id']
           retval = self.context.Scripts.get.user_realnames(authorId)
 
@@ -122,6 +117,6 @@ class GSTopicIndexContentProvider(object):
                   retval = (fileId, fileType)
           return retval
 
-zope.component.provideAdapter(GSTopicIndexContentProvider, 
-                              provides=zope.contentprovider.interfaces.IContentProvider,
-                              name="groupserver.TopicIndex")
+provideAdapter(GSTopicIndexContentProvider, 
+               provides=IContentProvider,
+               name="groupserver.TopicIndex")
