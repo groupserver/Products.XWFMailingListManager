@@ -46,7 +46,7 @@ class GSPostContentProvider(object):
       # Setup a least recently used expiry cache for results, with a K
       #   of posts, maximum.
       cookedResult = LRUCache()
-      cookedResult.set_cache_size(1024)
+      cookedResult.set_max_objects(1024)
       
       post = None
       def __init__(self, context, request, view):
