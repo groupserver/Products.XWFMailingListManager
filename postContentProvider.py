@@ -93,21 +93,20 @@ class GSPostContentProvider(object):
           
           self.__updated = True
           
-          self.authorId = self.post['author_id']
-          self.authorName = self.get_author_realnames()
-          self.authored = self.user_authored()
-          self.authorExists = self.author_exists()
-          self.authorImage = self.get_author_image()
-         
-          ir = self.get_email_intro_and_remainder()
-          self.postIntro, self.postRemainder = ir
-          
-          self.cssClass = self.get_cssClass()
-
-          self.siteInfo = GSSiteInfo(self.context)
-          self.groupInfo = GSGroupInfo(self.context)
-           
-          assert self.__updated
+          if not self.cookedResult.has_key(self.post['post_id']):
+              self.authorId = self.post['author_id']
+              self.authorName = self.get_author_realnames()
+              self.authored = self.user_authored()
+              self.authorExists = self.author_exists()
+              self.authorImage = self.get_author_image()
+             
+              ir = self.get_email_intro_and_remainder()
+              self.postIntro, self.postRemainder = ir
+              
+              self.cssClass = self.get_cssClass()
+    
+              self.siteInfo = GSSiteInfo(self.context)
+              self.groupInfo = GSGroupInfo(self.context)
           
       def render(self):
           """Render the post
@@ -116,7 +115,9 @@ class GSPostContentProvider(object):
           which is set when the content-provider is created.
           
           RETURNS
-              An HTML-snippet that represents the post."""
+              An HTML-snippet that represents the post.
+              
+          """
           if not self.__updated:
               raise UpdateNotCalled
           
@@ -167,17 +168,17 @@ class GSPostContentProvider(object):
               None.
 
           NOTE    
-              Originally found in XWFCore."""
+              Originally found in XWFCore.
+              
+          """
           import re, cgi
-          retval = ''
-          
+
           text = cgi.escape(messageText)
           text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
                  '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
                  text)
           retval = text.replace('@', ' ( at ) ')
-         
-          # assert retval
+          
           return retval
       
       def __wrap_message(self, messageText, width=79):
@@ -195,8 +196,9 @@ class GSPostContentProvider(object):
               
           NOTE
               Originally a stand-alone script in
-              "Presentation/Tofu/MailingListManager/lscripts"."""
-          retval = ''
+              "Presentation/Tofu/MailingListManager/lscripts".
+              
+          """
           t = textwrap.TextWrapper(width=width, expand_tabs=False, 
                                    replace_whitespace=False, 
                                    break_long_words=False)
