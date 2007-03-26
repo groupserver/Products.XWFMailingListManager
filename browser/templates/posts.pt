@@ -21,8 +21,8 @@
     <meta name="date" content="2006-10-25"/>
     
     <tal:block metal:fill-slot="metadata" 
-      tal:define="global postURLPrefix string:post.html?id=;
-      global topicURLPrefix string:topic.html?id=;
+      tal:define="global postURLPrefix string:p/;
+      global topicURLPrefix string:t/;
       global nextChunkURL python:view.get_next_chunk_url();
       global previousChunkURL python:view.get_previous_chunk_url();
       global lastChunkURL python:view.get_last_chunk_url()">

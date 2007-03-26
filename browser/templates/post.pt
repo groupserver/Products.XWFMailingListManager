@@ -24,33 +24,32 @@
       content="This template is used to render a single post to GroupServer" />
     <meta name="date" content="2006-10-25"/>
     
-    <tal:block metal:fill-slot="metadata" 
-      tal:define="global postURLPrefix string:post.html?id=">
+    <tal:block metal:fill-slot="metadata">
       <!-- The documents related to this post -->
       <link rel="next" 
         tal:define="global next python:view.get_next_post();"
         tal:condition="next"
         tal:attributes="title python:'Next post in &#8220;%s&#8221;' % topicName;
-        href string:${postURLPrefix}${next};" />
+        href string:${next};" />
       <link rel="prev" 
         tal:define="global prev python:view.get_previous_post();"
         tal:condition="prev"
         tal:attributes="title python:'Previous post in &#8220;%s&#8221;' % topicName;
-        href string:${postURLPrefix}${prev}};" />
+        href string:${prev}};" />
       <link rel="first"
         tal:condition="prev"
         tal:define="global first python:view.get_first_post()"
         tal:attributes="title python:'First post in &#8220;%s&#8221;' % topicName;
-        href string:${postURLPrefix}${first};" />
+        href string:${first};" />
       <link rel="last"
         tal:condition="next"
         tal:define="global last python:view.get_last_post()"
         tal:attributes="title python:'Latest post in &#8220;%s&#8221;' % topicName;
-        href string:${postURLPrefix}${last}" />
+        href string:${last}" />
       <tal:block 
         tal:define="title python:'All posts in &#8220;%s&#8221;' % topicName;">
         <link rel="up" href="#" 
-          tal:attributes="title title; href python:'topic.html?id=%s'%last" />
+          tal:attributes="title title; href python:'../t/%s'%last" />
       <link rel="home" 
         tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
         href python:view.siteInfo.get_url()" />
@@ -136,25 +135,25 @@
           <ul>
             <li class="first">
               <a tal:condition="prev"
-                tal:attributes="href string:${postURLPrefix}${first};
+                tal:attributes="href string:${first};
                 title string:First post in ${topicName};">First post</a>
               <span tal:condition="not:prev">First post</span>
             </li>
             <li class="prev">
               <a tal:condition="prev"
-                tal:attributes="href string:${postURLPrefix}${prev};
+                tal:attributes="href string:${prev};
                 title string:Previous post in ${topicName};">Previous post</a>
               <span tal:condition="not:prev">Previous post</span>
             </li>
             <li class="next">
               <a tal:condition="next"
-                tal:attributes="href string:${postURLPrefix}${next};
+                tal:attributes="href string:${next};
                 title string:Next post in ${topicName};">Next post</a>
               <span tal:condition="not:next">Next post</span>
             </li>
             <li class="last">
               <a tal:condition="next"
-                tal:attributes="href string:${postURLPrefix}${last};
+                tal:attributes="href string:${last};
                 title string:Most recent post in ${topicName};">Last post</a>
               <span tal:condition="not:next">Last post</span>                
             </li>
@@ -165,7 +164,7 @@
           <ul>
             <li class="topicLink">
               <a href="#" 
-                tal:attributes="href string:topic.html?id=${last}">
+                tal:attributes="href string:../t/${last}">
                 All posts in
               <cite class="topic" 
                   tal:content="topicName">topic name</cite></a>

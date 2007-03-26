@@ -12,7 +12,7 @@
       <strong><span tal:replace="length">-1</span> posts</strong>
       in this topic.</li>
     <li><a title="View the latest post"
-      tal:attributes="href string:topic.html?id=${lastPostId}#post-${lastPostId}"
+      tal:attributes="href string:${lastPostId}#post-${lastPostId}"
       href="#">Latest post</a> made by
       <span tal:condition="authorExists">
         <a tal:content="authorName"

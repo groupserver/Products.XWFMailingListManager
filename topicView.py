@@ -1,31 +1,40 @@
 '''GroupServer-Content View Class
 '''
+from zope.app.traversing.interfaces import TraversalError
 from interfaces import IGSTopicView
 from zope.interface import implements
+from Products.Five.traversable import Traversable
+from zope.app.traversing.interfaces import ITraversable
 import Products.GSContent, Products.XWFCore.XWFUtils
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
 import view
 
-class GSTopicView(view.GSPostingInfo):
+class GSTopicView(view.GSPostingInfo, Traversable):
       """View of a single GroupServer Topic"""
-      implements(IGSTopicView)
+      implements(IGSTopicView, ITraversable)
       def __init__(self, context, request):
           self.retval = {}
           self.context = context
           self.request = request
-
+          
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
           self.groupInfo = view.GSGroupInfo( context )
           
           self.archive = context.messages
-          self.emailId = request.form.get('id', None)
-
-          da = context.zsqlalchemy 
-          assert da, 'No data-adaptor found'
+          self.postId = None
           
-          self.messageQuery = queries.MessageQuery(context, da)
-          self.topicId = self.messageQuery.topic_id_from_post_id(self.emailId)
+      def traverse(self, name, furtherPath):
+          #
+          # TODO: this would probably be a good spot to check if the
+          # postId is valid, and if not redirect to a helpful message
+          #
+          if not self.postId:
+              self.postId = name
+          else:
+              raise TraversalError, "Post ID was already specified"
+          
+          return self
           
       def update(self):
           result = view.process_form( self.context, self.request )
@@ -34,6 +43,14 @@ class GSTopicView(view.GSPostingInfo):
           result = view.process_post( self.context, self.request )
           if result:
               self.retval.update(result.items())
+          
+          
+          da = self.context.zsqlalchemy 
+          assert da, 'No data-adaptor found'
+          
+          self.messageQuery = queries.MessageQuery(self.context, da)
+          self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
+          
           self.topic = self.messageQuery.topic_posts(self.topicId)
           self.lastPostId = self.topic[-1]['post_id']
           

@@ -74,6 +74,7 @@ def test_emailmessage():
       >>> g = time.time()
       >>> mq.post( '6KFmjSgWfzGmy1XeGkjhTW' )['subject']
       u'testing'
+      >>> mq.post_count( 'ogs', ['team','test'] )
       >>> h = time.time()
       >>> print b-a, c-b, d-c, f-e, e-d, g-f, h-g
       >>> print h-a

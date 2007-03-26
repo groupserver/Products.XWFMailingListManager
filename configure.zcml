@@ -26,11 +26,11 @@
   <five:traversable class="OFS.Folder.Folder" />
   
   <!--View of the index-pages -->
-  <browser:page for=".interfaces.IGSMessagesFolder" name="post.html"
+  <browser:page for=".interfaces.IGSMessagesFolder" name="p"
     class=".postView.GSPostView"
     template="browser/templates/post.pt" permission="zope2.View" />
 
-  <browser:page for=".interfaces.IGSMessagesFolder" name="topic.html"
+  <browser:page for=".interfaces.IGSMessagesFolder" name="t"
     class=".topicView.GSTopicView"
     template="browser/templates/topic.pt" permission="zope2.View" />
   
