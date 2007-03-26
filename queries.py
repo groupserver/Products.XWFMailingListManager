@@ -336,7 +336,7 @@ class MessageQuery(object):
         """ Retrieve a particular post.
             
             Returns:
-                {'post_id': ID, 'subject': String,
+                {'post_id': ID, 'group_id': ID, 'subject': String,
                  'date': Date, 'author_id': ID,
                  'body': Text}
              or
