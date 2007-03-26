@@ -1,7 +1,7 @@
 import sqlalchemy as sa
 
-class MessageQuery( object ):
-    def __init__( self, context, da ):
+class MessageQuery(object):
+    def __init__(self, context, da):
         self.context = context
 
         session = da.getSession()
@@ -10,9 +10,10 @@ class MessageQuery( object ):
         self.topicTable = sa.Table('topic', metadata, autoload=True)
         self.postTable = sa.Table('post', metadata, autoload=True)
         self.fileTable = sa.Table('file', metadata, autoload=True)
+        self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
 
-    def __add_std_where_clauses( self, statement, table, 
-                                       site_id, group_ids=[] ):
+    def __add_std_where_clauses(self, statement, table, 
+                                       site_id, group_ids=[]):
         '''Add the stanard "where" clauses to an SQL statement
         
         DESCRIPTION
@@ -36,10 +37,30 @@ class MessageQuery( object ):
             inStatement = table.c.group_id.in_(*group_ids)
             statement.append_whereclause(inStatement)
 
-        assert statement
         return statement
 
-    def topic_id_from_post_id( self, post_id ):
+    def post_id_from_legacy_id(self, legacy_post_id):
+        """ Given a legacy (pre-1.0) GS post_id, determine what the new
+        post ID is, if we know.
+        
+        This is primarily used for backwards compatibility in the redirection
+        system.
+        
+        """
+        pit = self.post_id_mapTable
+        statement = pit.select()
+        
+        statement.append_whereclause(pit.c.old_post_id==legacy_post_id)
+        r = statement.execute()
+        
+        post_id = None
+        if r.rowcount:
+            result = r.fetchone()
+            post_id = result['new_post_id']
+            
+        return post_id
+        
+    def topic_id_from_post_id(self, post_id):
         """ Given a post_id, determine which topic it came from.
         
         """
@@ -55,9 +76,9 @@ class MessageQuery( object ):
         
         return topic_id
 
-    def latest_posts( self, site_id, group_ids=[], limit=None, offset=0 ):
+    def latest_posts(self, site_id, group_ids=[], limit=None, offset=0):
         statement = self.postTable.select()
-        self.__add_std_where_clauses(statement, self.postTable,
+        self.__add_std_where_clauses(statement, self.postTable, 
                                      site_id, group_ids)
         statement.limit = limit
         statement.offset = offset
@@ -67,19 +88,19 @@ class MessageQuery( object ):
         
         retval = []
         if r.rowcount:
-            retval = [ {'post_id': x['post_id'],
-                        'topic_id': x['topic_id'],
-                        'subject': unicode(x['subject'], 'utf-8'),
-                        'date': x['date'],
-                        'author_id': x['user_id'],
-                        'body': x['body'],
+            retval = [ {'post_id': x['post_id'], 
+                        'topic_id': x['topic_id'], 
+                        'subject': unicode(x['subject'], 'utf-8'), 
+                        'date': x['date'], 
+                        'author_id': x['user_id'], 
+                        'body': x['body'], 
                         'has_attachments': x['has_attachments']} for x in r ]
             
         return retval
     
-    def post_count( self, site_id, group_ids=[] ):
+    def post_count(self, site_id, group_ids=[]):
         statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)])
-        self.__add_std_where_clauses(statement, self.topicTable,
+        self.__add_std_where_clauses(statement, self.topicTable, 
                                            site_id, group_ids)
         r = statement.execute()
 
@@ -87,9 +108,9 @@ class MessageQuery( object ):
         assert retval >= 0
         return retval
             
-    def topic_count( self, site_id, group_ids=[] ):
+    def topic_count(self, site_id, group_ids=[]):
         statement = sa.select([sa.func.count(self.topicTable.c.topic_id)])
-        self.__add_std_where_clauses(statement, self.topicTable,
+        self.__add_std_where_clauses(statement, self.topicTable, 
                                      site_id, group_ids)
         r = statement.execute()
 
@@ -97,7 +118,7 @@ class MessageQuery( object ):
         assert retval >= 0
         return retval
 
-    def latest_topics( self, site_id, group_ids=[], limit=None, offset=0 ):
+    def latest_topics(self, site_id, group_ids=[], limit=None, offset=0):
         """
             Returns: 
              ({'topic_id': ID, 'subject': String, 'first_post_id': ID,
@@ -108,7 +129,7 @@ class MessageQuery( object ):
         tt = self.topicTable
         
         statement = tt.select()
-        self.__add_std_where_clauses(statement, self.topicTable,
+        self.__add_std_where_clauses(statement, self.topicTable, 
                                      site_id, group_ids)
                 
         statement.limit = limit
@@ -119,17 +140,17 @@ class MessageQuery( object ):
 
         retval = []        
         if r.rowcount:
-            retval = [ {'topic_id': x['topic_id'],
-                        'site_id': x['site_id'],
-                        'group_id': x['group_id'],
-                        'subject': unicode(x['original_subject'], 'utf-8'),
-                        'first_post_id': x['first_post_id'],
-                        'last_post_id': x['last_post_id'],
-                        'count': x['num_posts'],
+            retval = [ {'topic_id': x['topic_id'], 
+                        'site_id': x['site_id'], 
+                        'group_id': x['group_id'], 
+                        'subject': unicode(x['original_subject'], 'utf-8'), 
+                        'first_post_id': x['first_post_id'], 
+                        'last_post_id': x['last_post_id'], 
+                        'count': x['num_posts'], 
                         'last_post_date': x['last_post_date']} for x in r ]
         return retval
 
-    def _nav_post( self, curr_post_id, direction, topic_id=None ):
+    def _nav_post(self, curr_post_id, direction, topic_id=None):
         op = direction == 'prev' and '<=' or '>='
         dir = direction == 'prev' and 'desc' or 'asc'
         
@@ -147,20 +168,20 @@ class MessageQuery( object ):
                    post.date %(op)s curr_post.date and
                    %(topic_id_filter)s
                    post.post_id != curr_post.post_id
-                   order by post.date %(dir)s limit 1""" % locals(),
+                   order by post.date %(dir)s limit 1""" % locals(), 
                    engine=self.postTable.engine)
         
         r = q.execute().fetchone()
         if r:
-             return {'post_id': r['post_id'],
-                     'topic_id': r['topic_id'],
-                     'subject': unicode(r['subject'], 'utf-8'),
-                     'date': r['date'],
-                     'author_id': r['user_id'],
+             return {'post_id': r['post_id'], 
+                     'topic_id': r['topic_id'], 
+                     'subject': unicode(r['subject'], 'utf-8'), 
+                     'date': r['date'], 
+                     'author_id': r['user_id'], 
                      'has_attachments': r['has_attachments']}
         return None
 
-    def previous_post( self, curr_post_id ):
+    def previous_post(self, curr_post_id):
         """ Find the post prior to the given post ID.
 
             Returns:
@@ -173,7 +194,7 @@ class MessageQuery( object ):
         return self._nav_post(curr_post_id, 'prev')
 
 
-    def next_post( self, curr_post_id ):
+    def next_post(self, curr_post_id):
         """ Find the post after the given post ID.
 
             Returns:
@@ -185,7 +206,7 @@ class MessageQuery( object ):
         """
         return self._nav_post(curr_post_id, 'next')
 
-    def _nav_topic( self, curr_topic_id, direction ):
+    def _nav_topic(self, curr_topic_id, direction):
         op = direction == 'prev' and '<=' or '>='
         dir = direction == 'prev' and 'desc' or 'asc'
         
@@ -201,18 +222,18 @@ class MessageQuery( object ):
                    topic.last_post_date %s curr_topic.date and
                    topic.topic_id != curr_topic.topic_id
                    order by date %s limit 1""" % 
-                   (curr_topic_id, op, dir),
+                   (curr_topic_id, op, dir), 
                    engine=self.postTable.engine)
         
         r = q.execute().fetchone()
         if r:
-             return {'topic_id': r['topic_id'],
-                     'last_post_id': r['last_post_id'],
-                     'subject': unicode(r['subject'], 'utf-8'),
+             return {'topic_id': r['topic_id'], 
+                     'last_post_id': r['last_post_id'], 
+                     'subject': unicode(r['subject'], 'utf-8'), 
                      'date': r['date']}
         return None
 
-    def later_topic( self, curr_topic_id ):
+    def later_topic(self, curr_topic_id):
         """ Find the topic prior to the given topic ID.
 
             Returns:
@@ -224,7 +245,7 @@ class MessageQuery( object ):
         """
         return self._nav_topic(curr_topic_id, 'prev')
 
-    def earlier_topic( self, curr_topic_id ):
+    def earlier_topic(self, curr_topic_id):
         """ Find the topic after the given topic ID.
 
             Returns:
@@ -236,7 +257,7 @@ class MessageQuery( object ):
         """
         return self._nav_topic(curr_topic_id, 'next')
     
-    def topic_post_navigation( self, curr_post_id ):
+    def topic_post_navigation(self, curr_post_id):
         """ Retrieve first/last, next/prev navigation relative to a post, within a topic.
             Used for navigation of single posts *within* a topic, not for general post
             navigation.
@@ -282,10 +303,10 @@ class MessageQuery( object ):
                 assert r['topic_id'] == topic_id, "Topic ID should always match"
                 previous_post_id = r['post_id']
         
-        return {'first_post_id': first_post_id, 'last_post_id': last_post_id,
+        return {'first_post_id': first_post_id, 'last_post_id': last_post_id, 
                 'previous_post_id': previous_post_id, 'next_post_id': next_post_id}
         
-    def topic_posts( self, topic_id ):
+    def topic_posts(self, topic_id):
         """ Retrieve all the posts in a topic.
             
             Returns:
@@ -304,14 +325,14 @@ class MessageQuery( object ):
         r = statement.execute()
         retval = []
         if r.rowcount:
-            retval = [ {'post_id': x['post_id'],
-                        'subject': unicode(x['subject'], 'utf-8'),
-                        'date': x['date'],
-                        'author_id': x['user_id'],
+            retval = [ {'post_id': x['post_id'], 
+                        'subject': unicode(x['subject'], 'utf-8'), 
+                        'date': x['date'], 
+                        'author_id': x['user_id'], 
                         'body': unicode(x['body'], 'utf-8')} for x in r ]
         return retval
 
-    def post( self, post_id ):
+    def post(self, post_id):
         """ Retrieve a particular post.
             
             Returns:
@@ -330,6 +351,7 @@ class MessageQuery( object ):
         if r.rowcount:
             assert r.rowcount == 1, "Posts should always be unique"
             row = r.fetchone()
+            
             return {'post_id': row['post_id'],
                     'group_id': row['group_id'],
                     'subject': unicode(row['subject'], 'utf-8'),

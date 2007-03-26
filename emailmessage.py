@@ -126,6 +126,7 @@ class RDBEmailMessageStorage(object):
         self.topicTable = sqlalchemy.Table('topic', metadata, autoload=True)
         self.topic_word_countTable = sqlalchemy.Table('topic_word_count', metadata, autoload=True)
         self.post_tagTable = sqlalchemy.Table('post_tag', metadata, autoload=True)
+        self.post_id_mapTable = sqlalchemy.Table('post_id_map', metadata, autoload=True)
 
     def _get_topic(self):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
@@ -189,6 +190,16 @@ class RDBEmailMessageStorage(object):
         for tag in self.email_message.tags:
             i.execute(post_id=self.email_message.post_id,
                       tag=tag)
+
+    def insert_legacy_id(self):
+        #
+        # This is only really needed when doing an upgrade run prior to GS 1.0
+        #
+        i = self.post_id_mapTable.insert()
+        gs_original_id = self.email_message.get('x-gsoriginal-id', None)
+        if gs_original_id:
+            i.execute(old_post_id=gs_original_id,
+                      new_post_id=self.email_message.post_id)
 
     def insert_keyword_count( self ):
         and_ = sqlalchemy.and_; or_ = sqlalchemy.or_

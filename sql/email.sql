@@ -1,6 +1,6 @@
-SET client_encoding = 'UTF8';
-SET check_function_bodies = false;
-SET client_min_messages = warning;
+SET CLIENT_ENCODING = 'UTF8';
+SET CHECK_FUNCTION_BODIES = FALSE;
+SET CLIENT_MIN_MESSAGES = WARNING;
 
 CREATE TABLE POST (
     POST_ID           TEXT                     PRIMARY KEY,
@@ -8,17 +8,17 @@ CREATE TABLE POST (
     GROUP_ID          TEXT                     NOT NULL,
     SITE_ID           TEXT                     NOT NULL,
     USER_ID           TEXT                     NOT NULL,
-    IN_REPLY_TO       TEXT                     NOT NULL DEFAULT ''::text,
-    SUBJECT           TEXT                     NOT NULL DEFAULT ''::text,
+    IN_REPLY_TO       TEXT                     NOT NULL DEFAULT ''::TEXT,
+    SUBJECT           TEXT                     NOT NULL DEFAULT ''::TEXT,
     DATE              TIMESTAMP WITH TIME ZONE NOT NULL,
-    BODY              TEXT                     NOT NULL DEFAULT ''::text,
-    HTMLBODY          TEXT                     NOT NULL DEFAULT ''::text,
+    BODY              TEXT                     NOT NULL DEFAULT ''::TEXT,
+    HTMLBODY          TEXT                     NOT NULL DEFAULT ''::TEXT,
     HEADER            TEXT                     NOT NULL,
     HAS_ATTACHMENTS   BOOLEAN		           NOT NULL
 );
 
-CREATE INDEX site_group_idx ON post USING btree (site_id, group_id);
-CREATE INDEX topic_idx ON post USING btree (topic_id);
+CREATE INDEX SITE_GROUP_IDX ON POST USING BTREE (SITE_ID, GROUP_ID);
+CREATE INDEX TOPIC_IDX ON POST USING BTREE (TOPIC_ID);
 
 CREATE TABLE POST_TAG (
 	POST_ID			  TEXT                     NOT NULL REFERENCES POST (POST_ID),
@@ -36,7 +36,7 @@ CREATE TABLE TOPIC (
     NUM_POSTS         INTEGER                  NOT NULL CHECK (NUM_POSTS > 0)
 );  
 
-CREATE INDEX group_id_site_id_idx ON topic USING btree (group_id, site_id);
+CREATE INDEX GROUP_ID_SITE_ID_IDX ON TOPIC USING BTREE (GROUP_ID, SITE_ID);
 
 CREATE TABLE TOPIC_WORD_COUNT (
     TOPIC_ID          TEXT                     NOT NULL REFERENCES TOPIC (TOPIC_ID),
@@ -44,7 +44,7 @@ CREATE TABLE TOPIC_WORD_COUNT (
     COUNT             INTEGER                  NOT NULL CHECK (COUNT > 0)
 );
 
-CREATE UNIQUE INDEX topic_word_pkey ON topic_word_count USING btree (topic_id, word);
+CREATE UNIQUE INDEX TOPIC_WORD_PKEY ON TOPIC_WORD_COUNT USING BTREE (TOPIC_ID, WORD);
 
 CREATE TABLE FILE (
     FILE_ID           TEXT                     NOT NULL,
@@ -55,3 +55,12 @@ CREATE TABLE FILE (
     POST_ID           TEXT                     NOT NULL REFERENCES POST (POST_ID),
     TOPIC_ID          TEXT                     NOT NULL REFERENCES TOPIC (TOPIC_ID)
 );
+
+// A MAPPING FROM OLD POST ID STYLE TO NEW POST ID. THIS TABLE IS REALLY ONLY NEEDED
+// FOR BACKWARDS COMPATIBILITY OF GS EARLIER THAN 1.0
+CREATE TABLE POST_ID_MAP (
+    OLD_POST_ID		  TEXT						NOT NULL,
+    NEW_POST_ID       TEXT						NOT NULL REFERENCES POST (POST_ID)
+);
+
+CREATE UNIQUE INDEX OLD_POST_ID_PKEY ON POST_ID_MAP USING BTREE (OLD_POST_ID);

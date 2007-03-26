@@ -15,8 +15,8 @@
 
 # CHANGE THESE
 DBHOSTNAME='localhost'
-DBPORT=5433
-DBUSERNAME='onlinegroups'
+DBPORT=5432
+DBUSERNAME='richard'
 DBPASSWORD=''
 DBNAME='onlinegroups.net'
 
@@ -75,8 +75,9 @@ for fname in os.listdir( importDir )[position:]:
      msgstorage = IRDBStorageForEmailMessage( msg )
      msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
      try:
-         msgstorage.insert()
-         msgstorage.insert_keyword_count()
+         #msgstorage.insert()
+         #msgstorage.insert_keyword_count()
+         msgstorage.insert_legacy_id()
          print '.',
      except SQLError, x:
          print 'e',
