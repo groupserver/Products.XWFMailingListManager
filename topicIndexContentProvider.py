@@ -31,7 +31,7 @@ class GSTopicIndexContentProvider(object):
       def update(self):
           # The entries list is made up of 4-tuples representing the
           #   post ID, files, author, user authored, and post-date.
-          hr = 'topic/%s' % self.view.lastPostId
+          hr = self.view.lastPostId
           self.entries = [{'href':  '%s#post-%s' % (hr, post['post_id']),
                            'files': self.get_file_from_post(post),
                            'name':  self.get_author_realnames_from_post(post),
@@ -105,16 +105,11 @@ class GSTopicIndexContentProvider(object):
           return retval
       
       def get_file_from_post(self, post):
-          assert post
           retval = ()
-          if hasattr(post, 'x-xwfnotification-file-id'):
-              # Just work with the first ID
-              fileId = post['x-xwfnotification-file-id'].split()[0]
-              filesArchive = self.context.files
-              files = filesArchive.find_files({'id': fileId})
-              if files:
-                  fileType = files[0].content_type
-                  retval = (fileId, fileType)
+          if post['files_metadata']:
+              fm = post['files_metadata'][0]
+              retval = (fm['file_id'], fm['mime_type'])
+              
           return retval
 
 provideAdapter(GSTopicIndexContentProvider, 

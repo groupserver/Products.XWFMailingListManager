@@ -106,7 +106,9 @@ class GSPostContentProvider(object):
               self.postIntro, self.postRemainder = ir
               
               self.cssClass = self.get_cssClass()
-    
+              
+              self.filesMetadata = self.post['files_metadata']
+              
               self.siteInfo = GSSiteInfo(self.context)
               self.groupInfo = GSGroupInfo(self.context)
           
@@ -140,6 +142,7 @@ class GSPostContentProvider(object):
                                   postRemainder=self.postRemainder, 
                                   cssClass=self.cssClass, 
                                   topicName=self.topicName, 
+                                  filesMetadata=self.filesMetadata,
                                   post=self.post, 
                                   context=self.context, 
                                   siteName = self.siteInfo.get_name(), 

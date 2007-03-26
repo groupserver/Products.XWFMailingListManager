@@ -20,7 +20,7 @@
     <meta name="date" content="2006-11-02"/>
     
     <tal:block metal:fill-slot="metadata" 
-      tal:define="global topicURLPrefix string:t/">
+      tal:define="global topicURLPrefix string:topic/">
       <!-- The documents related to this post -->
       
       <link rel="previous" title="Previous topics" href=""
@@ -201,7 +201,7 @@
                   class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';">
                   <td class="topic" title="Topic name">
                     <a tal:content="python:topic['subject'][:50]"
-                      tal:attributes="href string:t/${topic/last_post_id};
+                      tal:attributes="href string:topic/${topic/last_post_id};
                       title string:View the topic ${topic/subject}"
                       href="#">Wibble</a><span 
                       tal:condition="python:len(topic['subject'])&gt;50">&#8230;</span>

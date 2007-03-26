@@ -8,6 +8,7 @@
   showPhoto options/showPhoto;
   postIntro options/postIntro;
   postRemainder options/postRemainder;
+  filesMetadata options/filesMetadata;
   timezone python:options['context'].Scripts.get.option('timezone')">
   <div tal:attributes="class options/cssClass; id string:post-${postId};">
     <p class="email-metadata">
@@ -68,44 +69,36 @@
         </div>
       </div>
     </div><!--email-remainder-->
-
-      <!--I need to fix this -->
+	
     <div class="fileNotification" 
-      tal:condition="python:hasattr(post, 'x-xwfnotification-file-id')"
-      tal:define="groupObj python:options['context'].Scripts.get.group_object();">
+      tal:condition="filesMetadata">
       <div class="fileMetadata"
-        tal:repeat="fileId python:post.getProperty('x-xwfnotification-file-id', '').strip().split()">
-        <tal:block 
-          tal:define="fileObjs python:groupObj.files.find_files({'id': fileId});
-          fileObj python:fileObjs and fileObjs[0].getObject() or None"
-          tal:condition="fileObj">
+        tal:repeat="fm filesMetadata">
           <p>The following file was added to this topic.</p>
           <ul>
             <li 
-              tal:define="iconName python:'%s.png'%fileObj.content_type.replace('/','-')">
+              tal:define="iconName python:'%s.png'%fm['mime_type'].replace('/','-')">
               Name: 
               <a class="file" href="/favicon.ico" 
                 type="application/octet-stream"
-                tal:attributes="href string:${options/siteURL}/groups/${options/groupId}/files/f/${fileId}/${fileObj/title_or_id}">
+                tal:attributes="href string:${options/siteURL}/groups/${options/groupId}/files/f/${fm/file_id}/${fm/file_name}">
                 <img src="/favicon.ico" width="16" height="16" 
                   alt="application/octet-stream" 
-                  tal:attributes="alt fileObj/content_type;
-                  src python:'/++resource++fileIcons/%s'%iconName"/>
-                <span class="filename"
-                  tal:content="python:fileObj.title_or_id()">filename</span>
+                  tal:attributes="alt fm/mime_type;
+                  src python:'/++resource++fileIcons/%s' % iconName"/>
+                <span class="filename" tal:content="fm/file_name">filename</span>
               </a>
             </li>
             <li>Type: 
               <span class="mime"
-                tal:content="python:fileObj.content_type">application/octet-stream</span>
+                tal:content="fm/mime_type">application/octet-stream</span>
             </li>
             <li>
               Size:
               <span class="size"
-                tal:content="python:'%1.2fKB' % (fileObj.size/1024.0)">-1B</span>
+                tal:content="python:'%1.2fKB' % (fm['file_size']/1024.0)">-1B</span>
             </li>
           </ul>
-        </tal:block>
       </div><!--fileMetadata-->
     </div><!--fileNotification-->
   </div><!--email-details-->

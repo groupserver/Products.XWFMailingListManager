@@ -1,3 +1,4 @@
+from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
 
 class MessageQuery(object):
@@ -10,7 +11,11 @@ class MessageQuery(object):
         self.topicTable = sa.Table('topic', metadata, autoload=True)
         self.postTable = sa.Table('post', metadata, autoload=True)
         self.fileTable = sa.Table('file', metadata, autoload=True)
-        self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
+        
+        try:
+            self.post_id_mapTable = sa.Table('post_id_ap', metadata, autoload=True)
+        except NoSuchTableError:
+            self.post_id_mapTable = None
 
     def __add_std_where_clauses(self, statement, table, 
                                        site_id, group_ids=[]):
@@ -48,6 +53,9 @@ class MessageQuery(object):
         
         """
         pit = self.post_id_mapTable
+        if not pit:
+            return None
+        
         statement = pit.select()
         
         statement.append_whereclause(pit.c.old_post_id==legacy_post_id)
@@ -312,9 +320,10 @@ class MessageQuery(object):
             Returns:
                 ({'post_id': ID, 'subject': String,
                   'date': Date, 'author_id': ID,
+                  'files_metadata': [Metadata],
                   'body': Text}, ...)
              or
-                None
+                []
 
         """
         pt = self.postTable
@@ -328,7 +337,9 @@ class MessageQuery(object):
             retval = [ {'post_id': x['post_id'], 
                         'subject': unicode(x['subject'], 'utf-8'), 
                         'date': x['date'], 
-                        'author_id': x['user_id'], 
+                        'author_id': x['user_id'],
+                        'files_metadata': x['has_attachments'] 
+                                  and self.files_metadata(x['post_id']) or [],
                         'body': unicode(x['body'], 'utf-8')} for x in r ]
         return retval
 
@@ -338,7 +349,9 @@ class MessageQuery(object):
             Returns:
                 {'post_id': ID, 'group_id': ID, 'subject': String,
                  'date': Date, 'author_id': ID,
-                 'body': Text}
+                 'body': Text,
+                 'files_metadata': [Metadata]
+                 }
              or
                 None
 
@@ -357,6 +370,35 @@ class MessageQuery(object):
                     'subject': unicode(row['subject'], 'utf-8'),
                     'date': row['date'],
                     'author_id': row['user_id'],
+                    'files_metadata': row['has_attachments'] and 
+                                      self.files_metadata(row['post_id']) or [],
                     'body': unicode(row['body'], 'utf-8')}
         
         return None
+
+    def files_metadata(self, post_id):
+        """ Retrieve the metadata of all files associated with this post.
+            
+            Returns:
+                {'file_id': ID, 'mime_type': String,
+                 'file_name': String, 'file_size': Int}
+             or
+                []
+
+        """
+        ft = self.fileTable
+        statement = ft.select()
+        statement.append_whereclause(ft.c.post_id==post_id)
+        
+        r = statement.execute()
+        out = []
+        if r.rowcount:
+            out = []
+            for row in r:
+                out.append({'file_id': row['file_id'],
+                            'file_name': unicode(row['file_name'], 'utf-8'),
+                            'date': row['date'],
+                            'mime_type': unicode(row['mime_type'], 'utf-8'),
+                            'file_size': row['file_size']})
+                
+        return out
