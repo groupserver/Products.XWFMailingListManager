@@ -331,6 +331,7 @@ class MessageQuery( object ):
             assert r.rowcount == 1, "Posts should always be unique"
             row = r.fetchone()
             return {'post_id': row['post_id'],
+                    'group_id': row['group_id'],
                     'subject': unicode(row['subject'], 'utf-8'),
                     'date': row['date'],
                     'author_id': row['user_id'],
