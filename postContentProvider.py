@@ -396,7 +396,7 @@ class GSPostContentProvider(object):
               if self.authored:
                   retval = 'emaildetails-self-even'
               else:
-                  retval = 'emaildetials-even'
+                  retval = 'emaildetails-even'
           else:
               if self.authored:
                   retval = 'emaildetails-self-odd'
