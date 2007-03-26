@@ -15,7 +15,7 @@
 
 /* Summary for All Posts in Topic page */
 #topicSummary {
-  margin: 30px 0px 30px 0px;
+  margin: 15px 0px 15px 0px;
 }
 
 #topicSummary .label {
@@ -100,6 +100,10 @@ pre.email-body, .email-remainder pre {
   font-size: 92%;
 }
 
+.cannotPost {
+	margin: 5px 0 0 0;
+}
+
 .userimage {
     margin: 0px;
     padding: 0px 15px 15px 0px;
@@ -114,9 +118,25 @@ pre.email-body, .email-remainder pre {
   padding-right: 30px;
 }
 
-.emaildetails-odd, .emaildetails-self-odd, .emaildetials-even, .emaildetails-self-even
+.emaildetails-odd, .emaildetails-self-odd, .emaildetails-even, .emaildetails-self-even
 {
-    padding: 15px 30px 15px 30px;
+	margin: 0 0 2px 0;
+    padding: 5px 5px 10px 10px;
+}
+
+#topicsSummary {
+	min-width: 600px;
+	width: 90%;	
+}
+
+th.date, td.date {
+	width: 150px;
+	text-align: right;
+}
+
+th.posts, td.posts {
+	width: 30px;
+	text-align: right;
 }
 
 .email-remainder {
