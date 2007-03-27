@@ -174,15 +174,17 @@ class RDBEmailMessageStorage(object):
             num_posts = topic['num_posts']
             if time.mktime(topic['last_post_date'].timetuple()) > time.mktime(self.email_message.date.timetuple()):
                 last_post_date = topic['last_post_date']
+                last_post_id = topic['last_post_id']
             else:
                 last_post_date = self.email_message.date
+                last_post_id = self.email_message.post_id
                 
             self.topicTable.update(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
                                          self.topicTable.c.group_id == self.email_message.group_id, 
                                          self.topicTable.c.site_id == self.email_message.site_id)
                                    ).execute(num_posts=num_posts+1, 
-                                              last_post_id=self.email_message.post_id, 
-                                              last_post_date=last_post_date)
+                                             last_post_id=last_post_id, 
+                                             last_post_date=last_post_date)
         #
         # add any tags we have for the post
         #
