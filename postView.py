@@ -1,16 +1,40 @@
 '''GroupServer-Content View of a Single Post
 '''
+from zope.component import getMultiAdapter
 from zope.app.traversing.interfaces import TraversalError
 from interfaces import IGSPostView
 from zope.interface import implements
 from Products.Five.traversable import Traversable
+from Products.Five import BrowserView
 from zope.app.traversing.interfaces import ITraversable
 import Products.GSContent, Products.XWFCore.XWFUtils
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
 import view
 
-class GSPostView(Traversable):
+class GSPostTraversal(BrowserView, Traversable):
+    implements(ITraversable)
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.postId = None
+        self.post = None
+        
+        da = self.context.zsqlalchemy 
+        assert da, 'No data-adaptor found'
+        self.messageQuery = queries.MessageQuery(self.context, da)
+        
+    def traverse(self, name, furtherPath):
+        if not self.postId:
+            self.postId = name
+            
+        return self
+    
+    def __call__(self):
+      return getMultiAdapter((self.context, self.request), name="gspost")()
+      
+class GSPostView(BrowserView, Traversable):
       """A view of a single post.
       
       A view of a single post shares much in common with a view of an 
@@ -27,38 +51,25 @@ class GSPostView(Traversable):
           self.groupInfo = view.GSGroupInfo( context )
           
           self.archive = context.messages
-          
-          self.postId = None
-
+            
           da = self.context.zsqlalchemy 
           assert da, 'No data-adaptor found'
           self.messageQuery = queries.MessageQuery(self.context, da)
-
           
-      def traverse(self, name, furtherPath):
-          uri = ''
-          print
-          print 'Wibble'
-          if not self.postId:
-              self.postId = name
-              if not self.messageQuery.post(self.postId):
-                  uri = '/r/post-not-found?id=%s' % self.postId
-              else: # No post found
-                  self.update()
-          else: # No ID set
-              uri = '/r/post-no-id'
-          if uri:
-              print uri
-              return self.request.RESPONSE.redirect(uri)
-          else:            
-              return self
-      
-      def update(self):
-          if (self.postId):
-              self.post = self.messageQuery.post(self.postId)
-              assert self.post, 'No post found'
+          self.postId = self.context.postId
+          self.post = self.messageQuery.post(self.postId)
+          
+          if self.post:
               self.relatedPosts = self.messageQuery.topic_post_navigation(self.postId)
+          else:
+              self.do_error_redirect()
               
+      def do_error_redirect(self):
+          if not self.postId:
+              self.request.response.redirect('/r/post-no-id')
+          else:
+              self.request.response.redirect('/r/post-not-found?id=%s' % self.postId)
+          
       def get_topic_title(self):
           assert hasattr(self, 'post')
           retval = self.post and self.post['subject'] or ''
@@ -87,4 +98,3 @@ class GSPostView(Traversable):
       def get_post(self):
           assert hasattr(self, 'post')
           return self.post
-          
