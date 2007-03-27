@@ -173,9 +173,9 @@ class XWFVirtualMailingListArchive2(Folder, XWFIdFactoryMixin):
         else:
             thread = int(show_thread)
             if thread:
-                url = '%s/t/%s' % (REQUEST.BASE4, id)
+                url = '%s/topic/%s' % (REQUEST.BASE4, id)
             else:
-                url = '%s/p/%s' % (REQUEST.BASE4, id)
+                url = '%s/post/%s' % (REQUEST.BASE4, id)
             
         return RESPONSE.redirect(url)
 
