@@ -95,7 +95,11 @@ class GSPostContentProvider(object):
           
           self.__updated = True
           
-          if not self.cookedResult.has_key(self.post['post_id']):
+          # setup a cache key based on the unique attributes of this post
+          self.cacheKey = '%s:%s:%s' % (self.post['post_id'], self.position,
+                                   self.topicName)
+          
+          if not self.cookedResult.has_key(self.cacheKey):
               self.authorId = self.post['author_id']
               self.authorName = self.get_author_realnames()
               self.authored = self.user_authored()
@@ -125,7 +129,7 @@ class GSPostContentProvider(object):
           if not self.__updated:
               raise UpdateNotCalled
           
-          r = self.cookedResult.get(self.post['post_id'])
+          r = self.cookedResult.get(self.cacheKey)
           if not r:
               pageTemplate = self.cookedTemplates.get(self.pageTemplateFileName)
               if not pageTemplate:

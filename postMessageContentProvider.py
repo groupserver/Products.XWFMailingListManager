@@ -1,3 +1,4 @@
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 import sys, re, datetime, time, types, string
 import Products.Five, DateTime, Globals
 #import Products.Five.browser.pagetemplatefile
@@ -7,14 +8,15 @@ import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 
+from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
+
 import DocumentTemplate
 
 import Products.GSContent, Products.XWFCore.XWFUtils
 
+from Products.XWFCore.cache import LRUCache, SimpleCache
 from view import GSGroupInfo
 from interfaces import IGSPostMessageContentProvider
-
-COOKED_TEMPLATES = {}
 
 class GSPostMessageContentProvider(object):
       """GroupServer Post Message Content Provider
@@ -24,7 +26,11 @@ class GSPostMessageContentProvider(object):
       zope.component.adapts(zope.interface.Interface,
                             zope.publisher.interfaces.browser.IDefaultBrowserLayer,
                             zope.interface.Interface)
-            
+      
+      # We want a really simple cache for templates, because there aren't
+      #  many of them
+      cookedTemplates = SimpleCache()
+      
       def __init__(self, context, request, view):
           self.__parent = view
           self.__updated = False
@@ -57,17 +63,13 @@ class GSPostMessageContentProvider(object):
           
       def render(self):
           if not self.__updated:
-              raise interfaces.UpdateNotCalled
-          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-          self.pageTemplate = VPTF(self.pageTemplateFileName)
-
-          if COOKED_TEMPLATES.has_key(self.pageTemplateFileName):
-              pageTemplate = COOKED_TEMPLATES[self.pageTemplateFileName]
-          else:
-              VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-              pageTemplate = VPTF(self.pageTemplateFileName)    
-              COOKED_TEMPLATES[self.pageTemplateFileName] = pageTemplate      
+              raise UpdateNotCalled
           
+          pageTemplate = self.cookedTemplates.get(self.pageTemplateFileName)
+          if not pageTemplate:
+              pageTemplate = PageTemplateFile(self.pageTemplateFileName)    
+              self.cookedTemplates.add(self.pageTemplateFileName, pageTemplate)
+              
           return pageTemplate(startNew=self.startNew,
                               topic=self.topic,
                               groupName=self.groupName,
@@ -82,5 +84,5 @@ class GSPostMessageContentProvider(object):
       #########################################
 
 zope.component.provideAdapter(GSPostMessageContentProvider, 
-                              provides=zope.contentprovider.interfaces.IContentProvider,
+                              provides=IContentProvider,
                               name="groupserver.PostMessage")
