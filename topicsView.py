@@ -40,18 +40,11 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
 
           limit = self.get_summary_length()
 
-          # HACK because I stuffed up my local box.
-          if self.siteInfo.get_id() == 'example_division':
-              self.numTopics = self.messageQuery.topic_count('ogs', lists)
-              self.topics = self.messageQuery.latest_topics('ogs', lists,
-                                                            limit=limit,
-                                                            offset=self.start)
-          else:
-              self.numTopics = self.messageQuery.topic_count(self.siteInfo.get_id(), lists)
-              self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(),
-                                                            lists,
-                                                            limit=limit,
-                                                            offset=self.start)
+          self.numTopics = self.messageQuery.topic_count(self.siteInfo.get_id(), lists)
+          self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(),
+                                                        lists,
+                                                        limit=limit,
+                                                        offset=self.start)
           assert self.topics
 
       def get_previous_summary_url(self):

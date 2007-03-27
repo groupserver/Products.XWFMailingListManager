@@ -36,19 +36,13 @@ class GSLatestPostsView(Products.Five.BrowserView):
           
           messages = self.context.messages
           lists = messages.getProperty('xwf_mailing_list_ids')
-                   
-          if self.siteInfo.get_id() == 'example_division':
-              limit = self.get_chunk_length()
-              self.numPosts = self.messageQuery.post_count('ogs', lists)
-              self.posts = self.messageQuery.latest_posts('ogs',
-                                                          lists, limit=limit,
-                                                          offset=self.start)
-          else:
-              self.numPosts = self.messageQuery.post_count(self.siteInfo.get_id(),
-                                                          lists)
-              self.posts = self.messageQuery.latest_posts(self.siteInfo.get_id(), 
-                                                          lists, limit=limit,
-                                                          offset=self.start)
+
+          limit = self.get_chunk_length()
+          self.numPosts = self.messageQuery.post_count(self.siteInfo.get_id(),
+                                                      lists)
+          self.posts = self.messageQuery.latest_posts(self.siteInfo.get_id(), 
+                                                      lists, limit=limit,
+                                                      offset=self.start)
 
       def get_posts(self):
           assert self.posts
