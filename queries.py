@@ -102,6 +102,8 @@ class MessageQuery(object):
                         'date': x['date'], 
                         'author_id': x['user_id'], 
                         'body': x['body'], 
+                        'files_metadata': x['has_attachments'] 
+                                  and self.files_metadata(x['post_id']) or [],
                         'has_attachments': x['has_attachments']} for x in r ]
             
         return retval
