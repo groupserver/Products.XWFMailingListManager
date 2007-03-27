@@ -1,5 +1,6 @@
 from Products.PythonScripts.standard import html_quote
 from zLOG import LOG, WARNING, PROBLEM, INFO
+import queries
 
 def tagProcess(tagsString):
     # --=mpj17=-- Not the most elegant function, but I did not want to
@@ -56,6 +57,11 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     host = context.Scripts.get.option('canonicalHost', 'onlinegroups.net')
     messages = getattr(groupObj, 'messages')
     assert messages
+    
+    da = context.zsqlalchemy 
+    assert da, 'No data-adaptor found'
+    messageQuery = queries.MessageQuery(self.context, da)
+    
     files = getattr(groupObj, 'files')
     assert files
     listManager = messages.get_xwfMailingListManager()
@@ -64,10 +70,10 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     assert groupList
 
     if replyToId:
-        origEmail = messages.get_email(replyToId)
-        topic = origEmail.getProperty('mailSubject')
+        origEmail = messageQuery.post(replyToId)
+        topic = origEmail['subject']
         subject = 'Re: %s'  % topic
-        emailMessageReplyToId = origEmail.getProperty('message-id', '')
+        emailMessageReplyToId = replyToId
         # --=mpj17=-- I should really handle the References header here.
     else:
         subject = topic
