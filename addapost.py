@@ -60,7 +60,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     
     da = context.zsqlalchemy 
     assert da, 'No data-adaptor found'
-    messageQuery = queries.MessageQuery(self.context, da)
+    messageQuery = queries.MessageQuery(context, da)
     
     files = getattr(groupObj, 'files')
     assert files
