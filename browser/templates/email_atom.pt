@@ -36,7 +36,7 @@
       tal:content="string:/contacts/${authorId};">http://bla/</uri>
   </author>
   <updated 
-    tal:content="python:post['mailDate'].strftime('%Y-%m-%dT%H:%M:%SZ')">
+    tal:content="python:post['date']">
     2003-12-13T18:30:02Z
   </updated>
   <content type="xhtml">

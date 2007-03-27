@@ -7,7 +7,7 @@
   
   <title><span tal:replace="python:view.groupInfo.get_name()"/> Latest Posts</title>
   <updated 
-    tal:content="python:posts and posts[0]['mailDate'].strftime('%Y-%m-%dT%H:%M:%SZ') or '2003-12-13T14:15:16Z'">
+    tal:content="python:posts and posts[0]['date']">
     2003-12-13T14:15:16Z
   </updated>
   <author>
