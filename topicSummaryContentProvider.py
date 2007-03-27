@@ -121,12 +121,8 @@ class GSTopicSummaryContentProvider(object):
               
           SIDE EFFECTS
               None."""
-          assert self.authorId
-
-          retval = False          
           retval = self.context.Scripts.get.user_exists(self.authorId)
           
-          assert retval in (True, False)
           return retval
 
       def get_author_realnames(self):
