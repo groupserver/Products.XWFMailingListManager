@@ -42,7 +42,7 @@
     <div tal:condition="python:showPhoto and authorImage" 
       class="userimage">
       <a tal:attributes="href string:/contacts/${authorId}">
-        <img tal:attributes="src authorImage; alt string:Photo of ${authorName}"/>
+        <img tal:attributes="src string:/${authorImage}; alt string:Photo of ${authorName}"/>
       </a>
     </div><!--authorImage-->
     <pre class="email-body"><p tal:replace="structure options/postIntro">
