@@ -1,4 +1,5 @@
 <entry tal:define="post python:options['post'];
+  postId python:post['post_id'];
   authorId python:options['authorId']; 
   authorName python:options['authorName'];
   authorExists python:options['authorExists'];
@@ -6,13 +7,12 @@
   authorImage python:options['authorImage'];
   postIntro options/postIntro;
   postRemainder options/postRemainder;
-  filesMetadata options/filesMetadata;
-  id options/post/id">
+  filesMetadata options/filesMetadata;>
   <title tal:content="options/topicName">Atom-Powered Robots Run Amok</title>
   <link rel="alternate" type="text/html" title="Post on the Web" 
     href="http://example.org/2003/12/13/atom03" 
     tal:attributes="title string:Post in ${options/topicName};
-    href string:${options/siteURL}/r/post/${id}"/>
+    href string:${options/siteURL}/r/post/${postId}"/>
   <tal:block
     tal:condition="filesMetadata"
     tal:define="groupObj python:options['context'].Scripts.get.group_object();">
@@ -25,7 +25,7 @@
         length fm/file_size" />
       </tal:block>
   </tal:block>
-  <id tal:content="string:http://onlinegroups.net/r/post/${id}">abc123</id>
+  <id tal:content="string:http://onlinegroups.net/r/post/${postId}">abc123</id>
   <author>
     <name tal:content="authorName">Me!</name>
     <uri tal:condition="authorExists" 
