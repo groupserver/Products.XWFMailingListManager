@@ -21,7 +21,7 @@
   <link rel="self" href="http://onlinegroups.net/groups/demo" 
     tal:attributes="href feedURL"/>
   <tal:block tal:repeat="post posts">
-    <entry tal:define="topicName post/mailSubject"
+    <entry tal:define="topicName post/subject"
       tal:replace="structure provider:groupserver.PostAtom">
     </entry>
   </tal:block>
