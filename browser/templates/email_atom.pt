@@ -24,7 +24,6 @@
         href string:${options/siteURL}/groups/${options/groupId}/files/f/${fm/file_id}/${fm/file_name};
         length fm/file_size" />
       </tal:block>
-    </tal:block>
   </tal:block>
   <id tal:content="string:http://onlinegroups.net/r/post/${id}">abc123</id>
   <author>
