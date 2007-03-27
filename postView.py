@@ -29,32 +29,40 @@ class GSPostView(Traversable):
           self.archive = context.messages
           
           self.postId = None
-          
-      def traverse(self, name, furtherPath):
-          #
-          # TODO: this would probably be a good spot to check if the
-          # postId is valid, and if not redirect to a helpful message
-          #
-          if not self.postId:
-              self.postId = name
-              self.update()
-          else:
-              raise TraversalError, "Post ID was already specified"
-          
-          return self
-      
-      def update(self):
+
           da = self.context.zsqlalchemy 
           assert da, 'No data-adaptor found'
-          
           self.messageQuery = queries.MessageQuery(self.context, da)
-          self.post = self.messageQuery.post(self.postId)
-          self.relatedPosts = self.messageQuery.topic_post_navigation(self.postId)
+
           
+      def traverse(self, name, furtherPath):
+          uri = ''
+          print
+          print 'Wibble'
+          if not self.postId:
+              self.postId = name
+              if not self.messageQuery.post(self.postId):
+                  uri = '/r/post-not-found?id=%s' % self.postId
+              else: # No post found
+                  self.update()
+          else: # No ID set
+              uri = '/r/post-no-id'
+          if uri:
+              print uri
+              return self.request.RESPONSE.redirect(uri)
+          else:            
+              return self
+      
+      def update(self):
+          if (self.postId):
+              self.post = self.messageQuery.post(self.postId)
+              assert self.post, 'No post found'
+              self.relatedPosts = self.messageQuery.topic_post_navigation(self.postId)
+              
       def get_topic_title(self):
           assert hasattr(self, 'post')
-          assert self.post.has_key('subject')
-          return self.post['subject']
+          retval = self.post and self.post['subject'] or ''
+          return retval
           
       def get_previous_post(self):
           assert hasattr(self, 'relatedPosts')
