@@ -1,14 +1,11 @@
 /* Stylesheet for the messages */
 
 /* Summary for the Latest Topics page */
-#topicsSummary .topic, #topicsSummary th.posts, #topicsSummary th.date {
+#topicsSummary .topic, #topicsSummary th.posts, #topicsSummary th.date, #topicsSummary td.posts, #topicsSummary td.date {
     text-align: left;
     padding: 5px 10px 5px 10px;
 }
-#topicsSummary td.posts, #topicsSummary td.date {
-    padding: 5px 10px 5px 10px;
-    text-align: right;
-}
+
 #topicsSummary caption {
   display: none;
 }
@@ -130,13 +127,8 @@ pre.email-body, .email-remainder pre {
 }
 
 th.date, td.date {
-	width: 150px;
-	text-align: right;
-}
-
-th.posts, td.posts {
-	width: 30px;
-	text-align: right;
+	max-width: 180px;
+        padding: 0 0 0 10px;
 }
 
 .email-remainder {
@@ -165,7 +157,6 @@ table#results {
 }
 
 table#results caption {
-  padding-top: 30px;
   text-align: left;
   font-size: 122%;
   font-weight: bold;
@@ -178,7 +169,7 @@ table#results .file {
 }
 
 table#results th {
-    text-align: left;
+    /* text-align: left; */
 }
 
 table#results th.file {
@@ -221,12 +212,13 @@ a.shownArrow {
     display: none;
 }
 
-
 #post-message {
-    margin-top: 60px;
+    margin-top: 15px;
 }
+
 #post-message h2 {
     padding-top: 0px;
+    padding-bottom: 0px;
 }
 #post-topic-field, #post-from-fields, #singleFrom, #message-fields, #post-message .formelementbutton
  {
