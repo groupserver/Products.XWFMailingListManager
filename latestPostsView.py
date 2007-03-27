@@ -45,7 +45,7 @@ class GSLatestPostsView(Products.Five.BrowserView):
                                                       offset=self.start)
 
       def get_posts(self):
-          assert self.posts
+          assert hasattr(self, 'posts')
           return self.posts
 
       def get_chunk_length(self):

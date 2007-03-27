@@ -115,6 +115,8 @@ class MessageQuery(object):
         r = statement.execute()
 
         retval = r.scalar()
+        if retval == None:
+            retval = 0
         assert retval >= 0
         return retval
             

@@ -45,7 +45,6 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
                                                         lists,
                                                         limit=limit,
                                                         offset=self.start)
-          assert self.topics
 
       def get_previous_summary_url(self):
           newStart = self.start - self.get_summary_length()
@@ -86,7 +85,7 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
           return retval;
           
       def get_topics(self):
-          assert self.topics
+          assert hasattr(self, 'topics')
           return self.topics
 
       def get_sticky_topics(self):
