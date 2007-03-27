@@ -172,7 +172,8 @@ class RDBEmailMessageStorage(object):
                        num_posts=1)
         else:
             num_posts = topic['num_posts']
-            if time.mktime(topic['last_post_date'].timetuple()) > time.mktime(self.email_message.date.timetuple()):
+            if (time.mktime(topic['last_post_date'].timetuple()) > 
+                time.mktime(self.email_message.date.timetuple())):
                 last_post_date = topic['last_post_date']
                 last_post_id = topic['last_post_id']
             else:
