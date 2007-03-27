@@ -7,7 +7,7 @@
   authorImage python:options['authorImage'];
   postIntro options/postIntro;
   postRemainder options/postRemainder;
-  filesMetadata options/filesMetadata;>
+  filesMetadata options/filesMetadata;">
   <title tal:content="options/topicName">Atom-Powered Robots Run Amok</title>
   <link rel="alternate" type="text/html" title="Post on the Web" 
     href="http://example.org/2003/12/13/atom03" 
