@@ -9,6 +9,7 @@ class MessageQuery(object):
         metadata = session.getMetaData()
 
         self.topicTable = sa.Table('topic', metadata, autoload=True)
+        self.topic_word_countTable = sa.Table('topic_word_count', metadata, autoload=True)
         self.postTable = sa.Table('post', metadata, autoload=True)
         self.fileTable = sa.Table('file', metadata, autoload=True)
         
@@ -19,11 +20,11 @@ class MessageQuery(object):
 
     def __add_std_where_clauses(self, statement, table, 
                                        site_id, group_ids=[]):
-        '''Add the stanard "where" clauses to an SQL statement
+        '''Add the standard "where" clauses to an SQL statement
         
         DESCRIPTION
             It is very common to only search a table for an
-            object from a partular set of groups, on a particular site.
+            object from a particular set of groups, on a particular site.
             This method add the appropriate where-clauses to do this.
         
         ARGUMENTS
@@ -407,3 +408,42 @@ class MessageQuery(object):
                             'file_size': row['file_size']})
                 
         return out
+
+    def topic_search(self, search_string, site_id, group_ids=()):
+        """ Retrieve all the topics matching a particular search string.
+        
+            Returns:
+             ({'topic_id': ID, 'subject': String, 'first_post_id': ID,
+               'last_post_id': ID, 'count': Int, 'last_post_date': Date,
+               'group_id': ID, 'site_id': ID}, ...)
+               
+        """
+        tt = self.topicTable
+        twc = self.topic_word_countTable
+        t = tt.join(twc, twc.c.topic_id==tt.c.topic_id)
+        statement = sa.select((tt.c.topic_id,tt.c.site_id,tt.c.group_id,
+                               tt.c.original_subject, tt.c.first_post_id,
+                               tt.c.last_post_id, tt.c.num_posts,
+                               tt.c.last_post_date), from_obj=[t])
+        self.__add_std_where_clauses(statement, tt, 
+                                     site_id, group_ids)
+        
+        statement.append_whereclause(twc.c.word.in_(*search_string.split()))
+        statement.order_by(sa.desc(tt.c.last_post_date))
+        statement.limit = 30
+        
+        r = statement.execute()
+
+        retval = []
+        if r.rowcount:
+            retval = [ {'topic_id': x['topic_id'], 
+                        'site_id': x['site_id'], 
+                        'group_id': x['group_id'], 
+                        'subject': unicode(x['original_subject'], 'utf-8'), 
+                        'first_post_id': x['first_post_id'], 
+                        'last_post_id': x['last_post_id'], 
+                        'count': x['num_posts'], 
+                        'last_post_date': x['last_post_date']} for x in r ]
+        return retval
+
+        

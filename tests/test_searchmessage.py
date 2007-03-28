@@ -68,6 +68,8 @@ def test_emailmessage():
       u'testing'
       >>> mq.post_count( 'ogs', ['team','test'] )
       2359L
+      >>> mq.topic_search( 'blarg foo hello', 'ogs', ['team','test'] )[0]['topic_id']
+      '4r3jgIQSw06vTOtF42g8SM'
       >>> mq.post_id_from_legacy_id('139137')
       '57CPAwvchg1071QfN9zCWO'
       
