@@ -245,7 +245,10 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
             (header, body) = MailBoxerTools.splitMail(mailString)
             # a robustness check -- if we have an archive ID, and we aren't in
             # the archive, what are we doing here?
-            archive = getattr(group, group.getValueFor('storage'))
+            try:
+                archive = getattr(group, group.getValueFor('storage'))
+            except:
+                archive = None
             archive_id = header.get('x-archive-id', '').strip()
             # TODO: fix for relational database
             if archive and archive_id and not hasattr(archive.aq_explicit, archive_id):
