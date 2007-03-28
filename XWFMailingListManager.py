@@ -243,11 +243,12 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
 
             mailString = spoolfile.read()
             (header, body) = MailBoxerTools.splitMail(mailString)
-            # a robustness check -- if we an archive ID, and we aren't in
+            # a robustness check -- if we have an archive ID, and we aren't in
             # the archive, what are we doing here?
             archive = getattr(group, group.getValueFor('storage'))
             archive_id = header.get('x-archive-id', '').strip()
-            if archive_id and not hasattr(archive.aq_explicit, archive_id):
+            # TODO: fix for relational database
+            if archive and archive_id and not hasattr(archive.aq_explicit, archive_id):
                 #logger.error('Spooled email had archive_id, but did not exist in archive')
                 continue
 
