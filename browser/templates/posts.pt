@@ -124,7 +124,7 @@
           <input type="hidden" name="__models__" value="sitesearch"/>
           <input type="hidden" name="__instance+sitesearch+query" value=""/>
           <input type="hidden" name="__submission_action+sitesearch+search" 
-            value="search_all.xml"/>
+            value="/search_all.xml"/>
           <input type="hidden" name="__submission_method+sitesearch+search"
             value="get"/>
         </div>

@@ -76,7 +76,7 @@
       - instance.
     -->
     <tal:block metal:fill-slot="body">
-      <form method="get" action="search_all.xml"
+      <form method="get" action="/search_all.xml"
         enctype="application/x-www-form-urlencoded">
         <!-- Site Search -->
         <div id="searcharea">
