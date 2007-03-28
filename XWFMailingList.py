@@ -432,8 +432,11 @@ class XWFMailingList(MailBoxer):
             filemetadatastorage = RDBFileMetadataStorage(self, msg, ids)
             filemetadatastorage.set_zalchemy_adaptor(da)
             filemetadatastorage.insert()
-            
-        return mailObject
+        
+        if archive:
+            return mailObject.getId()
+        else:
+            return msg.post_id
     
     def is_senderBlocked(self, user_id):
         """ Get the sendercache entry for a particular user.

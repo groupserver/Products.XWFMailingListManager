@@ -301,7 +301,8 @@ def check_encoding(encoding):
 class EmailMessage(object):
     implements(IEmailMessage)
 
-    def __init__(self, message, list_title='', group_id='', site_id='', sender_id_cb=None):
+    def __init__(self, message, list_title='', group_id='', site_id='', sender_id_cb=None,
+                       replace_mail_date=True):
         parser = Parser.Parser()
         msg = parser.parsestr(message)
         
@@ -310,6 +311,8 @@ class EmailMessage(object):
         self.group_id = group_id
         self.site_id = site_id
         self.sender_id_cb = sender_id_cb
+        self.replace_mail_date = replace_mail_date
+        self._date = datetime.datetime.now()
         
     def get(self, name, default=''):
         value = self.message.get(name, default)
@@ -494,6 +497,9 @@ class EmailMessage(object):
 
     @property
     def date(self):
+        if self.replace_mail_date:
+            return self._date
+        
         d = self.get('date', '').strip()
         if d:
             # if we have the format Sat, 10 Mar 2007 22:47:20 +1300 (NZDT)
@@ -501,7 +507,7 @@ class EmailMessage(object):
             d = re.sub(' \(.*?\)','', d)
             return parseDatetimetz(d)
         
-        return datetime.datetime.now()        
+        return self._date
 
     @property
     def md5_body(self):

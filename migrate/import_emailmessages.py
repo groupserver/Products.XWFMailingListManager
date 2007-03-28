@@ -70,8 +70,8 @@ except:
 print position
 for fname in os.listdir( importDir )[position:]:
      email = file( os.path.join( importDir, fname ) ).read()
-     msg = emailmessage.EmailMessage( email )
-     msg = emailmessage.EmailMessage( email, msg.get('x-gsgroup-title',''), msg.get('x-gsgroup-id',''), msg.get('x-gssite-id', ''), lambda x: msg.get('x-gsuser-id', ''))
+     msg = emailmessage.EmailMessage( email, replace_mail_date=False )
+     msg = emailmessage.EmailMessage( email, msg.get('x-gsgroup-title',''), msg.get('x-gsgroup-id',''), msg.get('x-gssite-id', ''), lambda x: msg.get('x-gsuser-id', ''), replace_mail_date=False)
      msgstorage = IRDBStorageForEmailMessage( msg )
      msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
      try:
