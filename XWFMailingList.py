@@ -317,23 +317,9 @@ class XWFMailingList(MailBoxer):
             subject = '%s%s' % (re_string, subject)
             
         return subject
-        
-    security.declareProtected('Add Folders', 'manage_addMail')
-    def manage_addMail(self, mailString):
-        """ Store mail & attachments in a folder and return it.
-        
-        """
-        archive = self.restrictedTraverse(self.getValueFor('storage'), 
-                                          default=None)
-        
-        # no archive available? then return immediately
-        if archive is None:
-            return None
-
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
-                                       group_id=self.getId(),
-                                       site_id=self.getProperty('siteId', ''),
-                                       sender_id_cb=self.get_mailUserId)
+    
+    def _create_mailObject(self, msg, archive):
+        # do the dirty work to tidy up the legacy aspects of manage_addMail
         
         # if 'keepdate' is set, get date from mail,
         if self.getValueFor('keepdate'):
@@ -347,12 +333,13 @@ class XWFMailingList(MailBoxer):
         
         self.addMailBoxerMail(mailFolder, str(msg.post_id), msg.title)
         mailObject = getattr(mailFolder, str(msg.post_id))
-
+        
         # and now add some properties to our new mailobject
         props = list(mailObject._properties)
         for prop in props:
             if prop['id'] == 'title':
                 prop['type'] = 'ustring'
+                
         mailObject._properties = tuple(props)
         mailObject.title = msg.title
         
@@ -367,7 +354,26 @@ class XWFMailingList(MailBoxer):
         self.setMailBoxerMailProperty(mailObject, 'headers', msg.headers, 'utext')
         
         self.setMailBoxerMailProperty(mailObject, 'mailUserId', msg.sender_id, 'ustring')
+
+        return mailObject
+    
+    
+    security.declareProtected('Add Folders', 'manage_addMail')
+    def manage_addMail(self, mailString):
+        """ Store mail & attachments in a folder and return it.
         
+        """
+        archive = self.restrictedTraverse(self.getValueFor('storage'), 
+                                          default=None)
+
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
+            
+        if archive:
+            mailObject = self._create_mailObject(msg, archive)
+            
         ids = []
         for attachment in msg.attachments:
             if attachment['filename'] == '' and attachment['subtype'] == 'plain':
@@ -380,38 +386,50 @@ class XWFMailingList(MailBoxer):
                 LOG('MailBoxer', INFO, 'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
             else:
                 LOG('MailBoxer', INFO, 'stripped and archiving attachment %s %s' % (attachment['filename'], attachment['maintype']))
-                id = self.addMailBoxerFile(mailObject, 
-                                  None, 
-                                  attachment['filename'], 
-                                  attachment['payload'], 
-                                  attachment['mimetype'])
+                
+                if archive:
+                    id = self.addMailBoxerFile(mailObject, 
+                                               None, 
+                                               attachment['filename'], 
+                                               attachment['payload'], 
+                                               attachment['mimetype'])
+                else:
+                    id = self.addGSFile(attachment['filename'], 
+                                        msg.subject, 
+                                        msg.sender_id, 
+                                        attachment['payload'], 
+                                        attachment['mimetype'])
                 ids.append(id)
-        
-        if ids:
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', ' '.join(ids), 'ustring')
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', len(msg.body.replace('\r', '')), 'ustring')
-        else:
-            # see if we might have gotten an ids from somewhere else already
-            file_ids = msg.get('x-xwfnotification-file-id')
-            ids = filter(None, file_ids.strip().split())
-            file_notification_message_length = msg.get('x-xwfnotification-message-length')
-            if file_ids and file_notification_message_length:
-                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', file_ids, 'ustring')
-                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
-                                              file_notification_message_length, 'ustring')
 
-        self.catalogMailBoxerMail(mailObject)
+        if archive:
+            if ids:
+                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', 
+                                              ' '.join(ids), 'ustring')
+                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length',
+                                              len(msg.body.replace('\r', '')), 'ustring')
+            else:
+                # see if we might have gotten an ids from somewhere else already
+                file_ids = msg.get('x-xwfnotification-file-id')
+                ids = filter(None, file_ids.strip().split())
+                file_notification_message_length = msg.get('x-xwfnotification-message-length')
+                if file_ids and file_notification_message_length:
+                    self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id',
+                                                  file_ids, 'ustring')
+                    self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
+                                                  file_notification_message_length, 'ustring')
+    
+            self.catalogMailBoxerMail(mailObject)
 
         if self.getProperty('use_rdb', False):
-            msgstorage = IRDBStorageForEmailMessage( msg )
+            msgstorage = IRDBStorageForEmailMessage(msg)
             
             da = self.site_root().zsqlalchemy
             
-            msgstorage.set_zalchemy_adaptor( da )
+            msgstorage.set_zalchemy_adaptor(da)
             msgstorage.insert()
             msgstorage.insert_keyword_count()
             
-            filemetadatastorage = RDBFileMetadataStorage( self, msg, ids )
+            filemetadatastorage = RDBFileMetadataStorage(self, msg, ids)
             filemetadatastorage.set_zalchemy_adaptor(da)
             filemetadatastorage.insert()
             
@@ -1063,11 +1081,31 @@ class XWFMailingList(MailBoxer):
         else:
             return ""
 
+    def addGSFile(self, title, topic, creator, data, content_type):
+        """ Adds an attachment as a file.
+        
+            This is used instead of addMailBoxerFile if we are *only* using
+            the relational database.
+            
+        """
+        # TODO: group ID should be more robust
+        group_id = self.getId()
+        storage = self.FileLibrary2.get_fileStorage()
+        id = storage.add_file(data)
+        file = storage.get_file(id)
+        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'], 
+                                     group_ids=[group_id], dc_creator=creator, 
+                                     topic=topic)
+        file.reindex_file()
+        
+        return id
+
     def addMailBoxerFile(self, archiveObject, id, title, data, content_type):
         """ Adds an attachment as File.
-
-            MailBoxerFile should be derived
-            from plain-Zope-File to store title (=>filename),
+            
+            This is mainly used by the moderation framework, unless the relational
+            database is not being used.
+            
         """
         # TODO: group ID should be more robust
         group_id = self.getId()
@@ -1083,7 +1121,7 @@ class XWFMailingList(MailBoxer):
         
         return id
     
-    def export_as_mbox( self ):
+    def export_as_mbox(self):
         """ Export our mailing list archives into mbox format, as best we can.
         
         """
@@ -1092,10 +1130,10 @@ class XWFMailingList(MailBoxer):
         
         self.REQUEST.RESPONSE.setHeader('Content-Type', 'application/mbox')
         
-        export_archive_as_mbox( archive, group_id=self.getId(),
-                                site_id=self.getProperty('siteId', ''),
-                                group_title=self.getProperty('title',''),
-                                writer=self.REQUEST.RESPONSE )
+        export_archive_as_mbox(archive, group_id=self.getId(), 
+                                site_id=self.getProperty('siteId', ''), 
+                                group_title=self.getProperty('title', ''), 
+                                writer=self.REQUEST.RESPONSE)
     
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt', 
