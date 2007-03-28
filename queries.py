@@ -13,7 +13,7 @@ class MessageQuery(object):
         self.fileTable = sa.Table('file', metadata, autoload=True)
         
         try:
-            self.post_id_mapTable = sa.Table('post_id_ap', metadata, autoload=True)
+            self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
         except NoSuchTableError:
             self.post_id_mapTable = None
 
@@ -59,6 +59,7 @@ class MessageQuery(object):
         statement = pit.select()
         
         statement.append_whereclause(pit.c.old_post_id==legacy_post_id)
+        
         r = statement.execute()
         
         post_id = None
