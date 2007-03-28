@@ -94,8 +94,9 @@ class RDBFileMetadataStorage(object):
     def set_zalchemy_adaptor(self, da):
         session = da.getSession()
         metadata = session.getMetaData()
-    
+        
         self.fileTable = sqlalchemy.Table('file', metadata, autoload=True)
+        self.postTable = sqlalchemy.Table('post', metadata, autoload=True)
         
     def insert(self):
         # FIXME: references like this should *NOT* be hardcoded!
@@ -111,6 +112,10 @@ class RDBFileMetadataStorage(object):
                       date=self.email_message.date,
                       post_id=self.email_message.post_id,
                       topic_id=self.email_message.topic_id)
+
+        # set the flag on the post table to avoid lookups
+        self.postTable.update(self.postTable.c.post_id == self.email_message.post_id
+                                   ).execute(has_attachments=True)
 
 class RDBEmailMessageStorage(object): 
     implements(IRDBStorageForEmailMessage)
