@@ -1,9 +1,18 @@
 /* Stylesheet for the messages */
 
 /* Summary for the Latest Topics page */
+#topicsSummary {
+    border-collapse: seperate;
+}
 #topicsSummary .topic, #topicsSummary th.posts, #topicsSummary th.date, #topicsSummary td.posts, #topicsSummary td.date {
     text-align: left;
     padding: 5px 10px 5px 10px;
+}
+#topicsSummary .topic, #topicsSummary th.date, #topicsSummary td.posts, #topicsSummary td.date {
+    text-align: left;
+}
+#topicsSummary th.posts, #topicsSummary td.posts {
+    text-align: right;
 }
 
 #topicsSummary caption {
@@ -12,7 +21,7 @@
 
 /* Summary for All Posts in Topic page */
 #topicSummary {
-  margin: 15px 0px 15px 0px;
+  margin: 30px 0px 10px 0px;
 }
 
 #topicSummary .label {
@@ -101,6 +110,10 @@ pre.email-body, .email-remainder pre {
 	margin: 5px 0 0 0;
 }
 
+#postList {
+  magin: 30px 0px 0px 0px;
+}
+
 .userimage {
     margin: 0px;
     padding: 0px 15px 15px 0px;
@@ -117,8 +130,8 @@ pre.email-body, .email-remainder pre {
 
 .emaildetails-odd, .emaildetails-self-odd, .emaildetails-even, .emaildetails-self-even
 {
-	margin: 0 0 2px 0;
-    padding: 5px 5px 10px 10px;
+	margin: 0px;
+  padding: 5px 10px 10px 10px;
 }
 
 #topicsSummary {
@@ -213,7 +226,7 @@ a.shownArrow {
 }
 
 #post-message {
-    margin-top: 15px;
+    margin-top: 30px;
 }
 
 #post-message h2 {

@@ -28,19 +28,20 @@
         tal:define="topicName view/get_topic_name">
         <!-- The documents related to this post -->
         
-        <link tal:define="global prev python:view.get_previous_topic()" 
-          tal:condition="python:prev and prev[0]" rel="prev" title="Previous topic" href="wibble"
-          tal:attributes="href python:prev[0]; 
-          title python:'Previous topic: %s' % prev[1];" />
+        <link tal:define="global later python:view.get_previous_topic()" 
+          tal:condition="python:later and later[0]" 
+          rel="prev" title="Previous topic" href="wibble"
+          tal:attributes="href python:later[0]; 
+          title python:'Later topic: %s' % later[1];" />
         
-        <link tal:define="global next python:view.get_next_topic()" 
-          tal:condition="python:next and next[0]" 
-          rel="next" title="Next topic" href="wibble"
-          tal:attributes="href python:next[0]; 
-          title python:'Next topic: %s' % next[1];" />
+        <link tal:define="global earlier python:view.get_next_topic()" 
+          tal:condition="python:earlier and earlier[0]" 
+          rel="next" title="earlier topic" href="wibble"
+          tal:attributes="href python:earlier[0]; 
+          title python:'Earlier topic: %s' % earlier[1];" />
         
-        <link rel="up" title="Summary of topics" 
-          href="topics.html" />
+        <link rel="up" title="All topics" href="topics.html"
+          tal:attributes="title python:'Topics in %s' % view.groupInfo.get_name();" />
         
         <link rel="bookmark" title="Group Homepage" href="#"
           tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
@@ -147,20 +148,22 @@
           <ul>
             <li class="prev">
               <span 
-                tal:condition="python:not(prev and prev[0])">No next 
+                tal:condition="python:not(later and later[0])">No later 
                 topic</span>
-            <a href="foo" tal:condition="python:prev and prev[0]"
-                tal:attributes="href python:prev[0];">
-                Next topic: <cite tal:content="python:prev[1]">Topic Name</cite>
+            <a href="foo" tal:condition="python:later and later[0]"
+                tal:attributes="href python:later[0];
+                  title python:'The topic with more recent posts:%s'%later[1];">
+                Later topic: <cite tal:content="python:later[1]">Topic Name</cite>
               </a>
             </li>
             <li class="next">
-              <a href="foo"
-                tal:attributes="href python:next[0];"
-                tal:condition="python:next and next[0]">Previous topic: 
-              <cite tal:content="python:next[1]">Topic Name</cite></a>
-            <span tal:condition="python:not(next and next[0])">No previous
+            <span tal:condition="python:not(earlier and earlier[0])">No earlier
                 topic</span>
+              <a href="foo"
+                tal:attributes="href python:earlier[0];
+                title python:'The topic with older posts:%s'%later[1];"
+                tal:condition="python:earlier and earlier[0]">Earlier topic:
+              <cite tal:content="python:earlier[1]">Topic Name</cite></a>
             </li>
           </ul>
         </div>
@@ -168,13 +171,14 @@
         <p class="label">Useful Links</p>
         <ul>
           <li class="topics">
-            <a href="../topics.html">Latest topics in 
+            <a href="../topics.html">Topics in 
               <span tal:replace="python:view.groupInfo.get_name()"/></a> 
             </li>
           </ul>
         </div>
 
-        <div tal:define="topic topicList"
+        <div tal:define="topic topicList" 
+          tal:condition="python:len(topic) &gt; 1;"
           tal:replace="structure provider:groupserver.TopicSummary"/>
         
         <p tal:define="topic topicList"

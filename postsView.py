@@ -14,7 +14,7 @@ import DocumentTemplate, Products.XWFMailingListManager
 import Products.GSContent, Products.XWFCore.XWFUtils
 import queries
 
-class GSLatestPostsView(Products.Five.BrowserView):
+class GSPostsView(Products.Five.BrowserView):
       def __init__(self, context, request):
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
           self.groupInfo = GSGroupInfo( context )
@@ -58,7 +58,7 @@ class GSLatestPostsView(Products.Five.BrowserView):
           assert retval >= 0
           return retval;
           
-      def get_previous_chunk_url(self):
+      def get_later_url(self):
           assert hasattr(self, 'start')
 
           newStart = self.start - self.get_chunk_length()
@@ -74,7 +74,7 @@ class GSLatestPostsView(Products.Five.BrowserView):
               retval = ''
           return retval
 
-      def get_next_chunk_url(self):
+      def get_earlier_url(self):
           assert hasattr(self, 'end')
 
           newStart = self.end
@@ -85,7 +85,7 @@ class GSLatestPostsView(Products.Five.BrowserView):
               retval = ''
           return retval
 
-      def get_last_chunk_url(self):
+      def get_last_url(self):
           newStart = self.numPosts - self.get_chunk_length()
           newEnd = self.numPosts
           return 'posts.html?start=%d&end=%d' % (newStart, newEnd)

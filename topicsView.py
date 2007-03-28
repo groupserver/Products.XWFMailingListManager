@@ -46,7 +46,7 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
                                                         limit=limit,
                                                         offset=self.start)
 
-      def get_previous_summary_url(self):
+      def get_later_url(self):
           newStart = self.start - self.get_summary_length()
           if newStart < 0:
               newStart = 0
@@ -60,7 +60,7 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
               retval = ''
           return retval
       
-      def get_next_summary_url(self):
+      def get_earlier_url(self):
           newStart = self.end
           newEnd = newStart + self.get_summary_length()
           if newStart < self.numTopics:
@@ -69,7 +69,7 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
               retval = ''
           return retval
       
-      def get_last_summary_url(self):
+      def get_last_url(self):
           newStart = self.numTopics - self.get_summary_length()
           newEnd = self.numTopics
           return 'topics.html?start=%d&end=%d' % (newStart, newEnd)

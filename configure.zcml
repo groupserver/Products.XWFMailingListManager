@@ -43,11 +43,11 @@
     template="browser/templates/topics.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="posts.html"
-    class=".latestPostsView.GSLatestPostsView"
+    class=".postsView.GSPostsView"
     template="browser/templates/posts.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="posts.atom"
-    class=".latestPostsView.GSLatestPostsView"
+    class=".postsView.GSPostsView"
     template="browser/templates/posts_atom.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="newTopic.html"

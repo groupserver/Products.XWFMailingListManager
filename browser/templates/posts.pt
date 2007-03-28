@@ -23,20 +23,20 @@
     <tal:block metal:fill-slot="metadata" 
       tal:define="global postURLPrefix string:p/;
       global topicURLPrefix string:t/;
-      global nextChunkURL python:view.get_next_chunk_url();
-      global previousChunkURL python:view.get_previous_chunk_url();
-      global lastChunkURL python:view.get_last_chunk_url()">
+      global earlierURL python:view.get_earlier_url();
+      global laterURL python:view.get_later_url();
+      global lastChunkURL python:view.get_last_url()">
 
-      <link rel="first" href="posts.html" title="Latest Posts"
-        tal:condition="previousChunkURL" />
-      <link rel="previous" href="#" title="Previous chunk"
-        tal:condition="previousChunkURL"
-        tal:attributes="href previousChunkURL" />
-      <link rel="next" href="#" title="Next chunk"
-        tal:condition="nextChunkURL"
-        tal:attributes="href nextChunkURL" />
-      <link rel="last" title="Get Oldest Posts"
-        tal:condition="nextChunkURL"
+      <link rel="first" href="posts.html" title="Most recent posts"
+        tal:condition="laterURL" />
+      <link rel="previous" href="#" title="Later posts"
+        tal:condition="laterURL"
+        tal:attributes="href laterURL" />
+      <link rel="next" href="#" title="Earlier posts"
+        tal:condition="earlierURL"
+        tal:attributes="href earlierURL" />
+      <link rel="last" title="The oldest posts"
+        tal:condition="earlierURL"
         tal:attributes="href lastChunkURL" />
       
       <link rel="up" href="#"
@@ -138,18 +138,20 @@
           <p class="label">Posts Navigation</p>
           <ul>
             <li class="prev">
-              <a href="#" tal:condition="previousChunkURL" 
-                tal:attributes="href previousChunkURL">Previous 
+              <a href="#" tal:condition="laterURL"
+                tal:attributes="href laterURL;
+                title string:The ${len} more recent posts;">Later 
                 <span tal:replace="len">-1</span> posts</a>
-              <span tal:condition="not:previousChunkURL">Previous
+              <span tal:condition="not:laterURL">Later
                 <span tal:replace="len">-1</span> posts
               </span>
             </li>
             <li class="next">
-              <a href="#" tal:condition="nextChunkURL"
-                tal:attributes="href nextChunkURL">Next
+              <a href="#" tal:condition="earlierURL"
+                tal:attributes="href earlierURL;
+                title string:The ${len} older posts;">Earlier
                 <span tal:replace="len">-1</span> posts</a>
-              <span tal:condition="not:nextChunkURL">Next
+              <span tal:condition="not:earlierURL">Earlier
                 <span tal:replace="len">-1</span> posts
               </span>
             </li>
