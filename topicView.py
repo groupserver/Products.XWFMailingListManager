@@ -53,6 +53,11 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           self.messageQuery = queries.MessageQuery(self.context, da)
           self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
           
+          # see if it's a legacy postId, and if so get the correct one
+          if not self.topicId:
+              self.postId = self.messageQuery.post_id_from_legacy_id(self.postId)
+              self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
+              
           self.topic = self.messageQuery.topic_posts(self.topicId)
           assert len(self.topic) >= 1, "No posts in the topic %s" % self.topicId
           self.lastPostId = self.topic[-1]['post_id']
