@@ -88,21 +88,28 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
           assert hasattr(self, 'topics')
           return self.topics
 
+          
       def get_sticky_topics(self):
-          retval = []
+          assert hasattr(self, 'messageQuery'), 'No message query'
+          assert hasattr(self, 'groupInfo'), 'No group info'
+          if not hasattr(self, 'stickyTopics'):
+              stickyTopicsIds = self.groupInfo.get_property('sticky_topics', [])
+              topics = filter(lambda t: t!=None, [self.messageQuery.topic(topicId) 
+                                                  for topicId in stickyTopicsIds])
+              self.stickyTopics = topics
+              
+          retval =  self.stickyTopics
+          assert hasattr(self, 'stickyTopics'), 'Sticky topics not cached'
           return retval
-                    
-          stickyTopicsIds = self.groupInfo.get_property('sticky_topics')
-          if stickyTopicsIds and (self.start == 0):
-              for stickyTopicId in stickyTopicsIds:
-                  query = {'id': stickyTopicId}
-                  result = self.archive.find_email(query)[0]
-                  threadInfo = {'id':     result.id,
-                                'name':   result.mailSubject,
-                                'date':   result.mailDate,
-                                'length': ''}
-                  retval.append(threadInfo)
+
+      def get_non_sticky_topics(self):
+          stickyTopics = self.get_sticky_topics()
+          stickyTopicIds = map(lambda t:t['topic_id'], stickyTopics)
+          allTopics = self.get_topics()
+          
+          retval = [topic for topic in allTopics 
+                    if topic['topic_id'] not in stickyTopicIds]
+
           return retval
-                              
       def process_form(self, *args):
           pass

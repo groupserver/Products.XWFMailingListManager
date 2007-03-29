@@ -4,7 +4,8 @@
   <input type="hidden" id="toggleStickyModel" name="model" 
     value="sticky_topic" />
   <input type="hidden" id="toggleStickyInstance" name="instance" 
-    value="add" tal:attributes="value options/instance"/>
+    value="add" 
+    tal:attributes="value python:options['add'] and 'add' or 'remove'"/>
   
   <input type="hidden" id="toggleStickyID" name="id" 
     value="0" tal:attributes="value options/topicId"/>

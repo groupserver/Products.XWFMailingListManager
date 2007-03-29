@@ -382,6 +382,32 @@ class MessageQuery(object):
         
         return None
 
+    def topic(self, topic_id):
+        """
+            Returns: 
+             {'topic_id': ID, 'subject': String, 'first_post_id': ID,
+               'last_post_id': ID, 'count': Int, 'last_post_date': Date,
+               'group_id': ID, 'site_id': ID}
+        """
+        tt = self.topicTable
+        statement = tt.select()
+        statement.append_whereclause(tt.c.topic_id==topic_id)
+
+        retval = None
+        r = statement.execute()
+        if r.rowcount:
+            assert r.rowcount == 1, "Topics should always be unique"
+            row = r.fetchone()
+            retval = {'topic_id': row['topic_id'], 
+                      'site_id': row['site_id'],
+                      'group_id': row['group_id'],
+                      'subject': unicode(row['original_subject'], 'utf-8'), 
+                      'first_post_id': row['first_post_id'],
+                      'last_post_id': row['last_post_id'],
+                      'last_post_date': row['last_post_date'],
+                      'count': row['num_posts']}
+        return retval
+
     def files_metadata(self, post_id):
         """ Retrieve the metadata of all files associated with this post.
             

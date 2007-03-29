@@ -56,9 +56,33 @@ def process_post( context, request ):
                                          topic, message, tags, email,
                                          uploadedFile, 
                                          context, request)
-        else:
-            result['error'] = False
-            result['message'] = ''
+        else: # Not posting
+            model = form['model']
+            instance = form['instance']
+
+            localScripts = context.LocalScripts.forms  
+            oldScripts = context.Scripts.forms
+            
+            modelDir = getattr(localScripts, model, 
+                                getattr(oldScripts, model, None))
+            if modelDir:
+                assert hasattr(modelDir, model)
+                if hasattr(modelDir, instance):
+                    script = getattr(modelDir, instance)
+                    assert script
+                    retval = script()
+                    return retval
+                else:
+                    m = """<p>Could not find the instance
+                            <code>%s</code> in the model
+                            <code>%s</code>.</p>""" % (instance, model)
+                    result['error'] = True
+                    result['message'] = m
+            else:
+                m = """<p>Could not find the model 
+                        <code>%s</code>.</p>""" % model
+                result['error'] = True
+                result['message'] = m
 
         assert result.has_key('error')
         assert result.has_key('message')

@@ -35,10 +35,9 @@ class GSStickyTopicToggleContentProvider(object):
           self.__updated = True
           
           stickyTopics = self.view.get_sticky_topics()
-          stickyTopicsNames = map(lambda t: t['name'].lower(), 
-                                  stickyTopics)
+          stickyTopicIds = [topic['topic_id'] for topic in stickyTopics]
           # Add or remove the topic.
-          self.add = self.topic.lower() not in stickyTopicsNames
+          self.add = self.topicId not in stickyTopicIds
           
       def render(self):
           if not self.__updated:
@@ -51,7 +50,7 @@ class GSStickyTopicToggleContentProvider(object):
                                    add=self.add,
                                    groupId=self.groupInfo.get_id(),
                                    siteId=self.siteInfo.get_id(),
-                                   topicId=self.topicId)
+                                   topicId=self.view.topicId)
           
       #########################################
       # Non standard methods below this point #

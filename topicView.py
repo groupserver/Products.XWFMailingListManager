@@ -52,6 +52,7 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
           
           self.topic = self.messageQuery.topic_posts(self.topicId)
+          assert len(self.topic) >= 1, "No posts in the topic %s" % self.topicId
           self.lastPostId = self.topic[-1]['post_id']
           
       def get_topic(self):
@@ -82,20 +83,14 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           return retval
           
       def get_sticky_topics(self):
-          retval = []
-
-
-          return retval
-          
-          
-          stickyTopicsIds = self.groupInfo.get_property('sticky_topics')
-          if stickyTopicsIds:
-              for stickyTopicId in stickyTopicsIds:
-                  query = {'id': stickyTopicId}
-                  result = self.archive.find_email(query)[0]
-                  threadInfo = {'id':     result.id,
-                                'name':   result.mailSubject,
-                                'date':   result.mailDate,
-                                'length': ''}
-                  retval.append(threadInfo)
+          assert hasattr(self, 'messageQuery'), 'No message query'
+          assert hasattr(self, 'groupInfo'), 'No group info'
+          if not hasattr(self, 'stickyTopics'):
+              stickyTopicsIds = self.groupInfo.get_property('sticky_topics', [])
+              topics = filter(lambda t: t!=None, [self.messageQuery.topic(topicId) 
+                                                  for topicId in stickyTopicsIds])
+              self.stickyTopics = topics
+              
+          retval =  self.stickyTopics
+          assert hasattr(self, 'stickyTopics'), 'Sticky topics not cached'
           return retval

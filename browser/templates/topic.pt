@@ -128,7 +128,8 @@
           group_object context/Scripts/get/group_object;
           roles python:user.getRolesInContext(group_object);
           isGroupAdmin python:'GroupAdmin' in roles;
-          isDivisionAdmin python:'DivisionAdmin' in roles;"
+          isDivisionAdmin python:'DivisionAdmin' in roles;
+          topicId python:view.topicId;"
           tal:condition="python:isGroupAdmin or isDivisionAdmin">
           <p 
             tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicFormData.pt"
@@ -136,8 +137,7 @@
             The space for the hidden metadata associated with the
             sticky topic toggle.
           </p>
-        <p
-            tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicForm.pt"
+        <p tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicForm.pt;"
             tal:replace="structure provider:groupserver.StickyTopicToggle">
             The button to do the toggling!.
           </p>
