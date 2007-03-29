@@ -37,7 +37,7 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           return self
           
       def update(self):
-          assert hasattr(self, postId)
+          assert hasattr(self, 'postId')
           assert self.postId
           
           result = view.process_form( self.context, self.request )
