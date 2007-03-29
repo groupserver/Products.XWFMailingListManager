@@ -24,6 +24,9 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           self.archive = context.messages
           self.postId = None
           
+          self.da = self.context.zsqlalchemy 
+          assert self.da, 'No data-adaptor found'
+          
       def traverse(self, name, furtherPath):
           #
           # TODO: this would probably be a good spot to check if the
@@ -47,10 +50,7 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           if result:
               self.retval.update(result.items())
           
-          da = self.context.zsqlalchemy 
-          assert da, 'No data-adaptor found'
-          
-          self.messageQuery = queries.MessageQuery(self.context, da)
+          self.messageQuery = queries.MessageQuery(self.context, self.da)
           self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
           
           # see if it's a legacy postId, and if so get the correct one
