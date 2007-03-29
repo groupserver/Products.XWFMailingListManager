@@ -37,13 +37,15 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           return self
           
       def update(self):
+          assert hasattr(self, postId)
+          assert self.postId
+          
           result = view.process_form( self.context, self.request )
           if result:
               self.retval.update(result.items())
           result = view.process_post( self.context, self.request )
           if result:
               self.retval.update(result.items())
-          
           
           da = self.context.zsqlalchemy 
           assert da, 'No data-adaptor found'
