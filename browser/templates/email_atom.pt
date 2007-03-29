@@ -20,7 +20,7 @@
       tal:repeat="fm filesMetadata">
       <link rel="enclosure" 
         tal:attributes="type fm/mime_type;
-        title fileObj/title_or_id;
+        title fm/file_name;
         href string:${options/siteURL}/groups/${options/groupId}/files/f/${fm/file_id}/${fm/file_name};
         length fm/file_size" />
       </tal:block>
