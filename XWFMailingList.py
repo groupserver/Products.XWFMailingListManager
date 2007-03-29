@@ -1062,7 +1062,7 @@ class XWFMailingList(MailBoxer):
     
     security.declarePrivate('mail_header')
     def mail_header(self, context, REQUEST, getValueFor=None, title='',
-                          mail=None, body='', file_ids=()):
+                          mail=None, body='', file_ids=(), post_id=''):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
         
@@ -1072,13 +1072,14 @@ class XWFMailingList(MailBoxer):
             return header(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
                                    title=title, mail=mail, body=body,
-                                   file_ids=file_ids)
+                                   file_ids=file_ids,
+                                   post_id=post_id)
         else:
             return ""
     
     security.declarePrivate('mail_footer')
     def mail_footer(self, context, REQUEST, getValueFor=None, title='',
-                          mail=None, body='', file_ids=()):
+                          mail=None, body='', file_ids=(), post_id=''):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
         
@@ -1088,7 +1089,8 @@ class XWFMailingList(MailBoxer):
             return footer(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
                                    title=title, mail=mail, body=body,
-                                   file_ids=file_ids)
+                                   file_ids=file_ids,
+                                   post_id=post_id)
         else:
             return ""
 
