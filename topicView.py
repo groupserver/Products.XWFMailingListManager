@@ -40,8 +40,8 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           return self
           
       def update(self):
-          assert hasattr(self, 'postId')
-          assert self.postId
+          assert hasattr(self, 'postId'), 'PostID not set'
+          assert self.postId, 'self.postID set to %s' % self.postId
           
           result = view.process_form( self.context, self.request )
           if result:
@@ -52,7 +52,7 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           
           self.messageQuery = queries.MessageQuery(self.context, self.da)
           self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
-          
+          assert self.topicId, 'self.topicID set to %s' % self.topicId
           # see if it's a legacy postId, and if so get the correct one
           if not self.topicId:
               self.postId = self.messageQuery.post_id_from_legacy_id(self.postId)
@@ -61,7 +61,13 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           self.topic = self.messageQuery.topic_posts(self.topicId)
           assert len(self.topic) >= 1, "No posts in the topic %s" % self.topicId
           self.lastPostId = self.topic[-1]['post_id']
-          
+
+      def do_error_redirect(self):
+          if not self.postId:
+              self.request.response.redirect('/r/topic-no-id')
+          else:
+              self.request.response.redirect('/r/topic-not-found?id=%s' % self.postId)
+
       def get_topic(self):
           assert self.topic
           return self.topic
