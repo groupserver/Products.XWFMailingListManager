@@ -400,24 +400,28 @@ class XWFMailingList(MailBoxer):
                                         attachment['payload'], 
                                         attachment['mimetype'])
                 ids.append(id)
+        
+        if archive and ids:
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', 
+                                          ' '.join(ids), 'ustring')
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length',
+                                          len(msg.body.replace('\r', '')), 'ustring')
+
+        # if this is a post from the web, we may have also been passed the
+        # file ID in the header
+
+        file_ids = msg.get('x-xwfnotification-file-id')
+        if file_ids:
+            ids = ids+filter(None, file_ids.strip().split())
+            file_notification_message_length = msg.get('x-xwfnotification-message-length')
+            # if we are archiving to ZODB, update now
+            if archive and file_ids and file_notification_message_length:
+                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id',
+                                              file_ids, 'ustring')
+                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
+                                              file_notification_message_length, 'ustring')
 
         if archive:
-            if ids:
-                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', 
-                                              ' '.join(ids), 'ustring')
-                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length',
-                                              len(msg.body.replace('\r', '')), 'ustring')
-            else:
-                # see if we might have gotten an ids from somewhere else already
-                file_ids = msg.get('x-xwfnotification-file-id')
-                ids = filter(None, file_ids.strip().split())
-                file_notification_message_length = msg.get('x-xwfnotification-message-length')
-                if file_ids and file_notification_message_length:
-                    self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id',
-                                                  file_ids, 'ustring')
-                    self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
-                                                  file_notification_message_length, 'ustring')
-    
             self.catalogMailBoxerMail(mailObject)
 
         if self.getProperty('use_rdb', False):
@@ -434,9 +438,9 @@ class XWFMailingList(MailBoxer):
             filemetadatastorage.insert()
         
         if archive:
-            return mailObject.getId()
+            return (mailObject.getId(), ids)
         else:
-            return msg.post_id
+            return (msg.post_id, ids)
     
     def is_senderBlocked(self, user_id):
         """ Get the sendercache entry for a particular user.
@@ -1057,7 +1061,8 @@ class XWFMailingList(MailBoxer):
         smtpserver.quit()
     
     security.declarePrivate('mail_header')
-    def mail_header(self, context, REQUEST, getValueFor=None, title='', mail=None, body=''):
+    def mail_header(self, context, REQUEST, getValueFor=None, title='',
+                          mail=None, body='', file_ids=()):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
         
@@ -1066,12 +1071,14 @@ class XWFMailingList(MailBoxer):
         if header:
             return header(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
-                                   title=title, mail=mail, body=body)
+                                   title=title, mail=mail, body=body,
+                                   file_ids=file_ids)
         else:
             return ""
     
     security.declarePrivate('mail_footer')
-    def mail_footer(self, context, REQUEST, getValueFor=None, title='', mail=None, body=''):
+    def mail_footer(self, context, REQUEST, getValueFor=None, title='',
+                          mail=None, body='', file_ids=()):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
         
@@ -1080,7 +1087,8 @@ class XWFMailingList(MailBoxer):
         if footer:
             return footer(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
-                                   title=title, mail=mail, body=body)
+                                   title=title, mail=mail, body=body,
+                                   file_ids=file_ids)
         else:
             return ""
 
