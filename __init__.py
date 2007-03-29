@@ -24,6 +24,9 @@ allow_class(MessageQuery)
 from datetime import datetime
 allow_type(datetime)
 
+import time
+allow_class(time)
+
 def initialize(context):
     # import lazily and defer initialization to the module
     XWFMailingListManager.initialize(context)
