@@ -369,7 +369,7 @@ class XWFMailingList(MailBoxer):
                     msg.message.add_header(hdr, customHeader[hdr])
             else:
                 # if the header was blank, it means we want it to be removed
-                del(msg.message.[hdr])
+                del(msg.message[hdr])
 
         # patch in the archive ID
         if msg.message.has_key('x-archive-id'):
