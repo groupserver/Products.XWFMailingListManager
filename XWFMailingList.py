@@ -363,7 +363,7 @@ class XWFMailingList(MailBoxer):
                                               file_ids=file_ids, 
                                               post_id=post_id).strip()
         
-        for hdr in customHeader.keys():
+        for hdr in customHeader.message.keys():
             if customHeader[hdr].strip():
                 if msg.message.has_key(hdr):
                     msg.message.replace_header(hdr, customHeader[hdr])
