@@ -1175,11 +1175,16 @@ class XWFMailingList(MailBoxer):
         """
         footer = getattr(self, 'xwf_email_footer', None)
         if footer:
-            return unicode(footer(REQUEST, list_object=context, 
+            text = footer(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
                                    title=title, mail=mail, body=body, 
                                    file_ids=file_ids, 
-                                   post_id=post_id), 'utf-8', 'ignore')
+                                   post_id=post_id)
+            if not isinstance(text, unicode):
+                text = unicode(text, 'utf-8','ignore')
+            
+            return text
+        
         else:
             return u""
 
