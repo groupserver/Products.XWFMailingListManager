@@ -343,11 +343,13 @@ class XWFMailingList(MailBoxer):
         
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again
+        headers = {}
+        headers.update(msg.message.items())
         customHeader = EmailMessage(self.mail_header(self, 
                                                     REQUEST, 
                                                     getValueFor=self.getValueFor, 
                                                     title=self.getValueFor('title'), 
-                                                    mail={}.update(msg.message.items()), 
+                                                    mail=headers, 
                                                     body=msg.body, 
                                                     file_ids=file_ids, 
                                                     post_id=post_id).strip())
@@ -356,7 +358,7 @@ class XWFMailingList(MailBoxer):
         customFooter = self.mail_footer(self, REQUEST, 
                                               getValueFor=self.getValueFor, 
                                               title=self.getValueFor('title'), 
-                                              mail={}.update(msg.message.items()), 
+                                              mail=headers, 
                                               body=msg.body, 
                                               file_ids=file_ids, 
                                               post_id=post_id).strip()
