@@ -28,6 +28,7 @@ from cgi import escape
 from zLOG import LOG, WARNING
 
 import md5
+import os
 
 def convert_date(date):
     import time
@@ -317,6 +318,97 @@ class XWFMailingList(MailBoxer):
             subject = '%s%s' % (re_string, subject)
             
         return subject
+
+    def listMail(self, REQUEST):
+        # Shifted from MailBoxer till reintegration project
+        
+        # Send a mail to all members of the list.
+        mailString = self.getMailFromRequest(REQUEST)
+        
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
+        
+        # store mail in the archive? get context for the mail...
+        post_id = msg.post_id
+        if self.getValueFor('archived') <> self.archive_options[0]:
+            (post_id, file_ids) = self.manage_addMail(msg)
+        
+        # We *always* distribute plain mail at the moment.
+        if msg.has_key('content-type'):
+            msg.replace_header('content-type', 'text/plain; charset=utf-8;')
+        else:
+            msg.add_header('content-type', 'text/plain; charset=utf-8;')
+        
+        # The custom header is actually capable of replacing the top of the
+        # message, for example with a banner, so we need to parse it again
+        customHeader = EmailMessage(self.mail_header(self, 
+                                                    REQUEST, 
+                                                    getValueFor=self.getValueFor, 
+                                                    title=self.getValueFor('title'), 
+                                                    mail=msg, 
+                                                    body=msg.body, 
+                                                    file_ids=file_ids, 
+                                                    post_id=post_id).strip())
+        
+        # unlike the header, the footer is just a footer
+        customFooter = self.mail_footer(self, REQUEST, 
+                                              getValueFor=self.getValueFor, 
+                                              title=self.getValueFor('title'), 
+                                              mail=msg, 
+                                              body=msg.body, 
+                                              file_ids=file_ids, 
+                                              post_id=post_id).strip()
+        
+        for hdr in customHeader.keys():
+            if customHeader[hdr].strip():
+                if msg.message.has_key(hdr):
+                    msg.message.replace_header(hdr, customHeader[hdr])
+                else:
+                    msg.message.add_header(hdr, customHeader[hdr])
+            else:
+                # if the header was blank, it means we want it to be removed
+                del(msg[hdr])
+
+        # patch in the archive ID
+        if msg.has_key('x-archive-id'):
+            msg.replace_header('x-archive-id', post_id)
+        else:
+            msg.add_header('x-archive-id', post_id)
+        
+        # If customBody is not empty, use it as new mailBody
+        if customHeader.body.strip():
+            body = customHeader.body
+        else:
+            body = msg.body
+            
+        newMail = "%s\r\n%s\r\n%s" % (msg.headers,
+                                      body,
+                                      customFooter)
+        
+        if not DEFER_EMAIL:
+            return self.sendMail(newMail)
+
+        # otherwise, we save the email into a spool file for sending later.
+        # this should provide a _much_ faster response time for listMail
+        # we write the email to the spool file after we put the groupname
+        # at the top
+        spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
+
+        objpath = os.path.join(*self.aq_parent.getPhysicalPath())
+        tempfilepath = makeTempPath(objpath)
+        lockfilepath = '%s.lck' % tempfilepath
+
+        lockfile = file(lockfilepath, 'a+')
+        lockfile.write('locked')
+        lockfile.close()
+
+        spoolfile = file(tempfilepath, 'ab+')
+        spoolfile.write(spoolMail)
+
+        os.remove(lockfilepath)
+
     
     def _create_mailObject(self, msg, archive):
         # do the dirty work to tidy up the legacy aspects of manage_addMail
@@ -359,18 +451,13 @@ class XWFMailingList(MailBoxer):
     
     
     security.declareProtected('Add Folders', 'manage_addMail')
-    def manage_addMail(self, mailString):
+    def manage_addMail(self, msg):
         """ Store mail & attachments in a folder and return it.
         
         """
         archive = self.restrictedTraverse(self.getValueFor('storage'), 
                                           default=None)
-
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
-                                       group_id=self.getId(), 
-                                       site_id=self.getProperty('siteId', ''), 
-                                       sender_id_cb=self.get_mailUserId)
-            
+        
         if archive:
             mailObject = self._create_mailObject(msg, archive)
             
@@ -404,7 +491,7 @@ class XWFMailingList(MailBoxer):
         if archive and ids:
             self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', 
                                           ' '.join(ids), 'ustring')
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length',
+            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
                                           len(msg.body.replace('\r', '')), 'ustring')
 
         # if this is a post from the web, we may have also been passed the
@@ -416,7 +503,7 @@ class XWFMailingList(MailBoxer):
             file_notification_message_length = msg.get('x-xwfnotification-message-length')
             # if we are archiving to ZODB, update now
             if archive and file_ids and file_notification_message_length:
-                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id',
+                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', 
                                               file_ids, 'ustring')
                 self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
                                               file_notification_message_length, 'ustring')
@@ -1061,7 +1148,7 @@ class XWFMailingList(MailBoxer):
         smtpserver.quit()
     
     security.declarePrivate('mail_header')
-    def mail_header(self, context, REQUEST, getValueFor=None, title='',
+    def mail_header(self, context, REQUEST, getValueFor=None, title='', 
                           mail=None, body='', file_ids=(), post_id=''):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
@@ -1071,14 +1158,14 @@ class XWFMailingList(MailBoxer):
         if header:
             return header(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
-                                   title=title, mail=mail, body=body,
-                                   file_ids=file_ids,
+                                   title=title, mail=mail, body=body, 
+                                   file_ids=file_ids, 
                                    post_id=post_id)
         else:
             return ""
     
     security.declarePrivate('mail_footer')
-    def mail_footer(self, context, REQUEST, getValueFor=None, title='',
+    def mail_footer(self, context, REQUEST, getValueFor=None, title='', 
                           mail=None, body='', file_ids=(), post_id=''):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
@@ -1086,13 +1173,13 @@ class XWFMailingList(MailBoxer):
         """
         footer = getattr(self, 'xwf_email_footer', None)
         if footer:
-            return footer(REQUEST, list_object=context, 
+            return unicode(footer(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
-                                   title=title, mail=mail, body=body,
-                                   file_ids=file_ids,
-                                   post_id=post_id)
+                                   title=title, mail=mail, body=body, 
+                                   file_ids=file_ids, 
+                                   post_id=post_id), 'utf-8', 'ignore')
         else:
-            return ""
+            return u""
 
     def addGSFile(self, title, topic, creator, data, content_type):
         """ Adds an attachment as a file.
@@ -1133,6 +1220,28 @@ class XWFMailingList(MailBoxer):
         file.reindex_file()
         
         return id
+        
+    security.declareProtected('View', 'manage_inboxer')
+    def manage_inboxer(self, REQUEST):
+        """ Wrapper to mail directly into archive.
+
+            This is just a wrapper method if you
+            want to use MailBoxer as mailarchive-system.
+        """
+        # Shifted from XWFMailingListManager till re-integration project
+        if self.checkMail(REQUEST):
+            return FALSE
+
+        mailString = self.getMailFromRequest(REQUEST)
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
+
+        self.manage_addMail(msg)
+        return TRUE
+
+
     
     def export_as_mbox(self):
         """ Export our mailing list archives into mbox format, as best we can.
