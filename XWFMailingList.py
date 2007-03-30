@@ -364,11 +364,11 @@ class XWFMailingList(MailBoxer):
                                               post_id=post_id).strip()
         
         for hdr in customHeader.message.keys():
-            if customHeader[hdr].strip():
+            if customHeader.message[hdr].strip():
                 if msg.message.has_key(hdr):
-                    msg.message.replace_header(hdr, customHeader[hdr])
+                    msg.message.replace_header(hdr, customHeader.message[hdr])
                 else:
-                    msg.message.add_header(hdr, customHeader[hdr])
+                    msg.message.add_header(hdr, customHeader.message[hdr])
             else:
                 # if the header was blank, it means we want it to be removed
                 del(msg.message[hdr])
