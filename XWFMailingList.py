@@ -385,7 +385,7 @@ class XWFMailingList(MailBoxer):
         else:
             body = msg.body
             
-        newMail = "%s\r\n%s\r\n%s" % (msg.headers,
+        newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers,
                                       body,
                                       customFooter)
         
