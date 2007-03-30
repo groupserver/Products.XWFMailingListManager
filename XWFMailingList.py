@@ -347,7 +347,7 @@ class XWFMailingList(MailBoxer):
                                                     REQUEST, 
                                                     getValueFor=self.getValueFor, 
                                                     title=self.getValueFor('title'), 
-                                                    mail=msg.message, 
+                                                    mail={}.update(msg.message.items()), 
                                                     body=msg.body, 
                                                     file_ids=file_ids, 
                                                     post_id=post_id).strip())
@@ -356,7 +356,7 @@ class XWFMailingList(MailBoxer):
         customFooter = self.mail_footer(self, REQUEST, 
                                               getValueFor=self.getValueFor, 
                                               title=self.getValueFor('title'), 
-                                              mail=msg.message, 
+                                              mail={}.update(msg.message.items()), 
                                               body=msg.body, 
                                               file_ids=file_ids, 
                                               post_id=post_id).strip()
