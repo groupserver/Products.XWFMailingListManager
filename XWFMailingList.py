@@ -336,10 +336,10 @@ class XWFMailingList(MailBoxer):
             (post_id, file_ids) = self.manage_addMail(msg)
         
         # We *always* distribute plain mail at the moment.
-        if msg.has_key('content-type'):
-            msg.replace_header('content-type', 'text/plain; charset=utf-8;')
+        if msg.message.has_key('content-type'):
+            msg.message.replace_header('content-type', 'text/plain; charset=utf-8;')
         else:
-            msg.add_header('content-type', 'text/plain; charset=utf-8;')
+            msg.message.add_header('content-type', 'text/plain; charset=utf-8;')
         
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again
@@ -347,7 +347,7 @@ class XWFMailingList(MailBoxer):
                                                     REQUEST, 
                                                     getValueFor=self.getValueFor, 
                                                     title=self.getValueFor('title'), 
-                                                    mail=msg, 
+                                                    mail=msg.message, 
                                                     body=msg.body, 
                                                     file_ids=file_ids, 
                                                     post_id=post_id).strip())
@@ -356,7 +356,7 @@ class XWFMailingList(MailBoxer):
         customFooter = self.mail_footer(self, REQUEST, 
                                               getValueFor=self.getValueFor, 
                                               title=self.getValueFor('title'), 
-                                              mail=msg, 
+                                              mail=msg.message, 
                                               body=msg.body, 
                                               file_ids=file_ids, 
                                               post_id=post_id).strip()
@@ -369,13 +369,13 @@ class XWFMailingList(MailBoxer):
                     msg.message.add_header(hdr, customHeader[hdr])
             else:
                 # if the header was blank, it means we want it to be removed
-                del(msg[hdr])
+                del(msg.message.[hdr])
 
         # patch in the archive ID
-        if msg.has_key('x-archive-id'):
-            msg.replace_header('x-archive-id', post_id)
+        if msg.message.has_key('x-archive-id'):
+            msg.message.replace_header('x-archive-id', post_id)
         else:
-            msg.add_header('x-archive-id', post_id)
+            msg.message.add_header('x-archive-id', post_id)
         
         # If customBody is not empty, use it as new mailBody
         if customHeader.body.strip():
