@@ -344,7 +344,9 @@ class XWFMailingList(MailBoxer):
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again
         headers = {}
-        headers.update(msg.message.items())
+        for item in msg.message.items():
+            headers[item[0].lower()] = item[1]
+            
         customHeader = EmailMessage(self.mail_header(self, 
                                                     REQUEST, 
                                                     getValueFor=self.getValueFor, 
