@@ -435,6 +435,15 @@ class MessageQuery(object):
                 
         return out
 
+    def active_groups(self):
+        tt = self.topicTable
+        statement = sa.text("""SELECT DISTINCT group_id, site_id
+                               FROM topic WHERE age(last_post_date) < INTERVAL '1 day';""",
+                            engine=tt.engine)
+        r = statement.execute()
+        retval = r.fetchall()
+        return retval
+
     def topic_search(self, search_string, site_id, group_ids=()):
         """ Retrieve all the topics matching a particular search string.
         
@@ -470,6 +479,4 @@ class MessageQuery(object):
                         'last_post_id': x['last_post_id'], 
                         'count': x['num_posts'], 
                         'last_post_date': x['last_post_date']} for x in r ]
-        return retval
-
-        
+        return retval        

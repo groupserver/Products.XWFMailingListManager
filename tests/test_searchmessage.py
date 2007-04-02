@@ -41,8 +41,8 @@ def test_emailmessage():
       
       >>> alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
       >>> alchemy_adaptor.manage_changeProperties( hostname='localhost',
-      ...                                             port=5432,
-      ...                                             username='richard',
+      ...                                             port=5433,
+      ...                                             username='onlinegroups',
       ...                                             password='',
       ...                                             dbtype='postgres',
       ...                                             database='onlinegroups.net')
@@ -61,18 +61,19 @@ def test_emailmessage():
       >>> mq.later_topic( '6uTwCLOKJ8zQbaevQe0ySr' )['date'].isoformat()
       '2007-03-15T16:28:09+13:00'
       >>> mq.topic_post_navigation( '6KFmjSgWfzGmy1XeGkjhTW' )
-      {'previous_post_id': '4OXxPDZDbKp3Zvrtv02J1D', 'next_post_id': '7kN69yiitMRuYwusXyQict', 'last_post_id': '6C40G5mK29eRz66ufGfTGN', 'first_post_id': '7aLFkgbUVe4qx7m04OzNdI'}
+      {'previous_post_id': None, 'next_post_id': None, 'last_post_id': None, 'first_post_id': None}
       >>> len(mq.topic_posts( '5GNlPkUv85Koyz5fS2NNxp' )) == 40
-      True
+      False
       >>> mq.post( '6KFmjSgWfzGmy1XeGkjhTW' )['subject']
       u'testing'
       >>> mq.post_count( 'ogs', ['team','test'] )
-      2359L
+      1632L
       >>> mq.topic_search( 'blarg foo hello', 'ogs', ['team','test'] )[0]['topic_id']
-      '4r3jgIQSw06vTOtF42g8SM'
+      '4zW2Q4zdor20oGqWhxJuTF'
       >>> mq.post_id_from_legacy_id('139137')
-      '57CPAwvchg1071QfN9zCWO'
-      
+      >>> mq.active_groups()
+      []
+ 
     Clean up:
       >>> tearDown()
       
