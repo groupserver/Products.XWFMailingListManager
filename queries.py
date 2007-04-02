@@ -435,15 +435,40 @@ class MessageQuery(object):
                 
         return out
 
-    def active_groups(self):
+    def active_groups(self, interval='1 day'):
+        """Retrieve all active groups
+        
+        An active group is one which has had a post added to it within
+        "interval".
+        
+        ARGUMENTS
+            "interval"  An SQL interval, as a string, made up of 
+                        "quantity unit". The quantity is an integer value,
+                        while the unit is one of "second", "minute", "hour", 
+                        "day", "week", "month", "year", "decade", 
+                        "century", or "millennium".
+                        
+        RETURNS
+            A list of dictionaries, which contain "group_id" and "site_id".
+            
+        SIDE EFFECTS
+            None.
+        
+        See Also
+            Section 8.5.1.4 of the PostgreSQL manual:
+            http://www.postgresql.org/docs/8.0/interactive/datatype-datetime.html
+        """
         tt = self.topicTable
         statement = sa.text("""SELECT DISTINCT group_id, site_id
-                               FROM topic WHERE age(last_post_date) < INTERVAL '1 day';""",
+                               FROM topic 
+                               WHERE age(last_post_date) < INTERVAL '%s';""" % interval,
                             engine=tt.engine)
         r = statement.execute()
-        retval = r.fetchall()
-        return retval
-
+        retval = []
+        if r.rowcount:
+            retval = [ {'site_id': x['site_id'], 
+                        'group_id': x['group_id']} for x in r ]
+        return retval        
     def topic_search(self, search_string, site_id, group_ids=()):
         """ Retrieve all the topics matching a particular search string.
         
