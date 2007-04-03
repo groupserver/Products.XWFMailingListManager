@@ -461,7 +461,7 @@ class MessageQuery(object):
         tt = self.topicTable
         statement = sa.text("""SELECT DISTINCT group_id, site_id
                                FROM topic 
-                               WHERE age(last_post_date) < INTERVAL '%s';""" % interval,
+                               WHERE age(CURRENT_TIMESTAMP, last_post_date) < INTERVAL '%s';""" % interval,
                             engine=tt.engine)
         r = statement.execute()
         retval = []
