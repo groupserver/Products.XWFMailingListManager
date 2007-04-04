@@ -56,7 +56,7 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           if not self.topicId:
               self.postId = self.messageQuery.post_id_from_legacy_id(self.postId)
               self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
-         assert self.topicId, 'self.topicID set to %s' % self.topicId
+          assert self.topicId, 'self.topicID set to %s' % self.topicId
 
           self.topic = self.messageQuery.topic_posts(self.topicId)
           assert len(self.topic) >= 1, "No posts in the topic %s" % self.topicId
