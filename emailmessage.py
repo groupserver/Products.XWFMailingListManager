@@ -479,15 +479,17 @@ class EmailMessage(object):
         
         if sender:
             name, sender = AddressList(sender)[0]
+            sender = sender.lower()
         
         return sender
-
+    
     @property
     def to(self):
         to = self.get('to')
         
         if to:
             name, to = AddressList(to)[0]
+            to = to.lower()
         
         return to
 

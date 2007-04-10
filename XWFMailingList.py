@@ -53,6 +53,18 @@ def convert_encoding_to_default(s, possible_encoding):
             
     return s
 
+def check_unsubscribe():
+    pass
+
+def check_subscribe():
+    pass
+
+def check_digest_on():
+    pass
+
+def check_digest_off():
+    pass
+
 null_convert = lambda x: x
 
 class XWFMailingList(MailBoxer):
@@ -332,21 +344,8 @@ class XWFMailingList(MailBoxer):
         
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
-        if self.getValueFor('archived') <> self.archive_options[0]:
+        if self.getValueFor('archived') != self.archive_options[0]:
             (post_id, file_ids) = self.manage_addMail(msg)
-        
-        # We *always* distribute plain mail at the moment.
-        if msg.message.has_key('content-type'):
-            msg.message.replace_header('content-type', 'text/plain; charset=utf-8;')
-        else:
-            msg.message.add_header('content-type', 'text/plain; charset=utf-8;')
-            
-        # remove headers that should not be generally used for either our
-        # encoding scheme or in general list mail
-        for hdr in ('content-transfer-encoding', 'disposition-notification-to',
-                    'return-receipt-to'):
-            if msg.message.has_key(hdr):
-                del(msg.message[hdr])
                     
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again
@@ -362,6 +361,14 @@ class XWFMailingList(MailBoxer):
                                                     body=msg.body, 
                                                     file_ids=file_ids, 
                                                     post_id=post_id).strip())
+        
+        # If customBody is not empty, use it as new mailBody, and we need to
+        # fetch it before any other changes are made, since changing the
+        # header can affect the way the body is decoded
+        if customHeader.body.strip():
+            body = customHeader.body
+        else:
+            body = msg.body
         
         # unlike the header, the footer is just a footer
         customFooter = self.mail_footer(self, REQUEST, 
@@ -394,11 +401,18 @@ class XWFMailingList(MailBoxer):
         else:
             msg.message.add_header('X-GSUser-Id', msg.sender_id)
         
-        # If customBody is not empty, use it as new mailBody
-        if customHeader.body.strip():
-            body = customHeader.body
+        # We *always* distribute plain mail at the moment.
+        if msg.message.has_key('content-type'):
+            msg.message.replace_header('content-type', 'text/plain; charset=utf-8;')
         else:
-            body = msg.body
+            msg.message.add_header('content-type', 'text/plain; charset=utf-8;')
+            
+        # remove headers that should not be generally used for either our
+        # encoding scheme or in general list mail
+        for hdr in ('content-transfer-encoding', 'disposition-notification-to',
+                    'return-receipt-to'):
+            if msg.message.has_key(hdr):
+                del(msg.message[hdr])
             
         newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers,
                                       body,
@@ -595,13 +609,16 @@ class XWFMailingList(MailBoxer):
 
         # Check for x-mailer-loop
         mailString = self.getMailFromRequest(REQUEST)
-        (header, body) = self.splitMail(mailString)
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
         
-        if header.get('x-mailer') == self.getValueFor('xmailer'):
-            message = 'Mail already processed'
+        if msg.get('x-mailer') == self.getValueFor('xmailer'):
+            message = 'X-Mailer header detected, a loop is likely'
             LOG('MailBoxer', PROBLEM, message)
             return message
-
+        
         # Check for empty return-path => automatic mail
         if header.get('return-path', '') == '<>':
             self.bounceMail(REQUEST)
@@ -610,33 +627,33 @@ class XWFMailingList(MailBoxer):
             LOG('MailBoxer', PROBLEM, message)
             return message
         
-        # A sanity check ... have we seen this email before?
-        checksum_string = header.get('from', '')+body
-        last_email_checksum = md5.new(checksum_string).hexdigest()
+        # A sanity check ... was this email the last one we saw (tight loop)?
+        # TODO: expand this to check the archives
         if self.last_email_checksum:
-            if self.last_email_checksum == last_email_checksum:
-                message = 'detected duplicate message from "%s"' % header.get('from', '')
+            if self.last_email_checksum == msg.post_id:
+                message = 'Detected duplicate message from "%s"' % header.get('from', '')
                 LOG('MailBoxer', PROBLEM, message)
                 return message
-        self.last_email_checksum = last_email_checksum
+        
+        self.last_email_checksum = msg.post_id
         
         # Check for hosed denial-of-service-vacation mailers
         # or other infinite mail-loops...
-        sender = self.mime_decode_header(header.get('from', 'No Sender'))
-        subject = self.mime_decode_header(header.get('subject', 'No Subject'))
-        (name, email) = rfc822.parseaddr(sender)
-        email = email.lower()
-
+        email = msg.sender
+        subject = msg.get('subject', 'No Subject')
+        sender_id = msg.sender_id
+        
         disabled = list(self.getValueFor('disabled'))
 
         if email in disabled:
-            message = '%s is disabled.' % sender
+            message = 'Email address "%s" is disabled.' % sender
             LOG('MailBoxer', PROBLEM, message)
             return message
-
+        
         senderlimit = self.getValueFor('senderlimit')
         senderinterval = self.getValueFor('senderinterval')
         unsubscribe = self.getValueFor('unsubscribe')
+        
         # if the person is unsubscribing, we can't handle it with the loop
         # stuff, because they might easily exceed it if it is a tight setting
         if (unsubscribe != '' and
@@ -659,7 +676,7 @@ class XWFMailingList(MailBoxer):
                     break
 
             if count >= senderlimit:
-                user = self.acl_users.get_userByEmail(email)
+                user = self.acl_users.getUser(sender_id)
                 if user:
                     user.send_notification('sender_limit_exceeded', self.listId(), 
                                             n_dict={'expiry_time': DateTime(earliest+senderinterval), 
@@ -692,9 +709,9 @@ class XWFMailingList(MailBoxer):
         required_properties = filter(None, self.getProperty('required_properties', []))
         
         if blocked_members or required_properties:
-            user = self.acl_users.get_userByEmail(email)
+            user = self.acl_users.getUser(sender_id)
             if user and user.getId() in blocked_members:
-                message = 'Blocked user: %s from posting' % user.getId()
+                message = 'Blocked user "%s" from posting' % sender_id
                 LOG('MailBoxer', PROBLEM, message)
                 user.send_notification('post_blocked', self.listId(), 
                                        n_dict={'email': mailString})
@@ -707,7 +724,7 @@ class XWFMailingList(MailBoxer):
                 prop_val = str(user.getProperty(required_property, None))
                 prop_val = prop_val.strip()
                 if not prop_val or prop_val == 'None':
-                    message = 'Blocked user because of missing user properties: %s' % user.getId()
+                    message = 'Blocked user "%s" because of missing user properties' % sender_id
                     LOG('MailBoxer', PROBLEM, message)
                     user.send_notification('missing_properties', self.listId(), 
                                            n_dict={'email': mailString})
