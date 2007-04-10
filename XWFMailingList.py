@@ -620,9 +620,9 @@ class XWFMailingList(MailBoxer):
             return message
         
         # Check for empty return-path => automatic mail
-        if header.get('return-path', '') == '<>':
+        if msg.get('return-path') == '<>':
             self.bounceMail(REQUEST)
-            message = 'Automated response detected from %s' % (header.get('from', 
+            message = 'Automated response detected from %s' % (msg.get('from', 
                                                                           '<>'))
             LOG('MailBoxer', PROBLEM, message)
             return message
@@ -631,7 +631,7 @@ class XWFMailingList(MailBoxer):
         # TODO: expand this to check the archives
         if self.last_email_checksum:
             if self.last_email_checksum == msg.post_id:
-                message = 'Detected duplicate message from "%s"' % header.get('from', '')
+                message = 'Detected duplicate message from "%s"' % msg.get('from')
                 LOG('MailBoxer', PROBLEM, message)
                 return message
         
@@ -734,7 +734,7 @@ class XWFMailingList(MailBoxer):
         # custom_mailcheck should return True if the message is to be blocked
         custom_mailcheck = getattr(self, 'custom_mailcheck', None)
         if custom_mailcheck:
-            if custom_mailcheck(mailinglist=self, sender=email, header=header, body=body):
+            if custom_mailcheck(mailinglist=self, sender=email, header=msg, body=msg.body):
                 return message
 
     def requestMail(self, REQUEST):
