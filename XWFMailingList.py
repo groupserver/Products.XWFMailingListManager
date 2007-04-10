@@ -340,7 +340,14 @@ class XWFMailingList(MailBoxer):
             msg.message.replace_header('content-type', 'text/plain; charset=utf-8;')
         else:
             msg.message.add_header('content-type', 'text/plain; charset=utf-8;')
-        
+            
+        # remove headers that should not be generally used for either our
+        # encoding scheme or in general list mail
+        for hdr in ('content-transfer-encoding', 'disposition-notification-to',
+                    'return-receipt-to'):
+            if msg.message.has_key(hdr):
+                del(msg.message[hdr])
+                    
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again
         headers = {}
@@ -379,7 +386,13 @@ class XWFMailingList(MailBoxer):
         if msg.message.has_key('x-archive-id'):
             msg.message.replace_header('x-archive-id', post_id)
         else:
-            msg.message.add_header('x-archive-id', post_id)
+            msg.message.add_header('X-Archive-Id', post_id)
+        
+        # patch in the user ID
+        if msg.message.has_key('x-gsuser-id'):
+            msg.message.replace_header('x-gsuser-id', msg.sender_id)
+        else:
+            msg.message.add_header('X-GSUser-Id', msg.sender_id)
         
         # If customBody is not empty, use it as new mailBody
         if customHeader.body.strip():
