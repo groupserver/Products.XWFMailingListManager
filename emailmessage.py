@@ -48,13 +48,15 @@ def strip_subject(subject, list_title, remove_re=True):
     # compress up the whitespace into a single space
     subject = re.sub('\s+', ' ', subject).strip()
     
-    # remove the "re:" from the subject line. There are probably other variants
-    # we don't yet handle.
-    if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
-        subject = subject[3:].strip()
-    elif len(subject) == 0:
-        subject = 'No Subject'
+    if remove_re:
+        # remove the "re:" from the subject line. There are probably other variants
+        # we don't yet handle.
+        if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
+            subject = subject[3:].strip()
     
+    if len(subject) == 0:
+        subject = 'No Subject'
+        
     return subject
 
 def normalise_subject(subject):
@@ -134,8 +136,8 @@ class RDBEmailMessageStorage(object):
         self.post_id_mapTable = sqlalchemy.Table('post_id_map', metadata, autoload=True)
 
     def _get_topic(self):
-        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
-
+        and_ = sqlalchemy.and_
+        
         r = self.topicTable.select(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
                                         self.topicTable.c.group_id == self.email_message.group_id, 
                                         self.topicTable.c.site_id == self.email_message.site_id)).execute()
@@ -143,7 +145,7 @@ class RDBEmailMessageStorage(object):
         return r.fetchone()
 
     def insert(self):
-        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
+        and_ = sqlalchemy.and_
 
         #
         # add the post itself
@@ -210,7 +212,7 @@ class RDBEmailMessageStorage(object):
                       new_post_id=self.email_message.post_id)
 
     def insert_keyword_count( self ):
-        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
+        and_ = sqlalchemy.and_
         #    
         # add/update the word count for the topic
         #
@@ -232,7 +234,6 @@ class RDBEmailMessageStorage(object):
                                                            self.topic_word_countTable.c.word == word)).execute(count=r['count']+counts[word])
                            
     def remove(self):
-        and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
         topic = self._get_topic()
         if topic['num_posts'] == 1:
             self.topicTable.delete(self.topicTable.c.topic_id == self.email_message.topic_id).execute()         
@@ -268,6 +269,8 @@ class IEmailMessage(Interface):
     
     to = Attribute("The email address the message was sent to")
     sender = Attribute("The email address the message was sent from")
+    name = Attribute("The name of the sender, from the header. This is not "
+                     "related to their name as set in GroupServer")
     title = Attribute("An attempt at a title for the email")
     tags = Attribute("A list of tags that describe the email")
     
@@ -482,7 +485,17 @@ class EmailMessage(object):
             sender = sender.lower()
         
         return sender
-    
+
+    @property
+    def name(self):
+        sender = self.get('from')
+        name = ''
+        
+        if sender:
+            name, sender = AddressList(sender)[0]
+        
+        return name
+
     @property
     def to(self):
         to = self.get('to')

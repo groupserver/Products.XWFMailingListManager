@@ -8,81 +8,32 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
-from export import export_archive_as_mbox
-from emailmessage import RDBFileMetadataStorage
-from AccessControl import getSecurityManager, ClassSecurityInfo
+
+from AccessControl import ClassSecurityInfo
+from DateTime.DateTime import DateTime
+from Globals import InitializeClass
+from OFS.Folder import manage_addFolder
+
+from Products.CustomProperties.CustomProperties import CustomProperties
+from Products.MailBoxer.MailBoxer import MailBoxer
+from Products.MailBoxer.MailBoxer import DEFER_EMAIL, TRUE, FALSE, MaildropHostIsAvailable, SecureMailHostIsAvailable 
+from Products.MailBoxer.MailBoxer import makeTempPath
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.CustomProperties.CustomProperties import CustomProperties
-from Globals import InitializeClass, PersistentMapping
-from OFS.Folder import Folder, manage_addFolder
-
-from Products.MailBoxer.MailBoxer import *
-from Acquisition import ImplicitAcquisitionWrapper, aq_base, aq_parent
-from App.config import getConfiguration
-
-from emailmessage import EmailMessage, IRDBStorageForEmailMessage
 
 from cgi import escape
+from emailmessage import EmailMessage, IRDBStorageForEmailMessage
+from emailmessage import RDBFileMetadataStorage
+from export import export_archive_as_mbox
+from utils import check_for_commands
+from utils import pin
+from zLOG import LOG, PROBLEM, INFO
+from emailmessage import strip_subject
 
-from zLOG import LOG, WARNING
-import re
-
-import md5
+import smtplib
 import os
-
-def convert_date(date):
-    import time
-    from email.Utils import parsedate
-    
-    return time.asctime(parsedate(date))
-
-def convert_addrs(field):
-    import time
-    from rfc822 import AddressList
-    
-    return map(lambda x: x[1], AddressList(field).addresslist)
-
-def convert_encoding_to_default(s, possible_encoding):
-    for try_encoding in (possible_encoding, 'utf-8', 'iso-8859-1', 'iso-8859-15'):
-            try:
-                s = s.decode(try_encoding)
-                s.encode(getConfiguration().default_zpublisher_encoding or 'utf-8')
-                break
-            except (UnicodeDecodeError, LookupError):
-                pass
-            
-    return s
-
-def filter_command_string(s):
-    parts = filter(None, map(lambda x: re.sub('\W', '', x), s.split()))
-    
-    return ' '.join(parts)
-
-def check_for_commands(msg, commands):
-    if not isinstance(commands, list) and not isinstance(commands, tuple):
-        commands = (commands,)
-        
-    cstring = filter_command_string(msg.subject).lower()
-    for command in commands:
-        # command must occur either at the start of string or after a space,
-        # and at the end of a string, or be followed by a space
-        if re.search('( |^)%s( |$)' % command.lower(), cstring):
-            return True
-    
-    # since that didn't work, try again with the first 100 chars of the body
-    cstring = filter_command_string(msg.body[:100]).lower()
-    for command in commands:
-        if re.search('( |^)%s( |$)' % command.lower(), cstring):
-            return True
-        
-    return False
-    
-def pin(email, hashkey):
-    # returns the hex-digits for a randomized md5 of sender.
-    res = md5.new(email.lower() + hashkey).hexdigest()
-    
-    return res[:8]
+import re
+import time
     
 null_convert = lambda x: x
 
@@ -317,24 +268,18 @@ class XWFMailingList(MailBoxer):
         """
         return self.getId()
         
-    def tidy_subject(self, subject, strip_listid=1, reduce_whitespace=1):
-        """ A helper method for tidying the subject line.
-        
-        """
-        if strip_listid:
-            subject = re.sub('\[%s\]' % re.escape(self.getValueFor('title')), '', subject).strip()
-        if reduce_whitespace:
-            subject = re.sub('\s+', ' ', subject).strip()
-        
-        return subject
-        
     def create_mailableSubject(self, subject, include_listid=1):
         """ A helper method for tidying up the mailing list subject for remailing.
         
         """
         # there is an assumption that if we're including a listid we should
         # strip any existing listid reference
-        subject = self.tidy_subject(subject, include_listid)
+        if include_listid:
+            list_title = self.getValueFor('title')
+        else:
+            list_title = ''
+            
+        subject = strip_subject(subject, list_title, False)
         
         is_reply = 0
         if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
@@ -343,7 +288,7 @@ class XWFMailingList(MailBoxer):
         
         re_string = '%s' % (is_reply and 'Re: ' or '')
         if include_listid:
-            subject = '%s[%s] %s' % (re_string, self.getValueFor('title'), subject)
+            subject = '%s[%s] %s' % (re_string, list_title, subject)
         else:
             subject = '%s%s' % (re_string, subject)
             
@@ -589,7 +534,7 @@ class XWFMailingList(MailBoxer):
         user = self.acl_users.getUserById(user_id)
 
         for email in user.get_emailAddresses():
-            ntime = int(DateTime())
+            ntime = int(time.time())
             count = 0
             etime = ntime-senderinterval
             earliest = 0
@@ -658,13 +603,12 @@ class XWFMailingList(MailBoxer):
         # Check for hosed denial-of-service-vacation mailers
         # or other infinite mail-loops...
         email = msg.sender
-        subject = msg.subject or 'No Subject'
         sender_id = msg.sender_id
         
         disabled = list(self.getValueFor('disabled'))
 
         if email in disabled:
-            message = 'Email address "%s" is disabled.' % sender
+            message = 'Email address "%s" is disabled.' % email
             LOG('MailBoxer', PROBLEM, message)
             return message
         
@@ -699,8 +643,8 @@ class XWFMailingList(MailBoxer):
                     user.send_notification('sender_limit_exceeded', self.listId(), 
                                             n_dict={'expiry_time': DateTime(earliest+senderinterval), 
                                                     'email': mailString})
-                    message = ('Sender %s has sent %s mails in %s seconds' %
-                                              (sender, count, senderinterval))
+                    message = ('Sender "%s" has sent "%s" mails in "%s" seconds' %
+                                              (email, count, senderinterval))
                 LOG('MailBoxer', PROBLEM, message)
                 return message
 
@@ -804,21 +748,21 @@ class XWFMailingList(MailBoxer):
                     if user: # if the user exists, send out a subscription email
                         self.mail_subscribe_key(self, REQUEST, mail=header, body=body)
                     else: # otherwise handle subscription as part of registration
-                        nparts = name.split()
+                        nparts = msg.name.split()
                         if len(nparts) >= 2:
                             first_name = nparts[0]
                             last_name = ' '.join(nparts[1:])
                         elif len(nparts) == 1:
                             first_name = last_name = nparts[0]
                         else:
-                            first_name = last_name = name
+                            first_name = last_name = msg.name
                         user_id, password, verification_code = \
                                  self.acl_users.register_user(email=email, 
                                                               first_name=first_name, 
                                                               last_name=last_name)
                         user = self.acl_users.getUser(user_id)
                         group_object = self.Scripts.get.group_by_id(self.getId())
-                        #division_id = group_object.get_division_id()
+                        
                         division = group_object.Scripts.get.division_object()
                         div_groups = division.groups_with_local_role('DivisionMember')
                         div_mem = None
@@ -960,22 +904,6 @@ class XWFMailingList(MailBoxer):
                 self.Catalog.uncatalog_object(pp)
 
         return True
-            
-    def correct_subjects(self):
-        """ Correct the subject line by stripping out the group id.
-        
-        """
-        id_string = '[%s]' % self.getProperty('title')
-        subjects = []
-        for object in self.archive.objectValues('Folder'):
-            if hasattr(object, 'mailFrom'):
-                subject = object.getProperty('mailSubject')
-                subject = subject.replace(id_string, '').strip()
-                if subject == '':
-                    subject = 'No Subject'
-                object.mailSubject = subject
-        
-        return True
     
     security.declarePrivate('mail_reply')
     def mail_reply(self, context, REQUEST, mail=None, body=''):
@@ -983,7 +911,6 @@ class XWFMailingList(MailBoxer):
         a clean default.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1010,7 +937,6 @@ class XWFMailingList(MailBoxer):
         a clean default.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1038,7 +964,6 @@ class XWFMailingList(MailBoxer):
         a clean default.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1066,7 +991,6 @@ class XWFMailingList(MailBoxer):
         a clean default.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1094,7 +1018,6 @@ class XWFMailingList(MailBoxer):
         a clean default.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1121,7 +1044,6 @@ class XWFMailingList(MailBoxer):
         """ Send out a message that the digest feature has been turned on.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1148,7 +1070,6 @@ class XWFMailingList(MailBoxer):
         """ Send out a message that the digest feature has been turned off.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1176,7 +1097,6 @@ class XWFMailingList(MailBoxer):
         a clean default.
         
         """
-        import smtplib
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
