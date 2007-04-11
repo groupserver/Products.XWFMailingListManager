@@ -26,6 +26,7 @@ from emailmessage import EmailMessage, IRDBStorageForEmailMessage
 from cgi import escape
 
 from zLOG import LOG, WARNING
+import re
 
 import md5
 import os
@@ -53,18 +54,30 @@ def convert_encoding_to_default(s, possible_encoding):
             
     return s
 
-def check_unsubscribe():
-    pass
+def filter_command_string(s):
+    parts = filter(None, map(lambda x: re.sub('\W', '', x), s.split()))
+    
+    return ' '.join(parts)
 
-def check_subscribe():
-    pass
-
-def check_digest_on():
-    pass
-
-def check_digest_off():
-    pass
-
+def check_for_commands(msg, commands):
+    if not isinstance(commands, list) and not isinstance(commands, tuple):
+        commands = (commands,)
+        
+    cstring = filter_command_string(msg.subject)
+    for command in commands:
+        # command must occur either at the start of string or after a space,
+        # and at the end of a string, or be followed by a space
+        if re.search('( |^)%s( |$)' % command, cstring):
+            return True
+    
+    # since that didn't work, try again with the first 100 chars of the body
+    cstring = filter_command_string(msg.body[:100])
+    for command in commands:
+        if re.search('( |^)%s( |$)' % command, cstring):
+            return True
+        
+    return False
+    
 null_convert = lambda x: x
 
 class XWFMailingList(MailBoxer):
@@ -302,7 +315,6 @@ class XWFMailingList(MailBoxer):
         """ A helper method for tidying the subject line.
         
         """
-        import re
         if strip_listid:
             subject = re.sub('\[%s\]' % re.escape(self.getValueFor('title')), '', subject).strip()
         if reduce_whitespace:
@@ -640,7 +652,7 @@ class XWFMailingList(MailBoxer):
         # Check for hosed denial-of-service-vacation mailers
         # or other infinite mail-loops...
         email = msg.sender
-        subject = msg.get('subject', 'No Subject')
+        subject = msg.subject or 'No Subject'
         sender_id = msg.sender_id
         
         disabled = list(self.getValueFor('disabled'))
@@ -656,9 +668,9 @@ class XWFMailingList(MailBoxer):
         
         # if the person is unsubscribing, we can't handle it with the loop
         # stuff, because they might easily exceed it if it is a tight setting
-        if (unsubscribe != '' and
-            re.match('(?i)' + unsubscribe + "|.*: " + unsubscribe, subject)):
-            pass        
+        if unsubscribe != '' and check_for_commands(msg, unsubscribe):
+            pass
+        
         elif senderlimit and senderinterval:
             sendercache = self.sendercache
 
@@ -738,32 +750,37 @@ class XWFMailingList(MailBoxer):
                 return message
 
     def requestMail(self, REQUEST):
-        # Handles un-/subscribe-requests.
+        # Handles requests for subscription changes
 
         mailString = self.getMailFromRequest(REQUEST)
+
+        # TODO: this needs to be completely removed, but some of the email
+        # depends on it still
         (header, body) = self.splitMail(mailString)
 
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
+        
         # get subject
-        subject = self.mime_decode_header(header.get('subject', ''))
+        subject = msg.subject
 
         # get email-address
-        sender = self.mime_decode_header(header.get('from', ''))
-        (name, email) = self.parseaddr(sender)
+        email = msg.sender
         
         memberlist = self.lowerList(self.getValueFor('mailinlist'))
         
         # process digest commands
-        if email.lower() in memberlist:
-            user = self.acl_users.get_userByEmail(email)
-            digest_on = re.match('(?i)digest on', subject.strip())
-            if user and digest_on:
+        if email.lower() in memberlist and msg.sender_id:
+            user = self.acl_users.getUser(msg.sender_id)
+            if check_for_commands(msg, 'digest on'):
                 user.set_enableDigestByKey(self.getId())
                 self.mail_digest_on(self, REQUEST, mail=header, body=body)
                 
                 return email
             
-            digest_off = re.match('(?i)digest off', subject.strip())
-            if user and digest_off:
+            elif check_for_commands(msg, 'digest off'):
                 user.set_disableDigestByKey(self.getId())
                 self.mail_digest_off(self, REQUEST, mail=header, body=body)
                 
@@ -771,9 +788,7 @@ class XWFMailingList(MailBoxer):
                 
         # subscription? only subscribe if subscription is enabled.
         subscribe = self.getValueFor('subscribe')
-        if (subscribe <> '' and
-            re.match('(?i)' + subscribe + "|.*: " + subscribe, subject)):
-
+        if subscribe != '' and check_for_commands(msg, subscribe):
             if email.lower() not in memberlist:
                 if subject.find(self.pin(sender))<>-1:
                     self.manage_addMember(email)
@@ -817,9 +832,7 @@ class XWFMailingList(MailBoxer):
 
         # unsubscription? only unsubscribe if unsubscription is enabled...
         unsubscribe = self.getValueFor('unsubscribe')
-        if (unsubscribe <> '' and
-            re.match('(?i)' + unsubscribe + "|.*: " + unsubscribe, subject)):
-
+        if unsubscribe != '' and check_for_commands(msg, unsubscribe):
             if email.lower() in memberlist:
                 if subject.find(self.pin(sender))<>-1:
                     self.manage_delMember(email)
