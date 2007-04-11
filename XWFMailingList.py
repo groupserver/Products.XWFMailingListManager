@@ -78,6 +78,12 @@ def check_for_commands(msg, commands):
         
     return False
     
+def pin(email, hashkey):
+    # returns the hex-digits for a randomized md5 of sender.
+    res = md5.new(email.lower() + hashkey).hexdigest()
+    
+    return res[:8]
+    
 null_convert = lambda x: x
 
 class XWFMailingList(MailBoxer):
@@ -772,7 +778,7 @@ class XWFMailingList(MailBoxer):
         memberlist = self.lowerList(self.getValueFor('mailinlist'))
         
         # process digest commands
-        if email.lower() in memberlist and msg.sender_id:
+        if email in memberlist and msg.sender_id:
             user = self.acl_users.getUser(msg.sender_id)
             if check_for_commands(msg, 'digest on'):
                 user.set_enableDigestByKey(self.getId())
@@ -789,8 +795,8 @@ class XWFMailingList(MailBoxer):
         # subscription? only subscribe if subscription is enabled.
         subscribe = self.getValueFor('subscribe')
         if subscribe != '' and check_for_commands(msg, subscribe):
-            if email.lower() not in memberlist:
-                if subject.find(self.pin(sender))<>-1:
+            if email not in memberlist:
+                if subject.find(pin(email, self.getValueFor('hashkey'))) != -1:
                     self.manage_addMember(email)
                     self.mail_subscribe(self, REQUEST, mail=header, body=body)
                 else:
@@ -834,7 +840,7 @@ class XWFMailingList(MailBoxer):
         unsubscribe = self.getValueFor('unsubscribe')
         if unsubscribe != '' and check_for_commands(msg, unsubscribe):
             if email.lower() in memberlist:
-                if subject.find(self.pin(sender))<>-1:
+                if subject.find(pin(email, self.getValueFor('hashkey'))) != -1:
                     self.manage_delMember(email)
                     self.mail_unsubscribe(self, REQUEST, mail=header, body=body)
                 else:
