@@ -16,8 +16,6 @@ from OFS.Folder import Folder
 from OFS.Folder import manage_addFolder
 
 from Products.CustomProperties.CustomProperties import CustomProperties
-from Products.MailBoxer import Bouncers
-
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 
 import MailBoxerTools
@@ -696,37 +694,6 @@ class XWFMailingList(Folder):
             
             return email
         
-    def bounceMail(self, REQUEST):
-        # Check a mail for bounces
-        mailString = getMailFromRequest(REQUEST)
-        
-        # Mailman-Bounce-detectors can threw wired exceptions for
-        # wired mails...
-        try:
-            bouncedAddresses = Bouncers.ScanMessage(mailString)
-        except:
-            bouncedAddresses = []
-
-        if bouncedAddresses:
-            # Get lowered member-list
-            memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
-            for item in bouncedAddresses:
-                if item.lower() in memberlist:
-                    # Create an entry for bouncer, if it not exists...
-                    if not self.bounces.has_key(item):
-                       self.bounces[item] = [0, DateTime(), DateTime()]
-
-                    # Count up and remember last bounce
-                    self.bounces[item] = [self.bounces[item][0]+1, 
-                                          self.bounces[item][1], DateTime()]
-
-                    self.bounces = self.bounces
-
-            message = 'Mail bounced for: %s' % ', '.join(bouncedAddresses)
-            LOG('MailBoxer', PROBLEM, message)
-
-        return bouncedAddresses
-    
     def _create_mailObject(self, msg, archive):
         # do the dirty work to tidy up the legacy aspects of manage_addMail
         
