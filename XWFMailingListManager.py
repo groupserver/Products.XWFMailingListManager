@@ -321,7 +321,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         notification_type = 'bounce_detection'
         # disable delivery
-        if bounce_count >= 4:
+        if bounce_count >= 3:
             user.remove_defaultDeliveryEmailAddress(email)
             # reset the bounce counter, but penalize them a single point for having
             # been disabled before
