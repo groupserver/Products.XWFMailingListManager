@@ -401,7 +401,7 @@ def handleBounce(url, group_id, email):
     server = xmlrpclib.ServerProxy(url)
 
     try:
-        return server.process_bounces(group_id, email)
+        return server.processBounce(group_id, email)
     except Exception, e:
         log_error('A problem, "%s", occurred uploading email to server %s (doing bounce handling)' % (e, callURL))
         sys.exit(EXIT_NOPERM)
