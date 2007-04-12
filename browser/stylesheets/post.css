@@ -74,6 +74,10 @@ h1 .shortLink {
     background-image: url('/++resource++postImages/arrow_down.png');
 }
 
+#topicNavigation li, #postsNavigation li, #usefulLinks li {
+    list-style: none;
+}
+
 #topicNavigation .label, #topicsNavigation .label, #postsNavigation .label {
     display: none;
 }
@@ -251,4 +255,10 @@ a.shownArrow {
     width: 100%;
     max-width: 80em;
     height: 20em;
+}
+
+@media print {
+  #topicNavigation, #postsNavigation, #usefulLinks, table#results, #singlePostTopicNavigation {
+    display: none;
+  }
 }
