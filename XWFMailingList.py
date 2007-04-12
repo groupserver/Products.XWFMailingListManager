@@ -670,8 +670,8 @@ class XWFMailingList(MailBoxer):
         blocked_members = filter(None, self.getProperty('blocked_members', []))
         required_properties = filter(None, self.getProperty('required_properties', []))
         
-        if blocked_members or required_properties:
-            user = self.acl_users.getUser(sender_id)
+        user = self.acl_users.getUser(sender_id)
+        if (blocked_members or required_properties) and user:
             if user and user.getId() in blocked_members:
                 message = 'Blocked user "%s" from posting' % sender_id
                 LOG('MailBoxer', PROBLEM, message)
