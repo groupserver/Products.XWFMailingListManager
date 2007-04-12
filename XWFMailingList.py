@@ -1201,6 +1201,10 @@ class XWFMailingList(Folder):
 
         return True
     
+    def parseaddr(self, header):
+        # wrapper for rfc822.parseaddr, returns (name, addr)
+        return MailBoxerTools.parseaddr(header)
+    
     security.declarePrivate('mail_reply')
     def mail_reply(self, context, REQUEST, mail=None, body=''):
         """ A hook used by the MailBoxer framework, which we provide here as
