@@ -30,3 +30,10 @@ def pin(email, hashkey):
     res = md5.new(email.lower() + hashkey).hexdigest()
     
     return res[:8]
+
+# mail-parameter in the smtp2http-request
+MAIL_PARAMETER_NAME = "Mail"
+def getMailFromRequest(REQUEST):
+    # returns the Mail from the REQUEST-object as string
+        
+    return str(REQUEST[MAIL_PARAMETER_NAME])

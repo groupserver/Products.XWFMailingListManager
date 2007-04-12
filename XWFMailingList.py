@@ -12,32 +12,73 @@
 from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
 from Globals import InitializeClass
+from OFS.Folder import Folder
 from OFS.Folder import manage_addFolder
 
 from Products.CustomProperties.CustomProperties import CustomProperties
-from Products.MailBoxer.MailBoxer import MailBoxer
-from Products.MailBoxer.MailBoxer import DEFER_EMAIL, TRUE, FALSE, MaildropHostIsAvailable, SecureMailHostIsAvailable 
-from Products.MailBoxer.MailBoxer import makeTempPath
+from Products.MailBoxer import Bouncers
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 
-from cgi import escape
-from emailmessage import EmailMessage, IRDBStorageForEmailMessage
+import MailBoxerTools
+from emailmessage import EmailMessage
+from emailmessage import IRDBStorageForEmailMessage
 from emailmessage import RDBFileMetadataStorage
+from emailmessage import strip_subject
+
 from export import export_archive_as_mbox
 from utils import check_for_commands
 from utils import pin
-from zLOG import LOG, PROBLEM, INFO
-from emailmessage import strip_subject
+from utils import getMailFromRequest
 
+from zLOG import LOG, PROBLEM, INFO
+
+import random
 import smtplib
 import os
 import re
 import time
+
+from cgi import escape
     
 null_convert = lambda x: x
 
-class XWFMailingList(MailBoxer):
+try:
+    import Products.MaildropHost
+    MaildropHostIsAvailable = 1
+except:
+    MaildropHostIsAvailable = 0
+
+try:
+    import Products.SecureMailHost
+    SecureMailHostIsAvailable = 1
+except:
+    SecureMailHostIsAvailable = 0
+
+# Simple return-Codes for web-callable-methods for the smtp2zope-gate
+TRUE = "TRUE"
+FALSE = "FALSE"
+
+DEFER_EMAIL = True
+MAILDROP_SPOOL='/tmp/mailboxer_spool2'
+
+if not os.path.isdir(MAILDROP_SPOOL):
+    os.makedirs(MAILDROP_SPOOL)
+
+def makeTempPath(objpath):
+    """ Helper to create a temp file name safely """
+    temp_path_dir = os.path.join(MAILDROP_SPOOL, objpath)
+    temp_path = os.path.join(temp_path_dir, str(random.randint(100000, 9999999)))
+
+    if not os.path.isdir(temp_path_dir):
+        os.makedirs(temp_path_dir)
+
+    while os.path.exists(temp_path):
+        temp_path = os.path.join(temp_path_dir, str(random.randint(100000, 9999999)))
+
+    return temp_path
+
+class XWFMailingList(Folder):
     """ A mailing list implementation, based heavily on the excellent Mailboxer
     product.
 
@@ -55,12 +96,19 @@ class XWFMailingList(MailBoxer):
     # track the checksum of the last email sent
     last_email_checksum = ''
     
+    _properties = (
+        {'id':'title', 'type':'string', 'mode':'w'}, 
+        {'id':'mailto', 'type':'string', 'mode':'wd'}, 
+        {'id':'hashkey', 'type':'string', 'mode':'wd'}, 
+       )
+    
     def __init__(self, id, title, mailto):
-        """ Setup a MailBoxer with reasonable defaults.
+        """ Setup a mailing list with reasonable defaults.
         
         """
-        MailBoxer.__init__(self, id, title)
-        
+        self.id = id
+        self.title = title
+        self.hashkey = str(random.random())
         self.mailto = mailto
         
     def valid_property_id(self, id):
@@ -94,6 +142,149 @@ class XWFMailingList(MailBoxer):
         self._p_changed = 1
         
         return True
+
+
+    ###
+    # Public methods to be called via smtp2zope-gateway
+    ##
+    security.declareProtected('View', 'manage_mailboxer')
+    def manage_mailboxer(self, REQUEST):
+        """ Default for a all-in-one mailinglist-workflow.
+
+            Handles (un)subscription-requests and
+            checks for loops etc & bulks mails to list.
+        """
+
+        if self.checkMail(REQUEST):
+            return FALSE
+
+        # Check for subscription/unsubscription-request
+        if self.requestMail(REQUEST):
+            return TRUE
+
+        # Process the mail...
+        self.processMail(REQUEST)
+        return TRUE
+
+
+    security.declareProtected('View', 'manage_requestboxer')
+    def manage_requestboxer(self, REQUEST):
+        """ Handles un-/subscribe-requests.
+
+            Check mails for (un)subscription-requests,
+            returns (un)subscribed adress if request
+            was successful.
+        """
+
+        if self.checkMail(REQUEST):
+            return FALSE
+
+        # Check for subscription/unsubscription-request
+        self.requestMail(REQUEST)
+        return TRUE
+
+
+    security.declareProtected('View', 'manage_listboxer')
+    def manage_listboxer(self, REQUEST):
+        """ Send a mail to all members of the list.
+
+            Puts a mail into archive and then bulks
+            it to all members on list.
+        """
+
+        if self.checkMail(REQUEST):
+            return FALSE
+
+        self.listMail(REQUEST)
+        return TRUE
+    
+    security.declareProtected('View', 'manage_bounceboxer')
+    def manage_bounceboxer(self, REQUEST):
+        """ Check for bounced mails.
+        """
+
+        if self.checkMail(REQUEST):
+            return FALSE
+
+        bouncedAddresses = self.bounceMail(REQUEST)
+
+        if bouncedAddresses:
+            return TRUE
+        else:
+            return FALSE
+    
+    security.declareProtected('View', 'manage_inboxer')
+    def manage_inboxer(self, REQUEST):
+        """ Wrapper to mail directly into archive.
+
+            This is just a wrapper method if you
+            want to use MailBoxer as mailarchive-system.
+        """
+        # Shifted from XWFMailingListManager till re-integration project
+        if self.checkMail(REQUEST):
+            return FALSE
+
+        mailString = getMailFromRequest(REQUEST)
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
+
+        self.manage_addMail(msg)
+        return TRUE
+    
+    security.declareProtected('View', 'manage_moderateMail')
+    def manage_moderateMail(self, REQUEST):
+        """ Approves / discards a mail for a moderated list. """
+        # TODO: UGLY, UGLY, UGLY!!!
+        action = REQUEST.get('action', '')
+        if (REQUEST.get('pin') == self.pin(self.getValueFor('mailto'))):
+            mqueue = self.restrictedTraverse(self.getValueFor('mailqueue'))
+            mid = REQUEST.get('mid', '-1')
+
+            if not hasattr(mqueue, mid):
+                if action in ['approve', 'discard']:
+                    if hasattr(self, "mail_approve"):
+                        return self.mail_approve(self, REQUEST, msg="MAIL_NOT_FOUND")
+                    else:
+                        REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
+                        return "MAIL NOT FOUND! MAYBE THE MAIL WAS ALREADY PROCESSED."
+                else:
+                    if hasattr(self, "mail_approve"):
+                        return self.mail_approve(self, REQUEST, msg="MAIL_PENDING")
+                    else:
+                        REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
+                        if len(mqueue.objectValues()):
+                            return "PENDING MAILS IN QUEUE!"
+                        else:
+                            return "NO PENDING MAILS IN QUEUE!"
+                    
+            mail = getattr(mqueue, mid).data
+            REQUEST.set('Mail', mail)
+
+            # delete queued mail
+            mqueue.manage_delObjects([mid])
+            if action == 'approve':
+                # relay mail to list
+                self.listMail(REQUEST)
+                if hasattr(self, "mail_approve"):
+                    return self.mail_approve(self, REQUEST, msg="MAIL_APPROVE")
+                else:
+                    REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
+                    return "MAIL APPROVED\n\n%s" % mail
+            else:
+                if hasattr(self, "mail_approve"):
+                    return self.mail_approve(self, REQUEST, msg="MAIL_DISCARD")
+                else:
+                    REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
+                    return "MAIL DISCARDED\n\n%s" % mail
+
+        if hasattr(self, "mail_approve"):
+            return self.mail_approve(self, REQUEST, msg="INVALID_REQUEST")
+        else:
+            REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
+            return "INVALID REQUEST! Please check your PIN."
+
 
     ###
     # Universal getter / setter for retrieving / storing properties
@@ -298,7 +489,7 @@ class XWFMailingList(MailBoxer):
         # Shifted from MailBoxer till reintegration project
         
         # Send a mail to all members of the list.
-        mailString = self.getMailFromRequest(REQUEST)
+        mailString = getMailFromRequest(REQUEST)
         
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
                                        group_id=self.getId(), 
@@ -372,13 +563,13 @@ class XWFMailingList(MailBoxer):
             
         # remove headers that should not be generally used for either our
         # encoding scheme or in general list mail
-        for hdr in ('content-transfer-encoding', 'disposition-notification-to',
+        for hdr in ('content-transfer-encoding', 'disposition-notification-to', 
                     'return-receipt-to'):
             if msg.message.has_key(hdr):
                 del(msg.message[hdr])
             
-        newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers,
-                                      body,
+        newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers, 
+                                      body, 
                                       customFooter)
         
         if not DEFER_EMAIL:
@@ -402,7 +593,139 @@ class XWFMailingList(MailBoxer):
         spoolfile.write(spoolMail)
 
         os.remove(lockfilepath)
+        
+    def processMail(self, REQUEST):
+        # Checks if member is allowed to send a mail to list
+        mailString = self.getMailFromRequest(REQUEST)
+        
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
+        
+        (header, body) = MailBoxerTools.splitMail(mailString)
+        
+        # get lower case email for comparisons
+        email = msg.sender
+        
+        # Get members
+        try:
+            memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+        except:
+            memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
 
+        # Get moderators
+        moderatorlist = MailBoxerTools.lowerList(self.getValueFor('moderator'))
+        
+        moderated = self.getValueFor('moderated')
+        unclosed = self.getValueFor('unclosed')
+        
+        # message to a moderated list... relay all mails from a moderator
+        if moderated and (email not in moderatorlist):
+            modresult = self.processModeration(REQUEST)
+            if modresult:
+                return modresult
+            
+        # traffic! relay all mails to a unclosed list or
+        # relay if it is sent from members and moderators...
+        if unclosed or (email in (memberlist + moderatorlist)):
+            if hasattr(self, 'mail_handler'):
+                self.mail_handler(self, REQUEST, mail=header, body=body)
+            else:
+                self.listMail(REQUEST)
+                
+            return email
+
+        # if all previous tests fail, it must be an unknown sender.
+        self.mail_reply(self, REQUEST, mail=header, body=body)
+        
+    def processModeration(self, REQUEST):
+        # a hook for handling the moderation stage of processing the email
+        mailString = self.getMailFromRequest(REQUEST)
+        
+        # TODO: erradicate splitMail usage
+        (header, body) = MailBoxerTools.splitMail(mailString)
+
+        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
+                                       group_id=self.getId(), 
+                                       site_id=self.getProperty('siteId', ''), 
+                                       sender_id_cb=self.get_mailUserId)
+        
+        email = msg.sender
+        
+        # Get members
+        try:
+            memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+        except:
+            memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
+            
+        # Get individually moderated members
+        moderatedlist = filter(None, 
+                               MailBoxerTools.lowerList(self.getValueFor('moderatedlist') or []))
+        
+        unclosed = self.getValueFor('unclosed')
+        
+        # if we have a moderated list we _only_ moderate those individual
+        # members, no others.
+        moderate = 0
+        if len(moderatedlist):
+            if email in moderatedlist:
+                moderate = 1
+        elif (email in memberlist) or unclosed:
+            moderate = 1
+        else:
+            self.mail_reply(self, REQUEST, mail=header, body=body)
+            return email
+            
+        if moderate:
+            mqueue = getattr(self.aq_explicit, 'mqueue', None)
+
+            # create a default-mailqueue if the traverse to mailqueue fails...
+            if not mqueue:
+                self.setValueFor('mailqueue', 'mqueue')
+                self.manage_addFolder('mqueue', 'Moderated Mail Queue')
+                mqueue = self.mqueue
+                
+            title = "%s / %s" % (msg.subject, msg.get('from'))
+            
+            mqueue.manage_addFile(msg.post_id, title=title, file=mailString, 
+                                  content_type='text/plain')
+
+            self.mail_moderator(self, REQUEST, mid=msg.post_id, 
+                                      mail=header, body=body)
+            
+            return email
+        
+    def bounceMail(self, REQUEST):
+        # Check a mail for bounces
+        mailString = getMailFromRequest(REQUEST)
+        
+        # Mailman-Bounce-detectors can threw wired exceptions for
+        # wired mails...
+        try:
+            bouncedAddresses = Bouncers.ScanMessage(mailString)
+        except:
+            bouncedAddresses = []
+
+        if bouncedAddresses:
+            # Get lowered member-list
+            memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
+            for item in bouncedAddresses:
+                if item.lower() in memberlist:
+                    # Create an entry for bouncer, if it not exists...
+                    if not self.bounces.has_key(item):
+                       self.bounces[item] = [0, DateTime(), DateTime()]
+
+                    # Count up and remember last bounce
+                    self.bounces[item] = [self.bounces[item][0]+1, 
+                                          self.bounces[item][1], DateTime()]
+
+                    self.bounces = self.bounces
+
+            message = 'Mail bounced for: %s' % ', '.join(bouncedAddresses)
+            LOG('MailBoxer', PROBLEM, message)
+
+        return bouncedAddresses
     
     def _create_mailObject(self, msg, archive):
         # do the dirty work to tidy up the legacy aspects of manage_addMail
@@ -417,7 +740,7 @@ class XWFMailingList(MailBoxer):
         # let's create the mailObject
         mailFolder = archive
         
-        self.addMailBoxerMail(mailFolder, str(msg.post_id), msg.title)
+        mailFolder.manage_addFolder(str(msg.post_id), msg.title)
         mailObject = getattr(mailFolder, str(msg.post_id))
         
         # and now add some properties to our new mailobject
@@ -429,21 +752,20 @@ class XWFMailingList(MailBoxer):
         mailObject._properties = tuple(props)
         mailObject.title = msg.title
         
-        self.setMailBoxerMailProperty(mailObject, 'topic_id', msg.topic_id, 'ustring')
+        mailObject.manage_addProperty('topic_id', msg.topic_id, 'ustring')
         
-        self.setMailBoxerMailProperty(mailObject, 'mailFrom', msg.sender, 'ustring')
-        self.setMailBoxerMailProperty(mailObject, 'mailSubject', msg.subject, 'ustring')
-        self.setMailBoxerMailProperty(mailObject, 'mailDate', time, 'date')
-        self.setMailBoxerMailProperty(mailObject, 'mailBody', msg.body, 'utext')
-        self.setMailBoxerMailProperty(mailObject, 'compressedSubject', msg.compressed_subject, 'ustring')
+        mailObject.manage_addProperty('mailFrom', msg.sender, 'ustring')
+        mailObject.manage_addProperty('mailSubject', msg.subject, 'ustring')
+        mailObject.manage_addProperty('mailDate', time, 'date')
+        mailObject.manage_addProperty('mailBody', msg.body, 'utext')
+        mailObject.manage_addProperty('compressedSubject', msg.compressed_subject, 'ustring')
         
-        self.setMailBoxerMailProperty(mailObject, 'headers', msg.headers, 'utext')
+        mailObject.manage_addProperty('headers', msg.headers, 'utext')
         
-        self.setMailBoxerMailProperty(mailObject, 'mailUserId', msg.sender_id, 'ustring')
+        mailObject.manage_addProperty('mailUserId', msg.sender_id, 'ustring')
 
         return mailObject
-    
-    
+
     security.declareProtected('Add Folders', 'manage_addMail')
     def manage_addMail(self, msg):
         """ Store mail & attachments in a folder and return it.
@@ -483,9 +805,9 @@ class XWFMailingList(MailBoxer):
                 ids.append(id)
         
         if archive and ids:
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', 
+            mailObject.manage_addProperty('x-xwfnotification-file-id', 
                                           ' '.join(ids), 'ustring')
-            self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
+            mailObject.manage_addProperty('x-xwfnotification-message-length', 
                                           len(msg.body.replace('\r', '')), 'ustring')
 
         # if this is a post from the web, we may have also been passed the
@@ -497,9 +819,9 @@ class XWFMailingList(MailBoxer):
             file_notification_message_length = msg.get('x-xwfnotification-message-length')
             # if we are archiving to ZODB, update now
             if archive and file_ids and file_notification_message_length:
-                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-file-id', 
+                mailObject.manage_addProperty('x-xwfnotification-file-id', 
                                               file_ids, 'ustring')
-                self.setMailBoxerMailProperty(mailObject, 'x-xwfnotification-message-length', 
+                mailObject.manage_addProperty('x-xwfnotification-message-length', 
                                               file_notification_message_length, 'ustring')
 
         if archive:
@@ -552,9 +874,6 @@ class XWFMailingList(MailBoxer):
         return (False, -1)
 
     def checkMail(self, REQUEST):
-        # richard@iopen.net: this is mostly the same as the MailBoxer parent,
-        # only with notification.
-        
         # Check for ip, loops and spam.
         
         # Check for correct IP
@@ -571,7 +890,7 @@ class XWFMailingList(MailBoxer):
                 return message
 
         # Check for x-mailer-loop
-        mailString = self.getMailFromRequest(REQUEST)
+        mailString = getMailFromRequest(REQUEST)
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
@@ -702,11 +1021,11 @@ class XWFMailingList(MailBoxer):
     def requestMail(self, REQUEST):
         # Handles requests for subscription changes
 
-        mailString = self.getMailFromRequest(REQUEST)
+        mailString = getMailFromRequest(REQUEST)
 
         # TODO: this needs to be completely removed, but some of the email
         # depends on it still
-        (header, body) = self.splitMail(mailString)
+        (header, body) = MailBoxerTools.splitMail(mailString)
 
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
                                        group_id=self.getId(), 
@@ -719,7 +1038,7 @@ class XWFMailingList(MailBoxer):
         # get email-address
         email = msg.sender
         
-        memberlist = self.lowerList(self.getValueFor('mailinlist'))
+        memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
         
         # process digest commands
         if email in memberlist and msg.sender_id:
@@ -799,7 +1118,7 @@ class XWFMailingList(MailBoxer):
 	    requested it.
         
 	    """
-        memberlist = self.lowerList(self.getValueFor('digestmaillist'))
+        memberlist = MailBoxerTools.lowerList(self.getValueFor('digestmaillist'))
         maillist = []
         for email in memberlist:
             if '@' in email and email not in maillist:
@@ -877,7 +1196,17 @@ class XWFMailingList(MailBoxer):
                     return member_user.getId()
                     
         return ''
-    
+
+    security.declareProtected('Add Folders', 'catalogMailBoxerMail')
+    def catalogMailBoxerMail(self, MailBoxerMail):
+        """ Catalogs MailBoxerFile. """
+
+        # Index the new created mailFolder in the catalog
+        Catalog = self.unrestrictedTraverse(self.getValueFor('catalog'),
+                                            default=None)
+        if Catalog is not None:
+            Catalog.catalog_object(MailBoxerMail)
+  
     security.declareProtected('Manage properties', 'reindex_mailObjects')
     def reindex_mailObjects(self):
         """ Reindex the mailObjects that we contain.
@@ -1152,7 +1481,7 @@ class XWFMailingList(MailBoxer):
                                    file_ids=file_ids, 
                                    post_id=post_id)
             if not isinstance(text, unicode):
-                text = unicode(text, 'utf-8','ignore')
+                text = unicode(text, 'utf-8', 'ignore')
             
             return text
         
@@ -1197,30 +1526,8 @@ class XWFMailingList(MailBoxer):
                                      topic=topic)
         file.reindex_file()
         
-        return id
-        
-    security.declareProtected('View', 'manage_inboxer')
-    def manage_inboxer(self, REQUEST):
-        """ Wrapper to mail directly into archive.
-
-            This is just a wrapper method if you
-            want to use MailBoxer as mailarchive-system.
-        """
-        # Shifted from XWFMailingListManager till re-integration project
-        if self.checkMail(REQUEST):
-            return FALSE
-
-        mailString = self.getMailFromRequest(REQUEST)
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
-                                       group_id=self.getId(), 
-                                       site_id=self.getProperty('siteId', ''), 
-                                       sender_id_cb=self.get_mailUserId)
-
-        self.manage_addMail(msg)
-        return TRUE
-
-
-    
+        return id        
+  
     def export_as_mbox(self):
         """ Export our mailing list archives into mbox format, as best we can.
         
@@ -1234,6 +1541,102 @@ class XWFMailingList(MailBoxer):
                                 site_id=self.getProperty('siteId', ''), 
                                 group_title=self.getProperty('title', ''), 
                                 writer=self.REQUEST.RESPONSE)
+
+    def processSpool(self):
+        #
+        # run through the spool, and actually send the mail out
+        #
+        archive = self.restrictedTraverse(self.getValueFor('storage'))
+        for spoolfilepath in os.listdir(MAILDROP_SPOOL):
+            if os.path.exists(os.path.join(MAILDROP_SPOOL,
+                                           '%s.lck' % spoolfilepath)):
+                continue # we're locked
+            spoolfile = file(os.path.join(MAILDROP_SPOOL, spoolfilepath))
+            line = spoolfile.readline().strip()
+            if len(line) < 5 or line[:2] != ';;' or line[-2:] != ';;':
+                LOG('MailBoxer', PROBLEM, 'Spooled email has no group specified')
+                continue
+
+            groupname = line[2:-2]
+            if self.getId() != groupname:
+                continue # not for us
+                     
+            mailString = spoolfile.read()
+            (header, body) = self.splitMail(mailString)
+            
+            # a robustness check -- if we an archive ID, and we aren't in
+            # the archive, what are we doing here?
+            archive_id = header.get('x-archive-id', None)
+            LOG('MailBoxer', PROBLEM, 'archive_id = "%s"' % archive_id)
+            if archive_id and not hasattr(archive.aq_explicit,
+                                          archive_id.strip()):
+                LOG('MailBoxer', PROBLEM, 'Spooled email had archive_id, but did not exist in archive')                
+                continue
+
+            self.sendMail(mailString)
+            spoolfile.close()
+            os.remove(spoolfilepath)
+            # sleep a little
+            time.sleep(0.5)
+
+    def sendMail(self, mailString):
+        # actually send the email
+
+        # Get members
+        memberlist = self.getValueFor('maillist')
+
+        # Remove "blank" / corrupted / doubled entries
+        maillist=[]
+        for email in memberlist:
+            if '@' in email and email not in maillist:
+                maillist.append(email)
+
+        # if no returnpath is set, use first moderator as returnpath
+        returnpath=self.getValueFor('returnpath')
+        
+        mailoptions = self.getValueFor('mailoptions')
+        if not mailoptions:
+            mailoptions = []
+
+        # we want to handle bounces with XVERP
+        if not returnpath and 'XVERP' in mailoptions:
+            returnpath = self.getValueFor('mailto')
+        elif not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+        
+        if ((MaildropHostIsAvailable and
+             getattr(self, "MailHost").meta_type=='Maildrop Host') 
+            or (SecureMailHostIsAvailable and 
+                getattr(self, "MailHost").meta_type=='Secure Mail Host')):
+            TransactionalMailHost = getattr(self, "MailHost")
+            # Deliver each mail on its own with a transactional MailHost
+            batchsize = 50
+        else:
+            TransactionalMailHost = None
+            batchsize = self.getValueFor('batchsize')
+
+        # start batching mails
+        while maillist:
+            # if no batchsize is set (default)
+            # or batchsize is greater than maillist,
+            # bulk all mails in one batch,
+            # otherwise bulk only 'batch'-mails at once
+            if (batchsize == 0) or (batchsize > len(maillist)):
+                batch = len(maillist)
+            else:
+                batch = batchsize
+
+            if TransactionalMailHost:
+                 TransactionalMailHost._send(returnpath, maillist[0:batch], mailString)
+            else:
+                smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
+                                          int(self.MailHost.smtp_port))
+                smtpserver.sendmail(returnpath, maillist[0:batch], mailString, mail_options=mailoptions)
+                smtpserver.quit()
+
+            # remove already bulked addresses
+            maillist = maillist[batch:]
+
     
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt', 
