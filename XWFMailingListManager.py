@@ -6,16 +6,15 @@
 # You MUST follow the rules in README_STYLE before checking in code
 # to the head. Code which does not follow the rules will be rejected.  
 #
-from AccessControl import getSecurityManager, ClassSecurityInfo
+from AccessControl import ClassSecurityInfo
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Globals import InitializeClass, PersistentMapping
+from Globals import InitializeClass
 from OFS.Folder import Folder
 
+# TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
-from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
-from Products.XWFCore.XWFCatalog import XWFCatalog
-from Products.MailBoxer.MailBoxer import MailBoxer, MailBoxerTools
+import DateTime
 
 import os, time
 
@@ -24,7 +23,7 @@ MAILDROP_SPOOL = '/tmp/mailboxer_spool2'
 class Record:
     pass
 
-class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
+class XWFMailingListManager(Folder, XWFMetadataProvider):
     """ A searchable, self indexing mailing list manager.
 
     """
@@ -41,11 +40,72 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
     manage_configure = PageTemplateFile('management/main.zpt',
                                         globals(),
                                         __name__='manage_main')
-
-    archive_options = MailBoxer.archive_options
+    
+    archive_options = ['not archived', 'plain text', 'with attachments']
     
     id_namespace = 'http://xwft.org/ns/mailinglistmanager'
-    _properties = MailBoxer._properties
+    _properties = (
+        {'id':'title', 'type':'string', 'mode':'w'},
+        {'id':'maillist', 'type':'lines', 'mode':'wd'},
+        {'id':'disabled', 'type':'lines', 'mode':'wd'},
+        {'id':'moderator', 'type':'lines', 'mode':'wd'},
+        {'id':'moderatedlist', 'type':'lines', 'mode':'wd'},
+        {'id':'mailoptions', 'type':'lines', 'mode':'wd'},
+        {'id':'returnpath','type':'string', 'mode':'wd'},
+        {'id':'moderated', 'type':'boolean', 'mode':'wd'},
+        {'id':'unclosed','type':'boolean','mode':'wd'},
+        {'id':'plainmail', 'type':'boolean', 'mode':'wd'},
+        {'id':'keepdate', 'type':'boolean', 'mode':'wd'},
+        {'id':'storage', 'type':'string', 'mode':'wd'},
+        {'id':'archived', 'type':'selection','mode':'wd',
+                      'select_variable':'archive_options'},
+        {'id':'subscribe', 'type':'string', 'mode':'wd'},
+        {'id':'unsubscribe','type':'string', 'mode':'wd'},
+        {'id':'mtahosts', 'type':'tokens', 'mode':'wd'},
+        {'id':'spamlist', 'type':'lines', 'mode':'wd'},
+        {'id':'atmask', 'type':'string', 'mode':'wd'},
+        {'id':'sniplist', 'type':'lines', 'mode':'wd'},
+        {'id':'catalog', 'type':'string', 'mode':'wd'},
+        {'id':'xmailer', 'type':'string', 'mode':'wd'},
+        {'id':'headers', 'type':'string', 'mode':'wd'},
+        {'id':'batchsize','type':'int','mode':'wd'},
+        {'id':'senderlimit','type':'int','mode':'wd'},
+        {'id':'senderinterval','type':'int','mode':'wd'},
+        {'id':'mailqueue','type':'string','mode':'wd'},
+        {'id':'getter','type':'string','mode':'wd'},
+        {'id':'setter','type':'string','mode':'wd'},
+       )
+    
+    # initial properties, very handy when upgrading
+    maillist = []
+    disabled = []
+    moderator = []
+    moderatedlist = []
+    mailoptions = []
+    returnpath = ''
+    moderated = 0
+    unclosed = 0
+    plainmail = 0
+    keepdate = 0
+    storage = 'archive'
+    archived = archive_options[0]
+    subscribe = 'subscribe'
+    unsubscribe = 'unsubscribe'
+    mtahosts = []
+    spamlist = []
+    atmask = '(at)'
+    sniplist = [r'(\n>[^>].*)+|(\n>>[^>].*)+',
+                r'(?s)\n-- .*',
+                r'(?s)\n_+\n.*']
+    catalog = 'Catalog'
+    xmailer = 'GroupServer'
+    headers = ''
+    batchsize = 0
+    senderlimit = 10                # default: no more than 10 mails
+    senderinterval = 600            # in 10 minutes (= 600 seconds) allowed
+    mailqueue = 'mqueue'
+    getter = ''
+    setter = ''
         
     def __init__(self, id, title=''):
         """ Initialise a new instance of XWFMailingListManager.
@@ -55,59 +115,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         self.id = id
         self.title = title
         self._setupMetadata()
-        self._setupProperties()
         self.__initialised = 0
         
-    def _setupProperties(self):
-        """ Setup the propertiesheet.
-        
-        """
-        for property in MailBoxer._properties:
-            propval = getattr(self, property['id'], None)
-            if propval == None:
-                propval = getattr(MailBoxer, property['id'])
-            setattr(self, property['id'], propval)
-        self._properties = MailBoxer._properties 
-       
-        return True
-        
-    def _setupMetadata(self):
-        """ Setup the metadata to be provided by default in the manager.
-        
-        """
-        XWFMetadataProvider.__init__(self)
-        # dublin core
-        self.set_metadataNS('http://purl.org/dc/elements/1.1/', 'dc')
-        dc = (('Contributor','dc','KeywordIndex'),
-              ('Creator','dc','FieldIndex'),
-              ('Description','dc','ZCTextIndex'),
-              ('Format','dc','FieldIndex'),
-              ('Language','dc','FieldIndex'),
-              ('Subject','dc','KeywordIndex'),
-              ('Type','dc','FieldIndex'),
-              ('Publisher','dc','FieldIndex'),
-              )
-        for mdi in dc:
-            apply(self.set_metadataIndex, mdi)
-        
-        self.set_metadataIndex('Contributor', 'dc', 'KeywordIndex')
-        
-        # file library
-        self.set_metadataNSDefault('http://xwft.org/ns/mailinglistmanager/0.9/')
-        fl = (('id','','FieldIndex'),
-              ('listId', '', 'FieldIndex'),
-              ('title','','FieldIndex'),
-              ('mailDate','','DateIndex'),
-              ('mailFrom','','FieldIndex'),
-              ('mailSubject', '', 'ZCTextIndex'),
-              ('mailBody', '', 'ZCTextIndex'),
-              ('compressedSubject', '', 'ZCTextIndex'),
-              )
-              
-        for mdi in fl:
-            apply(self.set_metadataIndex, mdi)
-        
-        return True
        
     security.declareProtected('Add Mail Boxers','manage_afterAdd') 
     def manage_afterAdd(self, item, container):
@@ -116,43 +125,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
         """
         if getattr(self, '__initialised', 1):
             return 1
-            
-        item._setObject('Catalog', XWFCatalog())
-        
-        wordsplitter = Record()
-        wordsplitter.group = 'Word Splitter'
-        wordsplitter.name = 'HTML aware splitter'
-        
-        casenormalizer = Record()
-        casenormalizer.group = 'Case Normalizer'
-        casenormalizer.name = 'Case Normalizer'
-        
-        stopwords = Record()
-        stopwords.group = 'Stop Words'
-        stopwords.name = 'Remove listed and single char words'
-        
-        item.Catalog.manage_addProduct['ZCTextIndex'].manage_addLexicon(
-            'Lexicon', 'Default Lexicon', (wordsplitter, casenormalizer, stopwords))
-        
-        zctextindex_extras = Record()
-        zctextindex_extras.index_type = 'Okapi BM25 Rank'
-        zctextindex_extras.lexicon_id = 'Lexicon'
-        
-        for key, index in self.get_metadataIndexMap().items():
-            if index == 'ZCTextIndex':
-                zctextindex_extras.doc_attr = key
-                item.Catalog.addIndex(key, index, zctextindex_extras)
-            elif index == 'MultiplePathIndex':
-                # we need to shortcut this one
-                item.Catalog._catalog.addIndex(key, MultiplePathIndex(key))
-            else:
-                item.Catalog.addIndex(key, index)
-                
-        # add the metadata we need
-        item.Catalog.addColumn('id')
-        item.Catalog.addColumn('mailSubject')
-        item.Catalog.addColumn('mailFrom')
-        item.Catalog.addColumn('mailDate')
         
         item.manage_addProduct['MailHost'].manage_addMailHost('MailHost', 
                                                               smtp_host='127.0.0.1')
@@ -242,18 +214,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
                 continue
 
             mailString = spoolfile.read()
-            (header, body) = MailBoxerTools.splitMail(mailString)
-            # a robustness check -- if we have an archive ID, and we aren't in
-            # the archive, what are we doing here?
-            try:
-                archive = getattr(group, group.getValueFor('storage'))
-            except:
-                archive = None
-            archive_id = header.get('x-archive-id', '').strip()
-            # TODO: fix for relational database
-            if archive and archive_id and not hasattr(archive.aq_explicit, archive_id):
-                #logger.error('Spooled email had archive_id, but did not exist in archive')
-                continue
 
             try:
                 group.sendMail(mailString)
@@ -263,6 +223,158 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
                 time.sleep(0.5)
             except:
                 pass
+
+    def processBounce(self, group_id, email):
+        """ Process a bounce for a particular list.
+        
+        """
+        action = 'bounce_detection %s' % email
+        
+        user = self.acl_users.get_userByEmail(email)
+        if not user:
+            return 'no user with email %s' % email
+        
+        Bounces = getattr(self, 'Bounces', False)
+        
+        if not Bounces:
+            self.manage_addFolder('Bounces')
+            Bounces = getattr(self, 'Bounces')
+        
+        group_obj = getattr(Bounces.aq_explicit, group_id, False)
+        if not group_obj:
+            Bounces.manage_addFolder(group_id)
+            group_obj = getattr(Bounces.aq_explicit, group_id)
+        
+        obj = getattr(group_obj.aq_explicit, user.getId(), False)
+        if not obj:
+            group_obj.manage_addProduct['CustomProperties'].manage_addCustomProperties(user.getId())
+            obj = getattr(group_obj.aq_explicit, user.getId())
+        
+        bounce_addresses = obj.getProperty('bounce_addresses', [email])
+        if not obj.hasProperty('bounce_addresses'):
+            obj.manage_addProperty('bounce_addresses', bounce_addresses, 'lines')
+        else:
+            if email not in bounce_addresses:
+                bounce_addresses.append(email)
+            obj.manage_changeProperties(bounce_addresses=bounce_addresses)
+        
+        # Perform a little heuristic analysis ... figure out if we've had any successful emails since the last bounce
+        now = DateTime.DateTime()
+        
+        last_action = obj.getProperty('last_bounce_time', 0)
+        bounce_count = obj.getProperty('bounce_count', 1)
+        had_success = False
+        if last_action:
+            last_failure_diff = now-last_action       
+            # we look for the second-to-last email, since the last one is
+            # probably the one that bounced!
+            list_object = getattr(self.aq_explicit, group_id, None)
+            if list_object:
+                archives = getattr(list_object, 'archive', None)
+                last_success_object = None
+                if archives:
+                    items = archives.objectValues()
+                    if len(items) > 2:
+                        last_success_object = items[-2]
+                
+                last_success_diff = 0
+                if last_success_object:                         
+                    last_success_diff = now - last_success_object.getProperty('mailDate')
+                    
+                if last_failure_diff > last_success_diff:
+                    # if we haven't detected a bounce in the last 24 hours, give a bonus 'point'
+                    if last_failure_diff > 1.0:
+                        bounce_count -= 2
+                    else:
+                        bounce_count -= 1
+                    
+                    had_success = True
+        
+        if not obj.hasProperty('bounce_count'):
+            obj.manage_addProperty('bounce_count', 1, 'int')
+        else:
+            # only increment the bounce count if we haven't detected
+            # a failure in the last 24 hours. This is to give temporary
+            # failures a chance to recover
+            if last_action and last_failure_diff > 1.0:
+                bounce_count += 1
+            else:
+                action = '24_hours_allowance %s' % email
+            bounce_count = bounce_count > 1 and bounce_count or 1
+            obj.manage_changeProperties(bounce_count=bounce_count)
+        
+        if not obj.hasProperty('last_bounce_time'):
+            obj.manage_addProperty('last_bounce_time', now, 'date')
+        else:
+            obj.manage_changeProperties(last_bounce_time=now)
+        
+        do_notification = False
+        lnt = filter(None, map(lambda x: x.strip(), obj.getProperty('notification_times', [])))
+        
+        if len(lnt) >= 1:
+            lnt_elapsed = now - DateTime.DateTime(lnt[-1])
+        else:
+            lnt_elapsed = 0
+        
+        if (not lnt) or (lnt_elapsed > 1.0):
+            do_notification = True
+        
+        notification_type = 'bounce_detection'
+        # disable delivery
+        if bounce_count >= 4:
+            user.remove_defaultDeliveryEmailAddress(email)
+            # reset the bounce counter, but penalize them a single point for having
+            # been disabled before
+            obj.manage_changeProperties(bounce_count=1)
+            do_notification = True
+            bounce_addresses = obj.getProperty('bounce_addresses')
+            try:
+                bounce_addresses.remove(email)
+            except:
+                pass
+            obj.manage_changeProperties(bounce_addresses=bounce_addresses)
+            action = 'disabled_email %s' % email
+            notification_type = 'disabled_email'
+        elif had_success:
+            action = 'reprieve %s' % email
+        
+        if do_notification:
+            addresses = user.get_emailAddresses()
+            try:
+                addresses.remove(email)
+            except:
+                pass
+            if addresses:
+                user.send_notification(notification_type, group_id, n_dict={'bounced_email': email}, email_only=addresses)
+                
+                if not obj.hasProperty('notification_times'):
+                    obj.manage_addProperty('notification_times', [str(now)], 'lines')
+                else:
+                    lnt.append(str(now))
+                    obj.manage_changeProperties(notification_times=lnt)
+                    
+                nt = obj.getProperty('notification_types', [])        
+                if not obj.hasProperty('notification_types'):
+                    obj.manage_addProperty('notification_types', [notification_type], 'lines')
+                else:
+                    nt.append(notification_type)
+                    obj.manage_changeProperties(notification_types=nt)
+        
+        if not obj.hasProperty('action_taken_times'):
+            obj.manage_addProperty('action_taken_times', [str(now)], 'lines')
+        else:
+            att = obj.getProperty('action_taken_times')
+            att.append(str(now))
+            obj.manage_changeProperties(action_taken_times=att)
+        
+        if not obj.hasProperty('action_taken'):
+            obj.manage_addProperty('action_taken', [action], 'lines')
+        else:
+            at = obj.getProperty('action_taken')
+            at.append(action)
+            obj.manage_changeProperties(action_taken=at)    
+        
+        return True
                 
     security.declareProtected('Upgrade objects', 'upgrade')
     security.setPermissionDefault('Upgrade objects', ('Manager', 'Owner'))
@@ -276,7 +388,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider, XWFIdFactoryMixin):
 
         self.__initialised = 1
         self._setupMetadata()
-        self._setupProperties()
         self._version = self.version
 
         return 'upgraded %s to version %s from version %s' % (self.getId(),
