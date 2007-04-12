@@ -596,7 +596,7 @@ class XWFMailingList(Folder):
         
     def processMail(self, REQUEST):
         # Checks if member is allowed to send a mail to list
-        mailString = self.getMailFromRequest(REQUEST)
+        mailString = getMailFromRequest(REQUEST)
         
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
                                        group_id=self.getId(), 
@@ -641,7 +641,7 @@ class XWFMailingList(Folder):
         
     def processModeration(self, REQUEST):
         # a hook for handling the moderation stage of processing the email
-        mailString = self.getMailFromRequest(REQUEST)
+        mailString = getMailFromRequest(REQUEST)
         
         # TODO: erradicate splitMail usage
         (header, body) = MailBoxerTools.splitMail(mailString)
