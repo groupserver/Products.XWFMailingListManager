@@ -83,7 +83,7 @@ class XWFMailingList(Folder):
     """
     security = ClassSecurityInfo()
     meta_type = 'XWF Mailing List'
-    version = 0.34
+    version = 0.99
     
     # a tuple of properties that we _don't_ want to inherit from the parent
     # list manager
@@ -91,14 +91,18 @@ class XWFMailingList(Folder):
                               'mailto', 
                               'hashkey')
     
-    # track the checksum of the last email sent
-    last_email_checksum = ''
-    
     _properties = (
         {'id':'title', 'type':'string', 'mode':'w'}, 
         {'id':'mailto', 'type':'string', 'mode':'wd'}, 
         {'id':'hashkey', 'type':'string', 'mode':'wd'}, 
        )
+    
+    
+    # Internal storages for sender-loop-limitation
+    sendercache = {}
+    
+    # track the checksum of the last email sent
+    last_email_checksum = ''
     
     def __init__(self, id, title, mailto):
         """ Setup a mailing list with reasonable defaults.

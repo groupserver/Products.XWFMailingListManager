@@ -31,7 +31,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     security.setPermissionDefault('View', ('Manager',))
     
     meta_type = 'XWF Mailing List Manager'
-    version = 0.43
+    version = 0.99
     
     manage_options = Folder.manage_options + \
                      ({'label': 'Configure',
