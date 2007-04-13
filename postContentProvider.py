@@ -309,7 +309,13 @@ class GSPostContentProvider(object):
               else:
                   trim = 0
                   rintro.insert(0, line)
-          
+
+          # Do not snip, if we will only snip a single line of 
+          #  actual content          
+          if(len([line for line in body if line])==1):
+            rintro = rintro + body
+            body = []
+
           intro = '\n'.join(rintro)
           body = '\n'.join(body)
           retval = (intro.strip(), body.strip())
