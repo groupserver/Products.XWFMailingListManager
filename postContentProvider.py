@@ -316,6 +316,7 @@ class GSPostContentProvider(object):
                          or len(prevLine.strip().split()) == 1)):
                   # IF we are trimming, and the line has non-whitepsace 
                   #   characters AND there is only one word on the line,
+                  #   AND the previous line does NOT have any significant text
                   # THEN add it to the snipped-text.
                   body.insert(0, line)
 
