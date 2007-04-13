@@ -251,21 +251,22 @@ class GSPostContentProvider(object):
           slines = messageText.split('\n')
 
           intro = []; body = []; i = 1;
-          bodystart = 0; consecutive_comment = 0; 
+          bodystart = False; consecutive_comment = 0; 
           consecutive_whitespace = 0
           
           for line in slines:
-              if (line[:2] == '--' or line[:2] == '==' or line[:2] == '__' or
-                  line[:2] == '~~' or line [:3] == '- -'):
-                  bodystart = 1
+              if ((line[:2] == '--') or (line[:2] == '==') 
+                  or (line[:2] == '__') or (line[:2] == '~~') 
+                  or (line [:3] == '- -')):
+                  bodystart = True
               
               # if we've started on the body, just append to body
-              if bodystart: 
+              if bodystart:
                   body.append(line)
               # count comments, but don't penalise top quoting as badly
               elif consecutive_comment >= max_consecutive_comment and i > 25: 
                   body.append(line)
-                  bodystart = 1
+                  bodystart = True
               # if we've got less than 15 lines, just put it in the intro
               elif (i <= 15):
                   intro.append(line)
@@ -275,7 +276,7 @@ class GSPostContentProvider(object):
                   intro.append(line)
               else:
                   body.append(line)
-                  bodystart = 1
+                  bodystart = True
               
               if len(line) > 3 and (line[:4] == '&gt;' or line.lower().find('wrote:') != -1):
                   consecutive_comment += 1
@@ -288,26 +289,38 @@ class GSPostContentProvider(object):
                   consecutive_whitespace += 1
               
               i += 1
-          
-          rintro = []; trim = 1
+
+          # Backtrack through the post, in reverse order
+          rintro = []; trim = True
           for line in intro[::-1]:
+              prevLine = intro.index(line) == 0 and '' \
+                         or intro[intro.index(line)-1]
               if len(intro) < 5:
-                  trim = 0
+                  trim = False
               if len(line) > 3:
                   ls = line[:4]
               elif line.strip():
                   ls = line.strip()[0]
               else:
                   ls = ''
-              
+              print "ls: %s" % ls
               if trim and (ls == '&gt;' or ls == ''):
                   body.insert(0, line)
+                  print "trim and (ls == '&gt;' or ls == ''):"
               elif trim and line.find('wrote:') > 2:
                   body.insert(0, line)
-              elif trim and line.strip() and len(line.strip().split()) == 1:
+                  print "trim and line.find('wrote:') > 2:"
+              elif ((trim) and (len(line.strip()) > 0)
+                    and (len(line.strip().split()) == 1)
+                    and ((len(prevLine.strip()) == 0) 
+                         or len(prevLine.strip().split()) == 1)):
+                  # IF we are trimming, and the line has non-whitepsace 
+                  #   characters AND there is only one word on the line,
+                  # THEN add it to the snipped-text.
                   body.insert(0, line)
+
               else:
-                  trim = 0
+                  trim = False
                   rintro.insert(0, line)
 
           # Do not snip, if we will only snip a single line of 
@@ -319,7 +332,7 @@ class GSPostContentProvider(object):
           intro = '\n'.join(rintro)
           body = '\n'.join(body)
           retval = (intro.strip(), body.strip())
-          
+          print ''
           assert retval
           assert len(retval) == 2
           return retval
