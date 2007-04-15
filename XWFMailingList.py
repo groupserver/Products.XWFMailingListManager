@@ -1258,7 +1258,7 @@ class XWFMailingList(Folder):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
             
-        reply = getattr(self, 'xwf_email_unsubscribe_key', None)
+        reply = getattr(self, 'email_unsubscribe_key', None)
         
         thepin = pin( msg.sender, self.getValueFor('hashkey') )
         
