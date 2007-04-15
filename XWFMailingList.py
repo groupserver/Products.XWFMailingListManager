@@ -864,16 +864,6 @@ class XWFMailingList(Folder):
             LOG('MailBoxer', PROBLEM, message)
             return message
         
-        # A sanity check ... was this email the last one we saw (tight loop)?
-        # TODO: expand this to check the archives
-        if self.last_email_checksum:
-            if self.last_email_checksum == msg.post_id:
-                message = 'Detected duplicate message from "%s"' % msg.get('from')
-                LOG('MailBoxer', PROBLEM, message)
-                return message
-        
-        self.last_email_checksum = msg.post_id
-        
         # Check for hosed denial-of-service-vacation mailers
         # or other infinite mail-loops...
         email = msg.sender
@@ -894,6 +884,14 @@ class XWFMailingList(Folder):
         # stuff, because they might easily exceed it if it is a tight setting
         if unsubscribe != '' and check_for_commands(msg, unsubscribe):
             pass
+        
+        # A sanity check ... was this email the last one we saw (tight loop)?
+        # TODO: expand this to check the archives
+        elif self.last_email_checksum:
+            if self.last_email_checksum == msg.post_id:
+                message = 'Detected duplicate message from "%s"' % msg.get('from')
+                LOG('MailBoxer', PROBLEM, message)
+                return message
         
         elif senderlimit and senderinterval:
             sendercache = self.sendercache
@@ -920,6 +918,9 @@ class XWFMailingList(Folder):
                     message = ('Sender "%s" has sent "%s" mails in "%s" seconds' %
                                               (email, count, senderinterval))
                 LOG('MailBoxer', PROBLEM, message)
+        
+                self.last_email_checksum = msg.post_id
+        
                 return message
 
             # this only happens if we're not already blocking
@@ -933,6 +934,8 @@ class XWFMailingList(Folder):
             
             self.sendercache = sendercache
 
+        self.last_email_checksum = msg.post_id
+        
         # Check for spam
         for regexp in self.getValueFor('spamlist'):
             if regexp and re.search(regexp, mailString):
