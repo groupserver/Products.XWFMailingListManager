@@ -303,13 +303,10 @@ class GSPostContentProvider(object):
                   ls = line.strip()[0]
               else:
                   ls = ''
-              print "ls: %s" % ls
               if trim and (ls == '&gt;' or ls == ''):
                   body.insert(0, line)
-                  print "trim and (ls == '&gt;' or ls == ''):"
               elif trim and line.find('wrote:') > 2:
                   body.insert(0, line)
-                  print "trim and line.find('wrote:') > 2:"
               elif ((trim) and (len(line.strip()) > 0)
                     and (len(line.strip().split()) == 1)
                     and ((len(prevLine.strip()) == 0) 
@@ -326,14 +323,13 @@ class GSPostContentProvider(object):
 
           # Do not snip, if we will only snip a single line of 
           #  actual content          
-          if(len([line for line in body if line])==1):
+          if(len(body)==1):
             rintro = rintro + body
             body = []
 
           intro = '\n'.join(rintro)
           body = '\n'.join(body)
-          retval = (intro.strip(), body.strip())
-          print ''
+          retval = (intro.strip(), body)
           assert retval
           assert len(retval) == 2
           return retval
