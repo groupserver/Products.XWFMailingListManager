@@ -200,21 +200,6 @@ class XWFMailingList(Folder):
         self.listMail(REQUEST)
         return TRUE
     
-    security.declareProtected('View', 'manage_bounceboxer')
-    def manage_bounceboxer(self, REQUEST):
-        """ Check for bounced mails.
-        """
-
-        if self.checkMail(REQUEST):
-            return FALSE
-
-        bouncedAddresses = self.bounceMail(REQUEST)
-
-        if bouncedAddresses:
-            return TRUE
-        else:
-            return FALSE
-    
     security.declareProtected('View', 'manage_inboxer')
     def manage_inboxer(self, REQUEST):
         """ Wrapper to mail directly into archive.
@@ -874,7 +859,6 @@ class XWFMailingList(Folder):
         
         # Check for empty return-path => automatic mail
         if msg.get('return-path') == '<>':
-            self.bounceMail(REQUEST)
             message = 'Automated response detected from %s' % (msg.get('from', 
                                                                           '<>'))
             LOG('MailBoxer', PROBLEM, message)
@@ -1075,9 +1059,8 @@ class XWFMailingList(Folder):
             if email.lower() in memberlist:
                 if subject.find(pin(email, self.getValueFor('hashkey'))) != -1:
                     self.manage_delMember(email)
-                    self.mail_unsubscribe(self, REQUEST, mail=header, body=body)
                 else:
-                    self.mail_unsubscribe_key(self, REQUEST, mail=header, body=body)
+                    self.mail_unsubscribe_key(self, REQUEST, msg)
             else:
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
@@ -1236,8 +1219,7 @@ class XWFMailingList(Folder):
 
     security.declarePrivate('mail_subscribe_key')
     def mail_subscribe_key(self, context, REQUEST, msg):
-        """ A hook used by the MailBoxer framework, which we provide here as
-        a clean default.
+        """ Email out a subscription authentication notification.
         
         """
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
@@ -1263,38 +1245,10 @@ class XWFMailingList(Folder):
             pass
             
         smtpserver.quit()
-    
-    security.declarePrivate('mail_unsubscribe')
-    def mail_unsubscribe(self, context, REQUEST, mail=None, body=''):
-        """ A hook used by the MailBoxer framework, which we provide here as
-        a clean default.
-        
-        """
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
-        returnpath=self.getValueFor('returnpath')
-        if not returnpath:
-            returnpath = self.getValueFor('moderator')[0]
-            
-        reply = getattr(self, 'xwf_email_unsubscribe', None)
-        
-        email_address = mail['from']
-        
-        if reply:
-            reply_text = reply(REQUEST, list_object=context, 
-                                   getValueFor=self.getValueFor, 
-                                   mail=mail, body=body)
-            smtpserver.sendmail(returnpath, [email_address], reply_text)
-        else:
-            pass
-            
-        smtpserver.quit()
 
     security.declarePrivate('mail_unsubscribe_key')
-    def mail_unsubscribe_key(self, context, REQUEST, mail=None, body=''):
-        """ A hook used by the MailBoxer framework, which we provide here as
-        a clean default.
+    def mail_unsubscribe_key(self, context, REQUEST, msg):
+        """ Email out an unsubscription authentication notification.
         
         """
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
@@ -1306,13 +1260,16 @@ class XWFMailingList(Folder):
             
         reply = getattr(self, 'xwf_email_unsubscribe_key', None)
         
-        email_address = mail['from']
+        thepin = pin( msg.sender, self.getValueFor('hashkey') )
         
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
                                    getValueFor=self.getValueFor, 
-                                   mail=mail, body=body)
-            smtpserver.sendmail(returnpath, [email_address], reply_text)
+                                   pin=thepin,
+                                   email=msg.sender,
+                                   sender_id=msg.sender_id)
+            
+            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         else:
             pass
             
