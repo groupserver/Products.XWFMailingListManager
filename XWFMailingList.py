@@ -1025,18 +1025,17 @@ class XWFMailingList(Folder):
                 self.mail_digest_off(self, REQUEST, mail=header, body=body)
                 
                 return email 
-                
+        
         # subscription? only subscribe if subscription is enabled.
         subscribe = self.getValueFor('subscribe')
         if subscribe != '' and check_for_commands(msg, subscribe):
             if email not in memberlist:
                 if subject.find(pin(email, self.getValueFor('hashkey'))) != -1:
                     self.manage_addMember(email)
-                    self.mail_subscribe(self, REQUEST, mail=header, body=body)
                 else:
                     user = self.acl_users.get_userByEmail(email)
                     if user: # if the user exists, send out a subscription email
-                        self.mail_subscribe_key(self, REQUEST, mail=header, body=body)
+                        self.mail_subscribe_key(self, REQUEST, msg )
                     else: # otherwise handle subscription as part of registration
                         nparts = msg.name.split()
                         if len(nparts) >= 2:
@@ -1236,7 +1235,7 @@ class XWFMailingList(Folder):
         smtpserver.quit()
 
     security.declarePrivate('mail_subscribe_key')
-    def mail_subscribe_key(self, context, REQUEST, mail=None, body=''):
+    def mail_subscribe_key(self, context, REQUEST, msg):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
         
@@ -1248,42 +1247,18 @@ class XWFMailingList(Folder):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
             
-        reply = getattr(self, 'xwf_email_subscribe_key', None)
+        reply = getattr(self, 'email_subscribe_key', None)
         
-        email_address = mail['from']
-        
-        if reply:
-            reply_text = reply(REQUEST, list_object=context, 
-                                   getValueFor=self.getValueFor, 
-                                   mail=mail, body=body)
-            smtpserver.sendmail(returnpath, [email_address], reply_text)
-        else:
-            pass
-            
-        smtpserver.quit()
-
-    security.declarePrivate('mail_subscribe')
-    def mail_subscribe(self, context, REQUEST, mail=None, body=''):
-        """ A hook used by the MailBoxer framework, which we provide here as
-        a clean default.
-        
-        """
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
-        returnpath=self.getValueFor('returnpath')
-        if not returnpath:
-            returnpath = self.getValueFor('moderator')[0]
-            
-        reply = getattr(self, 'xwf_email_subscribe', None)
-        
-        email_address = mail['from']
+        thepin = pin( msg.sender, self.getValueFor('hashkey') )
         
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
                                    getValueFor=self.getValueFor, 
-                                   mail=mail, body=body)
-            smtpserver.sendmail(returnpath, [email_address], reply_text)
+                                   pin=thepin,
+                                   email=msg.sender,
+                                   sender_id=msg.sender_id)
+            
+            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         else:
             pass
             
