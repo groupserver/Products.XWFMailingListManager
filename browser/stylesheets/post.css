@@ -258,7 +258,7 @@ a.shownArrow {
 }
 
 @media print {
-  #topicNavigation, #postsNavigation, #usefulLinks, table#results, #singlePostTopicNavigation {
+  #topicNavigation, #postsNavigation, #usefulLinks, table#results, #singlePostTopicNavigation, #posting,  #toggleStickyTopic {
     display: none;
   }
 }
