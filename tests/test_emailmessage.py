@@ -47,6 +47,7 @@ def test_emailmessage():
       >>> email_attachments2 = file('emails/7479421AFD9.eml').read()
       >>> email_internationalization = file('emails/internationalization.eml').read()
       >>> email_date = file('emails/date.eml').read()
+      >>> email_anb = file('emails/attachment-no-body.eml').read()
       
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
@@ -125,7 +126,17 @@ def test_emailmessage():
       >>> dmsg = emailmessage.EmailMessage(email_date)
       >>> dmsg.date.isoformat()
       '2007-03-16T11:32:38+13:00'
-      
+
+    More microsoftness:
+      >>> anbmsg = emailmessage.EmailMessage(email_anb)
+      >>> anbmsg.date.isoformat()
+      '2007-03-16T11:32:38+13:00'
+      >>> anbmsg.message.replace_header('content-type', 'text/plain; charset=utf-8;')
+      >>> for h in anbmsg.message.keys():
+      ...     del(anbmsg.message[h])
+      >>> anbmsg.attachments
+
+
     Setup ZSQLAlchemy:
       >>> alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
       >>> alchemy_adaptor.manage_changeProperties( hostname='localhost',

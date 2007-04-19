@@ -150,19 +150,6 @@ class XWFVirtualMailingListArchive2(Folder, XWFIdFactoryMixin):
         return RESPONSE.redirect(url)
 
         
-    def view_send_email(self, id=None):
-        """ Return the email sending view.
-        
-        """
-        presentation = self.Presentation.Tofu.MailingListManager.xml
-        
-        if id:
-            email_object = self.get_email(id)
-        else:
-            email_object = None
-            
-        return presentation.sendemail(email_object=email_object)
-        
     def view_email(self, REQUEST, RESPONSE, id=-1, show_thread=0):
         """ """
         if show_thread not in ('0', '1'):
@@ -319,14 +306,6 @@ class XWFVirtualMailingListArchive2(Folder, XWFIdFactoryMixin):
         url = '%s/posts.atom' % REQUEST.BASE4
         return RESPONSE.redirect(url)
         
-    def view_search(self):
-        """ Return the search view.
-        
-        """
-        presentation = self.Presentation.Default.MailingListManager.xml
-        
-        return presentation.search()
-
     security.declarePublic('post_results')
     def post_results(self, REQUEST, b_start, b_size, s_on, s_order):
         """ Get a post result set."""
@@ -336,8 +315,7 @@ class XWFVirtualMailingListArchive2(Folder, XWFIdFactoryMixin):
 
     def get_all_posts(self, REQUEST, s_on, s_order):
         from DocumentTemplate import sequence
-        presentation = self.Presentation.Tofu.MailingListManager.xml
-        
+                
         result_set = self.find_email(REQUEST)
         
         if s_on == 'mailDate':
