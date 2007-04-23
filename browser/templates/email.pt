@@ -81,7 +81,7 @@
               Name: 
               <a class="file" href="/favicon.ico" 
                 type="application/octet-stream"
-                tal:attributes="href string:${options/siteURL}/groups/${options/groupId}/files/f/${fm/file_id}/${fm/file_name}">
+                tal:attributes="href string:${options/siteURL}/r/file/${fm/file_id}/${fm/file_name}">
                 <img src="/favicon.ico" width="16" height="16" 
                   alt="application/octet-stream" 
                   tal:attributes="alt fm/mime_type;
