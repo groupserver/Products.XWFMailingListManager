@@ -880,18 +880,17 @@ class XWFMailingList(Folder):
         senderinterval = self.getValueFor('senderinterval')
         unsubscribe = self.getValueFor('unsubscribe')
         
+        # A sanity check ... was this email the last one we saw (tight loop)?
+        # TODO: expand this to check the archives
+        if self.last_email_checksum and (self.last_email_checksum == msg.post_id):
+            message = 'Detected duplicate message from "%s"' % msg.get('from')
+            LOG('MailBoxer', PROBLEM, message)
+            return message
+        
         # if the person is unsubscribing, we can't handle it with the loop
         # stuff, because they might easily exceed it if it is a tight setting
         if unsubscribe != '' and check_for_commands(msg, unsubscribe):
             pass
-        
-        # A sanity check ... was this email the last one we saw (tight loop)?
-        # TODO: expand this to check the archives
-        elif self.last_email_checksum:
-            if self.last_email_checksum == msg.post_id:
-                message = 'Detected duplicate message from "%s"' % msg.get('from')
-                LOG('MailBoxer', PROBLEM, message)
-                return message
         
         elif senderlimit and senderinterval:
             sendercache = self.sendercache
