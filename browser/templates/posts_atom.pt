@@ -7,7 +7,7 @@
   
   <title><span tal:replace="python:view.groupInfo.get_name()"/> Latest Posts</title>
   <updated 
-    tal:content="python:posts and posts[0]['date']">
+    tal:content="view/get_most_recent_post_date">
     2003-12-13T14:15:16Z
   </updated>
   <author>

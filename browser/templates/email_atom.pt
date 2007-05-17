@@ -32,7 +32,7 @@
       tal:content="string:/contacts/${authorId};">http://bla/</uri>
   </author>
   <updated 
-    tal:content="python:post['date']">
+    tal:content="python:post['date'].utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')">
     2003-12-13T18:30:02Z
   </updated>
   <content type="xhtml">

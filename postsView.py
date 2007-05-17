@@ -90,5 +90,15 @@ class GSPostsView(Products.Five.BrowserView):
           newEnd = self.numPosts
           return 'posts.html?start=%d&end=%d' % (newStart, newEnd)
 
+      def get_most_recent_post_date(self):
+          retval = ''
+          
+          if self.posts:
+              mostRecentPost = self.posts[0]
+              d = mostRecentPost['date']
+              retval = d.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+              
+          return retval
+          
       def process_form(self):
           pass
