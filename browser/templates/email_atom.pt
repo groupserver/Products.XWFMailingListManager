@@ -31,8 +31,8 @@
     <uri tal:condition="authorExists" 
       tal:content="string:/contacts/${authorId};">http://bla/</uri>
   </author>
-  <updated 
-    tal:content="python:post['date'].utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')">
+  <updated tal:define="d post/date"
+    tal:content="python:(d-d.utcoffset()).strftime('%Y-%m-%dT%H:%M:%SZ')">
     2003-12-13T18:30:02Z
   </updated>
   <content type="xhtml">

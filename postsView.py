@@ -96,7 +96,8 @@ class GSPostsView(Products.Five.BrowserView):
           if self.posts:
               mostRecentPost = self.posts[0]
               d = mostRecentPost['date']
-              retval = d.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+              date = d - d.utcoffset()
+              retval = date.strftime('%Y-%m-%dT%H:%M:%SZ')
               
           return retval
           
