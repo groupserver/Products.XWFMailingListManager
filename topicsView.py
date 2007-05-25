@@ -1,19 +1,9 @@
-import sys, re, datetime, time, types, string
-import Products.Five, Products.GSContent, DateTime, Globals
-import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
-import zope.pagetemplate.pagetemplatefile
-import zope.interface, zope.component, zope.publisher.interfaces
-import zope.viewlet.interfaces, zope.contentprovider.interfaces 
+from Products.Five import BrowserView
+from zope.component import createObject
+import Products.GSContent, queries
+from view import GSPostingInfo # FIX
 
-import DocumentTemplate, Products.XWFMailingListManager
-
-import Products.GSContent, Products.XWFCore.XWFUtils
-
-from view import GSGroupInfo, GSPostingInfo
-import queries
-
-class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
+class GSTopicsView(BrowserView, GSPostingInfo):
       """List of latest topics in the group."""
       __groupInfo = None
       def __init__(self, context, request):
@@ -21,7 +11,7 @@ class GSTopicsView( Products.Five.BrowserView, GSPostingInfo ):
           self.request = request
 
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-          self.groupInfo = GSGroupInfo( context )
+          self.groupInfo = createObject('groupserver.GroupInfo', context)
           
           da = context.zsqlalchemy 
           assert da

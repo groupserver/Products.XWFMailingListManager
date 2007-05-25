@@ -1,18 +1,10 @@
-import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
-import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
-import zope.pagetemplate.pagetemplatefile
-import zope.interface, zope.component, zope.publisher.interfaces
-import zope.viewlet.interfaces, zope.contentprovider.interfaces 
-
-import DocumentTemplate, Products.XWFMailingListManager
-
-import Products.GSContent, Products.XWFCore.XWFUtils
-
+from zope.component import createObject, adapts, provideAdapter
+from zope.interface import implements, Interface
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+import Products.Five, Products.GSContent 
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+from zope.contentprovider.interfaces import IContentProvider
 from interfaces import IGSTopicSummaryContentProvider
-from view import GSGroupInfo
 
 # <zope-3 weirdness="high">
           
@@ -20,10 +12,8 @@ class GSTopicSummaryContentProvider(object):
       """GroupServer Topic Simmary Content Provider: summarise a topic
       """
 
-      zope.interface.implements( IGSTopicSummaryContentProvider )
-      zope.component.adapts(zope.interface.Interface,
-                            zope.publisher.interfaces.browser.IDefaultBrowserLayer,
-                            zope.interface.Interface)
+      implements( IGSTopicSummaryContentProvider )
+      adapts(Interface, IDefaultBrowserLayer, Interface)
       post = None
       def __init__(self, context, request, view):
           """Create a GSTopicSummaryContentProvider instance.
@@ -56,7 +46,7 @@ class GSTopicSummaryContentProvider(object):
           self.authorExists = self.author_exists()
          
           self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
-          self.groupInfo = GSGroupInfo( self.context )
+          self.groupInfo = createObject('groupserver.GroupInfo', self.context)
            
           assert self.__updated
           
@@ -71,8 +61,7 @@ class GSTopicSummaryContentProvider(object):
           if not self.__updated:
               raise interfaces.UpdateNotCalled
       
-          VPTF = zope.pagetemplate.pagetemplatefile.PageTemplateFile
-          pageTemplate = VPTF(self.pageTemplateFileName)          
+          pageTemplate = PageTemplateFile(self.pageTemplateFileName)          
 
           return pageTemplate(length=len(self.topic),
                               lastPostId = self.lastPost['post_id'],
@@ -140,7 +129,6 @@ class GSTopicSummaryContentProvider(object):
           
 # State that the GSPostContentProvider is a Content Provider, and attach
 #     to "groupserver.Post".
-zope.component.provideAdapter(GSTopicSummaryContentProvider,
-                              provides=zope.contentprovider.interfaces.IContentProvider,
-                              name="groupserver.TopicSummary")
+provideAdapter(GSTopicSummaryContentProvider, provides=IContentProvider,
+ name="groupserver.TopicSummary")
 # </zope-3 weirdness="high">

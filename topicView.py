@@ -1,14 +1,10 @@
-'''GroupServer-Content View Class
-'''
+from zope.component import createObject
+from zope.interface import implements
 from zope.app.traversing.interfaces import TraversalError
 from interfaces import IGSTopicView
-from zope.interface import implements
 from Products.Five.traversable import Traversable
 from zope.app.traversing.interfaces import ITraversable
-import Products.GSContent, Products.XWFCore.XWFUtils
-import Products.XWFMailingListManager.stickyTopicToggleContentProvider
-import queries
-import view
+import Products.GSContent, queries, view, stickyTopicToggleContentProvider
 
 class GSTopicView(view.GSPostingInfo, Traversable):
       """View of a single GroupServer Topic"""
@@ -19,7 +15,7 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           self.request = request
           
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-          self.groupInfo = view.GSGroupInfo( context )
+          self.groupInfo = createObject('groupserver.GroupInfo', context)
           
           self.archive = context.messages
           self.postId = None
@@ -107,3 +103,4 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           retval =  self.stickyTopics
           assert hasattr(self, 'stickyTopics'), 'Sticky topics not cached'
           return retval
+

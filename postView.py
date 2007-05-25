@@ -1,16 +1,12 @@
-'''GroupServer-Content View of a Single Post
-'''
 from zope.component import getMultiAdapter
 from zope.app.traversing.interfaces import TraversalError
 from interfaces import IGSPostView
 from zope.interface import implements
+from zope.component import createObject
 from Products.Five.traversable import Traversable
 from Products.Five import BrowserView
 from zope.app.traversing.interfaces import ITraversable
-import Products.GSContent, Products.XWFCore.XWFUtils
-import Products.XWFMailingListManager.stickyTopicToggleContentProvider
-import queries
-import view
+import Products.GSContent, queries, view
 
 class GSPostTraversal(BrowserView, Traversable):
     implements(ITraversable)
@@ -48,7 +44,7 @@ class GSPostView(BrowserView, Traversable):
           self.request = request
 
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-          self.groupInfo = view.GSGroupInfo( context )
+          self.groupInfo =createObject('groupserver.GroupInfo', self.context)
           
           self.archive = context.messages
             
@@ -98,3 +94,4 @@ class GSPostView(BrowserView, Traversable):
       def get_post(self):
           assert hasattr(self, 'post')
           return self.post
+

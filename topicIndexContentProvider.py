@@ -1,25 +1,18 @@
 from interfaces import IGSTopicIndexContentProvider
-from view import GSGroupInfo
-from zope.component import adapts
-from zope.component import provideAdapter
+from zope.component import createObject, adapts, provideAdapter
 from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
 from zope.interface import implements
 from zope.interface.interface import Interface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-
 import Products.GSContent
-import Products.XWFCore.XWFUtils
-import Products.XWFMailingListManager
 
 class GSTopicIndexContentProvider(object):
       """GroupServer Topic Index Content Provider
       
       """
       implements( IGSTopicIndexContentProvider )
-      adapts(Interface,
-             IDefaultBrowserLayer,
-             Interface)
+      adapts(Interface, IDefaultBrowserLayer, Interface)
       
       def __init__(self, context, request, view):
           self.__parent = view
@@ -40,8 +33,8 @@ class GSTopicIndexContentProvider(object):
                            for post in self.topic ]
 
           self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
-          self.groupInfo = GSGroupInfo( self.context )
-          
+          self.groupInfo = createObject('groupserver.GroupInfo', self.context)
+                    
           self.__updated = True
           
       def render(self):
@@ -112,6 +105,6 @@ class GSTopicIndexContentProvider(object):
               
           return retval
 
-provideAdapter(GSTopicIndexContentProvider, 
-               provides=IContentProvider,
+provideAdapter(GSTopicIndexContentProvider, provides=IContentProvider,
                name="groupserver.TopicIndex")
+

@@ -1,27 +1,21 @@
-import sys, re, datetime, time, types, string
 import Products.Five, Products.GSContent, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
 import zope.schema
 import zope.app.pagetemplate.viewpagetemplatefile
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
+from zope.component import createObject
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
-
-from view import GSGroupInfo
-
 import DocumentTemplate, Products.XWFMailingListManager
-
-import Products.GSContent, Products.XWFCore.XWFUtils
-import queries
+import Products.GSContent, Products.XWFCore.XWFUtils,  queries
 
 class GSPostsView(Products.Five.BrowserView):
       def __init__(self, context, request):
-          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-          self.groupInfo = GSGroupInfo( context )
-           
           self.context = context
           self.request = request
           
+          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+          self.groupInfo = createObject('groupserver.GroupInfo', self.context)
+           
           self.start = int(self.request.form.get('start', 0))
           self.end = int(self.request.form.get('end', 20))
           # Swap the start and end, if necessary
