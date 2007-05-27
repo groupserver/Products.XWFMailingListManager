@@ -1,32 +1,18 @@
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
-import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
-import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
-import zope.pagetemplate.pagetemplatefile
-import zope.interface, zope.component, zope.publisher.interfaces
-import zope.viewlet.interfaces, zope.contentprovider.interfaces 
-
+from zope.interface import implements, Interface
+from zope.component import createObject, adapts, provideAdapter
+from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
-
-import DocumentTemplate
-
-import Products.GSContent, Products.XWFCore.XWFUtils
-
+import Products.GSContent
 from Products.XWFCore.cache import LRUCache, SimpleCache
-from view import GSGroupInfo
 from interfaces import IGSPostMessageContentProvider
 
 class GSPostMessageContentProvider(object):
       """GroupServer Post Message Content Provider
       """
+      implements( IGSPostMessageContentProvider )
+      adapts(Interface, IDefaultBrowserLayer, Interface)
 
-      zope.interface.implements( IGSPostMessageContentProvider )
-      zope.component.adapts(zope.interface.Interface,
-                            zope.publisher.interfaces.browser.IDefaultBrowserLayer,
-                            zope.interface.Interface)
-      
       # We want a really simple cache for templates, because there aren't
       #  many of them
       cookedTemplates = SimpleCache()
@@ -40,7 +26,8 @@ class GSPostMessageContentProvider(object):
 
       def update(self):
           self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
-          self.groupInfo = GSGroupInfo( self.context )
+          self.groupInfo = createObject('groupserver.GroupInfo', 
+            self.context)
 
           self.groupName = self.groupInfo.get_name()
           self.groupId = self.groupInfo.get_id()
@@ -83,6 +70,6 @@ class GSPostMessageContentProvider(object):
       # Non standard methods below this point #
       #########################################
 
-zope.component.provideAdapter(GSPostMessageContentProvider, 
-                              provides=IContentProvider,
-                              name="groupserver.PostMessage")
+provideAdapter(GSPostMessageContentProvider, provides=IContentProvider,
+  name="groupserver.PostMessage")
+

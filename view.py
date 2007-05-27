@@ -11,6 +11,8 @@ import zope.viewlet.interfaces, zope.contentprovider.interfaces
 import Products.PythonScripts.standard
 import transaction
 
+from zope.component import createObject
+
 import DocumentTemplate
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
@@ -122,53 +124,6 @@ def process_form( context, request ):
     result['form'] = form
     return result
 
-class GSGroupInfo:
-    def __init__(self, context):
-        assert context
-        self.context = context
-        self.groupObj = self.__get_group_object()
-        self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-
-    def __get_group_object(self):
-        assert self.context
-        retval = self.context
-        markerAttr = 'is_group'
-        while retval:
-            try:
-                if getattr(retval.aq_inner.aq_explicit, markerAttr, False):
-                    break
-                else:
-                    retval = retval.aq_parent
-            except:
-                break
-        retval = retval.aq_inner.aq_explicit
-        assert retval 
-        assert hasattr(retval, markerAttr)
-        assert getattr(retval, markerAttr)
-        return retval
-
-    def get_name(self):
-        assert self.groupObj
-        retval = self.groupObj.title_or_id()
-        return retval
-        
-    def get_id(self):
-        assert self.groupObj
-        retval = self.groupObj.getId()
-        return retval
-        
-    def get_url(self):
-        assert self.groupObj
-        assert self.siteInfo
-        siteURL = self.siteInfo.get_url()
-        retval = '%s/groups/%s' % (siteURL, self.get_id())
-        return retval
-        
-    def get_property(self, propertyId, default=None):
-        assert self.groupObj
-        retval = self.groupObj.getProperty(propertyId, default)
-        return retval
-
 class GSPostingInfo:
       def get_user_can_post(self, reasonNeeded=False):
         # Assume the user can post
@@ -242,8 +197,8 @@ class GSNewTopicView(Products.Five.BrowserView, GSPostingInfo):
           self.request = request
           
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-          self.groupInfo = GSGroupInfo( context )
-
+          self.groupInfo = createObject('groupserver.GroupInfo', context)
+          
           self.retval = {}
           
       def update(self):

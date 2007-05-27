@@ -2,13 +2,12 @@ from Products.GSContent.view import GSSiteInfo
 from Products.XWFCore.XWFUtils import get_user, get_user_realnames
 from Products.XWFCore.cache import LRUCache, SimpleCache
 from interfaces import IGSPostContentProvider
-from view import GSGroupInfo
 import textwrap, re
 
 from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
 from zope.interface import implements, Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
-from zope.component import adapts, provideAdapter
+from zope.component import adapts, provideAdapter, createObject
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 
 # <zope-3 weirdness="high">
@@ -114,7 +113,8 @@ class GSPostContentProvider(object):
               self.filesMetadata = self.post['files_metadata']
               
               self.siteInfo = GSSiteInfo(self.context)
-              self.groupInfo = GSGroupInfo(self.context)
+              self.groupInfo = createObject('groupserver.GroupInfo', 
+                self.context)
           
       def render(self):
           """Render the post
