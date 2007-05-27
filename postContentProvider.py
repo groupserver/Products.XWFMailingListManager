@@ -3,7 +3,7 @@ from Products.XWFCore.XWFUtils import get_user, get_user_realnames
 from Products.XWFCore.cache import LRUCache, SimpleCache
 from interfaces import IGSPostContentProvider
 from view import GSGroupInfo
-import textwrap
+import textwrap, re
 
 from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
 from zope.interface import implements, Interface
@@ -208,9 +208,13 @@ class GSPostContentProvider(object):
               "Presentation/Tofu/MailingListManager/lscripts".
               
           """
+          # The following expression is based on the one inside the
+          #   TextWrapper class, but without the breaking on '-'.
+          splitExp = (r'(\s+|(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')
           t = textwrap.TextWrapper(width=width, expand_tabs=False, 
                                    replace_whitespace=False, 
                                    break_long_words=False)
+          t.wordsep_re = re.compile(splitExp)
           retval = '\n'.join(map(lambda l: '\n'.join(t.wrap(l)), 
                                  messageText.split('\n')))
           return retval
