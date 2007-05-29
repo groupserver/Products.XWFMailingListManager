@@ -40,9 +40,8 @@
           tal:attributes="href python:earlier[0]; 
           title python:'Earlier topic: %s' % earlier[1];" />
         
-        <link rel="up" title="All topics" href="#"
-          tal:attributes="href string:${view/groupInfo/get_id}/messages/topics.html;
-            title string:Topics in ${view/groupInfo/get_name};"/>
+        <link rel="up" title="All topics" href="../topics.html"
+          tal:attributes="title string:Topics in ${view/groupInfo/get_name};"/>
         
         <link rel="bookmark" title="Group Homepage" href="#"
           tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
