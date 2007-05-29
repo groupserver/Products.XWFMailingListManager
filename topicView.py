@@ -90,7 +90,7 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           else:
               retval = (None,None)
           return retval
-          
+
       def get_sticky_topics(self):
           assert hasattr(self, 'messageQuery'), 'No message query'
           assert hasattr(self, 'groupInfo'), 'No group info'
