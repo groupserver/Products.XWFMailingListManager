@@ -17,7 +17,7 @@
   
   <id tal:content="feedURL">abc123</id>
   <generator uri="http://groupserver.org/">GroupServer</generator>
-  <icon><span tal:replace="python:view.siteInfo.get_url()"/>favicon.ico</icon>
+  <icon><span tal:replace="python:view.siteInfo.get_url()"/>/favicon.ico</icon>
   <link rel="self" href="http://onlinegroups.net/groups/demo" 
     tal:attributes="href feedURL"/>
   <tal:block tal:repeat="post posts">
