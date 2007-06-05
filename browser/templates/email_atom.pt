@@ -25,7 +25,7 @@
         length fm/file_size" />
       </tal:block>
   </tal:block>
-  <id tal:content="string:http://onlinegroups.net/r/post/${postId}">abc123</id>
+  <id tal:content="string:${options/siteURL}/r/post/${postId}">abc123</id>
   <author>
     <name tal:content="authorName">Me!</name>
     <uri tal:condition="authorExists" 
