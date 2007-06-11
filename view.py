@@ -159,9 +159,9 @@ class GSPostingInfo:
             timezone = self.context.Scripts.get.option('timezone')
             t = DateTime.DateTime(int(groupList.is_senderBlocked(user.getId())[1]))
             postingDate = t.toZone(timezone).strftime('%F %H:%M')
-            m = """Members may only send %d messages every %s, and 
-            you have exceeded this limit; you may post again 
-            at %s."""  % (senderLimit, interval, postingDate)
+            m = """You have reached the posting limit of %d messages 
+            every %s; you may post again  at %s."""  % (senderLimit, 
+              interval, postingDate)
             retval = ((m, 4), False)
         else:            
             # ...there is a local reason that allows the user to post
