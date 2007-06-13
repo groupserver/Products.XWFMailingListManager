@@ -917,16 +917,18 @@ class XWFMailingList(Folder):
 
             if count >= senderlimit:
                 if  user and (user.getId() != ptnCoachId):
-                    user.send_notification('sender_limit_exceeded', self.listId(), 
-                                            n_dict={'expiry_time': DateTime(earliest+senderinterval), 
-                                                    'email': mailString})
-                    message = ('Sender "%s" has sent "%s" mails in "%s" seconds' %
-                                              (email, count, senderinterval))
-                LOG('MailBoxer', PROBLEM, message)
-        
-                self.last_email_checksum = msg.post_id
-        
-                return message
+                    expTime = DateTime(earliest+senderinterval)
+                    user.send_notification('sender_limit_exceeded', 
+                                           self.listId(), 
+                                           n_dict={'expiry_time': expTime, 
+                                                   'email': mailString})
+                    rm = r'Sender "%s" has sent "%s" mails in "%s" seconds'
+                    message = (rm % (email, count, senderinterval))
+                    LOG('MailBoxer', PROBLEM, message)
+            
+                    self.last_email_checksum = msg.post_id
+            
+                    return message
 
             # this only happens if we're not already blocking
             if sendercache.has_key(email):
