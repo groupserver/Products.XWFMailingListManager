@@ -810,24 +810,31 @@ class XWFMailingList(Folder):
         senderlimit = self.getValueFor('senderlimit')
         senderinterval = self.getValueFor('senderinterval')
         user = self.acl_users.getUserById(user_id)
+        
+        ptnCoachId = self.getProperty('ptn_coach_id', '')
 
-        for email in user.get_emailAddresses():
-            ntime = int(time.time())
-            count = 0
-            etime = ntime-senderinterval
-            earliest = 0
-            for atime in self.sendercache.get(email, []):
-                if atime > etime:
-                    if not earliest or atime < earliest:
-                        earliest = atime
-                    count += 1
+        if user.getId() == ptnCoachId:
+            # The participation coach is not subject to the posting limit.
+            retval = (False, -1)
+        else:
+            for email in user.get_emailAddresses():
+                ntime = int(time.time())
+                count = 0
+                etime = ntime-senderinterval
+                earliest = 0
+                for atime in self.sendercache.get(email, []):
+                    if atime > etime:
+                        if not earliest or atime < earliest:
+                            earliest = atime
+                        count += 1
+                    else:
+                        break
+
+                if count >= senderlimit:
+                    retval = (True, DateTime(earliest+senderinterval))
                 else:
-                    break
-
-            if count >= senderlimit:
-                return (True, DateTime(earliest+senderinterval))
-
-        return (False, -1)
+                    retval = (False, -1)
+        return retval
 
     def checkMail(self, REQUEST):
         # Check for ip, loops and spam.
@@ -886,7 +893,7 @@ class XWFMailingList(Folder):
             message = 'Detected duplicate message from "%s"' % msg.get('from')
             LOG('MailBoxer', PROBLEM, message)
             return message
-        
+
         # if the person is unsubscribing, we can't handle it with the loop
         # stuff, because they might easily exceed it if it is a tight setting
         if unsubscribe != '' and check_for_commands(msg, unsubscribe):
@@ -908,9 +915,11 @@ class XWFMailingList(Folder):
                 else:
                     break
 
+            user = self.acl_users.getUser(sender_id)
+            ptnCoachId = self.getProperty('ptn_coach_id', '')
+
             if count >= senderlimit:
-                user = self.acl_users.getUser(sender_id)
-                if user:
+                if  user and (user.getId() != ptnCoachId):
                     user.send_notification('sender_limit_exceeded', self.listId(), 
                                             n_dict={'expiry_time': DateTime(earliest+senderinterval), 
                                                     'email': mailString})
