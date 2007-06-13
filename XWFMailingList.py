@@ -813,10 +813,8 @@ class XWFMailingList(Folder):
         
         ptnCoachId = self.getProperty('ptn_coach_id', '')
 
-        if user.getId() == ptnCoachId:
-            # The participation coach is not subject to the posting limit.
-            retval = (False, -1)
-        else:
+        retval = (False, -1) # Uncharacteristic optimism
+        if user.getId() != ptnCoachId:
             for email in user.get_emailAddresses():
                 ntime = int(time.time())
                 count = 0
@@ -832,8 +830,7 @@ class XWFMailingList(Folder):
 
                 if count >= senderlimit:
                     retval = (True, DateTime(earliest+senderinterval))
-                else:
-                    retval = (False, -1)
+                    break
         return retval
 
     def checkMail(self, REQUEST):
