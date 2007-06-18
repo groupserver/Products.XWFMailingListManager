@@ -679,7 +679,7 @@ class XWFMailingList(Folder):
                                   content_type='text/plain')
 
             self.mail_moderator(self, REQUEST, mid=msg.post_id, 
-                                      mail=header, body=body)
+                                pin=pin, mail=header, body=body)
             
             return email
         
