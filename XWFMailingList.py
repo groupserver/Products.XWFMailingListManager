@@ -633,12 +633,12 @@ class XWFMailingList(Folder):
         # TODO: erradicate splitMail usage
         (header, body) = MailBoxerTools.splitMail(mailString)
 
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
-                                       group_id=self.getId(), 
-                                       site_id=self.getProperty('siteId', ''), 
-                                       sender_id_cb=self.get_mailUserId)
+        msg = EmailMessage(mailString, 
+          list_title=self.getProperty('title', ''), 
+          group_id=self.getId(), site_id=self.getProperty('siteId', ''), 
+          sender_id_cb=self.get_mailUserId)
         
-        email = msg.sender
+        # email = msg.sender
         
         # Get members
         try:
@@ -656,13 +656,13 @@ class XWFMailingList(Folder):
         # members, no others.
         moderate = 0
         if len(moderatedlist):
-            if email in moderatedlist:
+            if msg.sender in moderatedlist:
                 moderate = 1
-        elif (email in memberlist) or unclosed:
+        elif (msg.sender in memberlist) or unclosed:
             moderate = 1
         else:
             self.mail_reply(self, REQUEST, mail=header, body=body)
-            return email
+            return msg.sender
             
         if moderate:
             mqueue = getattr(self.aq_explicit, 'mqueue', None)
@@ -678,10 +678,31 @@ class XWFMailingList(Folder):
             mqueue.manage_addFile(msg.post_id, title=title, file=mailString, 
                                   content_type='text/plain')
 
-            self.mail_moderator(self, REQUEST, mid=msg.post_id, 
-                                pin=pin, mail=header, body=body)
+            # --=mpj17=-- Changed to use the GroupServer message 
+            # notification framework. Instead of a single call to the 
+            # "mail_moderator" template, two calls are made to notify the 
+            # two users.
             
-            return email
+            # self.mail_moderator(self, REQUEST, mid=msg.post_id, 
+            #                    pin=pin, mail=header, body=body)
+
+            moderatedUsers = self.get_moderatedUserObjects()
+            moderatedUser = [user for user in users 
+              if user.get_id() == msg.sender][0] #--=mpj17=-- will this work?
+            
+            moderators = self.get_moderatorUserObjects()
+            for moderator in moderators:
+                  nDict = {'mailingList': self,
+                    'moderatedMessage': msg,
+                    'moderatedUser': moderatedUser,
+                    'pin': pin(msg.body, self.email)} #--=mpj17=-- pin?
+                  moderator.send_notification('mail_moderator', 'default',
+                    n_dict=nDict)
+
+            moderatedUser.send_notification('mail_moderated_user', 
+              'default')
+            
+            return msg.sender
         
     def _create_mailObject(self, msg, archive):
         # do the dirty work to tidy up the legacy aspects of manage_addMail
