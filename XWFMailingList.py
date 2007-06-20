@@ -687,7 +687,7 @@ class XWFMailingList(Folder):
             #                    pin=pin, mail=header, body=body)
 
             moderatedUsers = self.get_moderatedUserObjects()
-            moderatedUser = [user for user in users 
+            moderatedUser = [user for user in moderatedUsers
               if user.get_id() == msg.sender][0] #--=mpj17=-- will this work?
             
             moderators = self.get_moderatorUserObjects()
