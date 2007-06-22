@@ -338,7 +338,7 @@ class XWFMailingList(Folder):
         users = []
         for uid in uids:
             user = self.acl_users.getUser(uid)
-            if user:
+            if user and (user not in users):
                 users.append(user)
                 
         return users
@@ -357,7 +357,7 @@ class XWFMailingList(Folder):
         uids += self.getProperty('moderator_members', [])
         
         users = []
-        for uid in uids:
+        for uid in uids and (user not in users):
             user = self.acl_users.getUser(uid)
             if user:
                 users.append(user)
@@ -694,8 +694,7 @@ class XWFMailingList(Folder):
             for moderator in moderators:
                   nDict = {'mailingList': self,
                     'moderatedMessage': msg,
-                    'moderatedUser': moderatedUser,
-                    'pin': pin(msg.body, self.email)} #--=mpj17=-- pin?
+                    'moderatedUser': moderatedUser} #--=mpj17=-- pin?
                   moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
