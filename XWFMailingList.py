@@ -700,7 +700,7 @@ class XWFMailingList(Folder):
                     'moderatedUser': moderatedUser,
                     'moderatedUserAddress': msg.sender,
                     'groupName': self.title,
-                    'groupEmail': self.email,
+                    'groupEmail': self.getValueFor('mailto'),
                     'subject': msg.subject,
                     'mid': msg.post_id,
                     'body': msg.body,
