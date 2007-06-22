@@ -357,9 +357,9 @@ class XWFMailingList(Folder):
         uids += self.getProperty('moderator_members', [])
         
         users = []
-        for uid in uids and (user not in users):
+        for uid in uids:
             user = self.acl_users.getUser(uid)
-            if user:
+            if user and (user not in users):
                 users.append(user)
                 
         return users
