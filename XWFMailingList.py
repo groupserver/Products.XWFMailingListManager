@@ -225,7 +225,8 @@ class XWFMailingList(Folder):
         """ Approves / discards a mail for a moderated list. """
         # TODO: UGLY, UGLY, UGLY!!!
         action = REQUEST.get('action', '')
-        if (REQUEST.get('pin') == self.pin(self.getValueFor('mailto'))):
+        if (REQUEST.get('pin') == pin(self.getValueFor('mailto'),
+                                      self.getValueFor('hashkey')) ):
             mqueue = self.restrictedTraverse(self.getValueFor('mailqueue'))
             mid = REQUEST.get('mid', '-1')
 
@@ -693,8 +694,10 @@ class XWFMailingList(Folder):
             moderators = self.get_moderatorUserObjects()
             for moderator in moderators:
                   nDict = {'mailingList': self,
+                    'pin': pin(self.getValueFor('mailto'),
+                               self.getValueFor('hashkey')),
                     'moderatedMessage': msg,
-                    'moderatedUser': moderatedUser} #--=mpj17=-- pin?
+                    'moderatedUser': moderatedUser}
                   moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
