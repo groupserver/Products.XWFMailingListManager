@@ -224,6 +224,11 @@ class XWFMailingList(Folder):
     def manage_moderateMail(self, REQUEST):
         """ Approves / discards a mail for a moderated list. """
         # TODO: UGLY, UGLY, UGLY!!!
+        # --=mpj17=-- This code is command-coupled on the "action" 
+        #   parameter, so it really needs to be split into two parts: one
+        #   for accepting, and one for rejecting the moderated message. In
+        #    addition, the moderated member should be informed that the 
+        #    message has been accepted or rejected.
         action = REQUEST.get('action', '')
         if (REQUEST.get('pin') == pin(self.getValueFor('mailto'),
                                       self.getValueFor('hashkey')) ):
