@@ -18,7 +18,6 @@ import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
 
 import Products.GSContent, Products.XWFCore.XWFUtils
-from interfaces import IGSUserInfo
 import addapost
 
 def process_post( context, request ):
@@ -206,20 +205,3 @@ class GSNewTopicView(Products.Five.BrowserView, GSPostingInfo):
           if result:
               self.retval.update(result.items())
 
-class GSCurrentUserInfo:
-    """Information about the current user"""
-    zope.interface.implements( IGSUserInfo )
-    
-    def __init__(self):
-        pass
-    
-    def exists(self):
-        return True
-    def get_id(self):
-        pass
-    def get_image(self):
-        pass
-    def get_real_names(self, preferredNameOnly=True):
-        pass
-          
-#Globals.InitializeClass( GSPostView )

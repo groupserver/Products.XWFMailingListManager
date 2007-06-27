@@ -144,11 +144,11 @@ class IGSStickyTopicToggleContentProvider(zope.interface.Interface):
 # </zope-3>
 
         
-class IGSUserInfo(zope.interface.Interface):
-    """Information about a user"""
+class IGSAuthorInfo(zope.interface.Interface):
+    """Information about the author of a document"""
 
     def exists():
-        """Does the user exist
+        """Does the author exist
         
         ARGUMENTS
             None.
@@ -159,7 +159,6 @@ class IGSUserInfo(zope.interface.Interface):
         SIDE EFFECTS
             None.
         """
-        pass
 
     def get_id():
         """Get the ID associated with the user
@@ -186,7 +185,6 @@ class IGSUserInfo(zope.interface.Interface):
         SIDE EFFECTS
             None.
         """
-        pass
 
     def get_real_names(preferredNameOnly=True):
         """Get the names associated with the user
@@ -204,5 +202,15 @@ class IGSUserInfo(zope.interface.Interface):
         SIDE EFFECTS
             None. 
         """
-        pass
+    def get_url():
+        """Get the URL of the author
         
+        ARGUMENTS
+            None.
+            
+        RETURNS
+            A string representing the URL of the user.
+            
+        SIDE EFFECTS
+          None.
+        """
