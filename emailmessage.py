@@ -6,6 +6,7 @@ import string
 import datetime, time
 import codecs
 
+from MailBoxerTools import convertHTML2Text
 from email import Parser, Header
 from rfc822 import AddressList
 
@@ -359,9 +360,9 @@ class EmailMessage(object):
                     
             for msg in outmessages:
                 actual_payload = msg.get_payload(decode=True)
-                
+                encoding = msg.get_param('charset', self.encoding)
                 filename = unicode(parse_disposition(msg.get('content-disposition', '')), 
-                                    self.encoding, 'ignore')
+                                   encoding, 'ignore')
                 fileid, length, md5_sum = calculate_file_id(actual_payload, msg.get_content_type())
                 out.append({'payload': actual_payload, 
                              'fileid': fileid, 
@@ -459,6 +460,12 @@ class EmailMessage(object):
         for item in self.attachments:
             if item['filename'] == '' and item['subtype'] != 'html':
                 return unicode(item['payload'], self.encoding, 'ignore')
+        
+        html_body = self.html_body
+        if html_body:
+            plain_body = convertHTML2Text(str(html_body))
+            return unicode(plain_body, self.encoding, 'ignore')
+        
         return ''
 
     @property
