@@ -469,6 +469,7 @@ class MessageQuery(object):
             retval = [ {'site_id': x['site_id'], 
                         'group_id': x['group_id']} for x in r ]
         return retval        
+  
     def topic_search(self, search_string, site_id, group_ids=()):
         """ Retrieve all the topics matching a particular search string.
         
