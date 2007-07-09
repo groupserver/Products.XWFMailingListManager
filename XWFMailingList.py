@@ -186,7 +186,7 @@ class XWFMailingList(Folder):
         return TRUE
 
 
-    security.declareProtected('View', 'a')
+    security.declareProtected('View', 'manage_listboxer')
     def manage_listboxer(self, REQUEST):
         """ Send a mail to all members of the list.
 
