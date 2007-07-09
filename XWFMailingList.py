@@ -186,7 +186,7 @@ class XWFMailingList(Folder):
         return TRUE
 
 
-    security.declareProtected('View', 'manage_listboxer')
+    security.declareProtected('View', 'a')
     def manage_listboxer(self, REQUEST):
         """ Send a mail to all members of the list.
 
@@ -1197,14 +1197,13 @@ class XWFMailingList(Folder):
     
     def get_mailUserId(self, addr):
         addr = addr.lower().strip()
-        member_users = self.get_memberUserObjects()
-        for member_user in member_users:
-            addrs = member_user.getProperty('emailAddresses', [])
-            for member_addr in addrs:
-                if member_addr.lower() == addr:
-                    return member_user.getId()
-                    
-        return ''
+        site_root = self.site_root()
+        acl_users = site_root.acl_users
+        groupMember = acl_users.get_userByEmail(addr)
+        retval = ''
+        if groupMember:
+            retval = groupMember.getId()
+        return retval
 
     security.declareProtected('Add Folders', 'catalogMailBoxerMail')
     def catalogMailBoxerMail(self, MailBoxerMail):
