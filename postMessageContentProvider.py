@@ -39,9 +39,9 @@ class GSPostMessageContentProvider(object):
                 "User has no email addresses set."
               self.preferredEmailAddress = \
                 user.get_defaultDeliveryEmailAddresses()
-              assert (len(user.preferredEmailAddresses) > 0), \
+              assert (len(self.preferredEmailAddress) > 0), \
                 "User has no preferred email addresses set."
-              self.preferredEmailAddress = user.preferredEmailAddresses[0]
+              self.preferredEmailAddress = self.preferredEmailAddresses[0]
               if self.preferredEmailAddress not in self.fromEmailAddresses:
                   self.preferredEmailAddress = self.fromEmailAddresses[0]
           else:
