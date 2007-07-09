@@ -34,9 +34,11 @@ class GSPostMessageContentProvider(object):
           self.siteId = self.siteInfo.get_id()
           user = self.request.AUTHENTICATED_USER
           if user.getId() != None:
-              assert (len(user.emailAddresses) > 0), \
+              self.fromEmailAddresses = user.get_emailAddresses()
+              assert (len(self.fromEmailAddresses) > 0), \
                 "User has no email addresses set."
-              self.fromEmailAddresses = user.emailAddresses
+              self.preferredEmailAddress = \
+                user.get_defaultDeliveryEmailAddresses()
               assert (len(user.preferredEmailAddresses) > 0), \
                 "User has no preferred email addresses set."
               self.preferredEmailAddress = user.preferredEmailAddresses[0]
