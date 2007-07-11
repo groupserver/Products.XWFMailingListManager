@@ -11,7 +11,7 @@ class MessageQuery(object):
         self.fileTable = da.createMapper('file')[1]
         
         try:
-            self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
+            self.post_id_mapTable = da.createMapper('post_id_map')[1]
         except NoSuchTableError:
             self.post_id_mapTable = None
 
