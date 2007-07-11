@@ -95,11 +95,8 @@ class RDBFileMetadataStorage(object):
         self.file_ids = file_ids
     
     def set_zalchemy_adaptor(self, da):
-        session = da.getSession()
-        metadata = session.getMetaData()
-        
-        self.fileTable = sqlalchemy.Table('file', metadata, autoload=True)
-        self.postTable = sqlalchemy.Table('post', metadata, autoload=True)
+        self.fileTable = da.createMapper('file')[1]
+        self.postTable = da.createMapper('post')[1]
         
     def insert(self):
         # FIXME: references like this should *NOT* be hardcoded!
@@ -127,14 +124,11 @@ class RDBEmailMessageStorage(object):
         self.email_message = email_message
 
     def set_zalchemy_adaptor(self, da):
-        session = da.getSession()
-        metadata = session.getMetaData()
-        
-        self.postTable = sqlalchemy.Table('post', metadata, autoload=True)
-        self.topicTable = sqlalchemy.Table('topic', metadata, autoload=True)
-        self.topic_word_countTable = sqlalchemy.Table('topic_word_count', metadata, autoload=True)
-        self.post_tagTable = sqlalchemy.Table('post_tag', metadata, autoload=True)
-        self.post_id_mapTable = sqlalchemy.Table('post_id_map', metadata, autoload=True)
+        self.postTable = da.createMapper('post')[1]
+        self.topicTable = da.createMapper('topic')[1]
+        self.topic_word_countTable = da.createMapper('topic_word_count')[1]
+        self.post_tagTable = da.createMapper('post_tag')[1]
+        self.post_id_mapTable = da.createMapper('post_id_map')[1]
 
     def _get_topic(self):
         and_ = sqlalchemy.and_

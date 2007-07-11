@@ -5,13 +5,10 @@ class MessageQuery(object):
     def __init__(self, context, da):
         self.context = context
 
-        session = da.getSession()
-        metadata = session.getMetaData()
-
-        self.topicTable = sa.Table('topic', metadata, autoload=True)
-        self.topic_word_countTable = sa.Table('topic_word_count', metadata, autoload=True)
-        self.postTable = sa.Table('post', metadata, autoload=True)
-        self.fileTable = sa.Table('file', metadata, autoload=True)
+        self.topicTable = da.createMapper('topic')[1]
+        self.topic_word_countTable = da.createMapper('topic_word_count')[1]
+        self.postTable = da.createMapper('post')[1]
+        self.fileTable = da.createMapper('file')[1]
         
         try:
             self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
