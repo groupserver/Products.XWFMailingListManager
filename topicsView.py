@@ -31,6 +31,9 @@ class GSTopicsView(BrowserView, GSPostingInfo):
           limit = self.get_summary_length()
 
           self.numTopics = self.messageQuery.topic_count(self.siteInfo.get_id(), lists)
+          if self.start > self.numTopics:
+              self.start = self.numTopics - limit
+              
           self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(),
                                                         lists,
                                                         limit=limit,
