@@ -14,7 +14,7 @@ class GSPostsView(Products.Five.BrowserView):
           self.request = request
           
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-          self.groupInfo = createObject('groupserver.GroupInfo', self.context)
+          self.groupInfo = createObject('groupserver.GroupInfo', context)
            
           self.start = int(self.request.form.get('start', 0))
           self.end = int(self.request.form.get('end', 20))
