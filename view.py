@@ -17,7 +17,8 @@ import DocumentTemplate
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
 
-import Products.GSContent, Products.XWFCore.XWFUtils
+import Products.GSContent
+from Products.XWFCore.XWFUtils import munge_date
 import addapost
 
 def process_post( context, request ):
@@ -155,9 +156,9 @@ class GSPostingInfo:
             dayOrHour = dayOrHour + ((plural and 's') or '')
             interval = '%d %s' % (duration, dayOrHour)
             
-            timezone = self.context.Scripts.get.option('timezone')
             t = DateTime.DateTime(int(groupList.is_senderBlocked(user.getId())[1]))
-            postingDate = t.toZone(timezone).strftime('%F %H:%M')
+            postingDate = munge_date(self.groupInfo.groupObj, t)
+                                                               
             m = """You have reached the posting limit of %d messages 
             every %s; you may post again  at %s."""  % (senderLimit, 
               interval, postingDate)
