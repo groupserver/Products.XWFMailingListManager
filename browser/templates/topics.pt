@@ -167,7 +167,8 @@
           </p>
         </tal:block>
         
-        <tal:block tal:define="topics python:view.get_topics();
+        <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
+          topics python:view.get_topics();
           stickyTopics python:view.get_sticky_topics();
           nonStickyTopics python:view.get_non_sticky_topics()">
           <table id="topicsSummary" 
@@ -199,7 +200,7 @@
                     <td class="posts" title="Number of posts"
                       tal:content="stickyTopic/count">-1</td>
                     <td class="date" title="Date of the most recent post"
-                      tal:define="date python:stickyTopic['last_post_date'].strftime('%F %H:%M')">
+                      tal:define="date python:munge_date(here, stickyTopic['last_post_date'])">
                       <span 
                       tal:replace="date">
                       Today, Tomorrow, Timaru
@@ -224,7 +225,7 @@
                   <td class="posts" title="Number of posts" 
                     tal:content="topic/count">-1</td>
                   <td class="date" title="Date of the most recent post" 
-                    tal:define="date python:topic['last_post_date'].strftime('%F %H:%M')">
+                    tal:define="date python:munge_date(here, topic['last_post_date'])">
                     <span 
                       tal:replace="date">
                       Today, Tomorrow, Timaru

@@ -1,4 +1,5 @@
-<tal:block tal:define="post python:options['post'];
+<tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
+  post python:options['post'];
   postId python:post['post_id'];
   authorId python:options['authorId']; 
   authorName python:options['authorName'];
@@ -27,7 +28,7 @@
       <span class="posted">
         <strong>Date:</strong>
         <span class="date" 
-          tal:define="date python:post['date'].strftime('%F %H:%M')">
+          tal:define="date python:munge_date(here, post['date'])">
           <span 
             tal:replace="date">
             Today, Tomorrow, Timaru

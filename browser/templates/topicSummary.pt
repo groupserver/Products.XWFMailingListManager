@@ -5,7 +5,7 @@
   authorId python:options['authorId']; 
   authorName python:options['authorName'];
   authorExists python:options['authorExists'];
-  timezone python:options['context'].Scripts.get.option('timezone')">
+  munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date">
   <p class="label">Summary</p>
   <ul>
     <li>There are
@@ -26,7 +26,7 @@
       </span>
       at
       <span class="date" 
-        tal:define="date python:lastPostDate.strftime('%F %H:%M')">
+        tal:define="date python:munge_date(here, lastPostDate)">
         <span 
           tal:replace="date">
           Today, Tomorrow, Timaru
