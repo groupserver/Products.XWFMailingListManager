@@ -17,6 +17,7 @@ from OFS.Folder import manage_addFolder
 
 from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+from Products.XWFCore.XWFUtils import munge_date
 
 import MailBoxerTools
 from emailmessage import EmailMessage
@@ -964,6 +965,7 @@ class XWFMailingList(Folder):
             if count >= senderlimit:
                 if  user and (user.getId() != ptnCoachId):
                     expTime = DateTime(earliest+senderinterval)
+                    expTime = munge_date(self, expTime)
                     user.send_notification('sender_limit_exceeded', 
                                            self.listId(), 
                                            n_dict={'expiry_time': expTime, 
@@ -971,7 +973,7 @@ class XWFMailingList(Folder):
                     rm = r'Sender "%s" has sent "%s" mails in "%s" seconds'
                     message = (rm % (email, count, senderinterval))
                     LOG('MailBoxer', PROBLEM, message)
-            
+                    
                     self.last_email_checksum = msg.post_id
             
                     return message
