@@ -1,5 +1,6 @@
 <div id="topicSummary"
   tal:define="length options/length;
+  lenAuthors options/lenAuthors;
   lastPostId options/lastPostId;
   lastPostDate options/lastPostDate;
   authorId python:options['authorId']; 
@@ -9,8 +10,9 @@
   <p class="label">Summary</p>
   <ul>
     <li>There are
-      <strong><span tal:replace="length">-1</span> posts</strong>
-      in this topic.</li>
+      <strong><span class="cardinal" tal:content="length"/> posts</strong>
+      &#8212; by <span class="cardinal" tal:content="lenAuthors"/> authors
+      &#8212; in this topic.</li>
     <li><a title="View the latest post"
       tal:attributes="href string:${lastPostId}#post-${lastPostId}"
       href="#">Latest post</a> made by

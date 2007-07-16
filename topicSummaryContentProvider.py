@@ -6,6 +6,8 @@ from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.contentprovider.interfaces import IContentProvider
 from interfaces import IGSTopicSummaryContentProvider
 
+from Products.XWFCore.XWFUtils import get_user, get_user_realnames
+
 # <zope-3 weirdness="high">
           
 class GSTopicSummaryContentProvider(object):
@@ -44,7 +46,13 @@ class GSTopicSummaryContentProvider(object):
           self.authorId = self.lastPost['author_id']
           self.authorName = self.get_author_realnames()
           self.authorExists = self.author_exists()
-         
+
+          authorIds = []
+          for post in self.topic:
+              if post['author_id'] not in authorIds:
+                  authorIds.append(post['author_id'])
+          self.lenAuthors = len(authorIds)
+          
           self.siteInfo = Products.GSContent.view.GSSiteInfo( self.context )
           self.groupInfo = createObject('groupserver.GroupInfo', self.context)
            
@@ -64,6 +72,7 @@ class GSTopicSummaryContentProvider(object):
           pageTemplate = PageTemplateFile(self.pageTemplateFileName)          
 
           return pageTemplate(length=len(self.topic),
+                              lenAuthors=self.lenAuthors,
                               lastPostId = self.lastPost['post_id'],
                               lastPostDate = self.lastPost['date'],
                               authorId=self.authorId, 
@@ -110,7 +119,7 @@ class GSTopicSummaryContentProvider(object):
               
           SIDE EFFECTS
               None."""
-          retval = self.context.Scripts.get.user_exists(self.authorId)
+          retval = get_user(self.context, self.authorId) and True or False
           
           return retval
 
@@ -123,7 +132,7 @@ class GSTopicSummaryContentProvider(object):
           SIDE EFFECTS
              None.
           """
-          retval = self.context.Scripts.get.user_realnames(self.authorId)
+          retval = get_user_realnames(get_user(self.context, self.authorId))
           
           return retval
           
