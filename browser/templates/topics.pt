@@ -184,8 +184,7 @@
                 <th class="date">Latest Post</th>
               </tr>
             </thead>
-            <tbody tal:define="lenSticky python:len(stickyTopics);
-              timezone python:context.Scripts.get.option('timezone')">
+            <tbody tal:define="lenSticky python:len(stickyTopics)">
               <tal:block tal:condition="stickyTopics">
                 <tal:block tal:repeat="stickyTopic stickyTopics">
                   <tr tal:define="position repeat/stickyTopic/number;"
@@ -200,12 +199,11 @@
                     <td class="posts" title="Number of posts"
                       tal:content="stickyTopic/count">-1</td>
                     <td class="date" title="Date of the most recent post"
-                      tal:define="date python:munge_date(here, stickyTopic['last_post_date'])">
+                      tal:define="date python:munge_date(options['context'], stickyTopic['last_post_date'])">
                       <span 
                       tal:replace="date">
                       Today, Tomorrow, Timaru
                       </span>
-                      (<span tal:replace="timezone"/>)
                     </td>
                   </tr>
                 </tal:block>
@@ -225,12 +223,11 @@
                   <td class="posts" title="Number of posts" 
                     tal:content="topic/count">-1</td>
                   <td class="date" title="Date of the most recent post" 
-                    tal:define="date python:munge_date(here, topic['last_post_date'])">
+                    tal:define="date python:munge_date(options['context'], topic['last_post_date'])">
                     <span 
                       tal:replace="date">
                       Today, Tomorrow, Timaru
                     </span>
-                    (<span tal:replace="timezone"/>)
                   </td>
                 </tr>
               </tal:block>

@@ -1,8 +1,7 @@
 <table id="results"
   tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
   entries options/entries;
-  files python:map(lambda e:e['files'] ,entries);
-  timezone python:options['context'].Scripts.get.option('timezone')"
+  files python:map(lambda e:e['files'] ,entries)"
   tal:condition="python:reduce(lambda a, b: a or b, files, False)">
   <caption>Posts with files</caption>
   <thead>
@@ -32,14 +31,13 @@
             <span class="emailname-self"
               tal:content="structure entry/name">Me!</span></a>
         </td>
-        <td tal:define="date python:munge_date(here, entry['date'])"
+        <td tal:define="date python:munge_date(options['context'], entry['date'])"
           class="date">
           <a tal:attributes="href entry/href">
             <span 
               tal:replace="date">
               Today, Tomorrow, Timaru
             </span>
-            (<span tal:replace="timezone"/>)
           </a>
         </td>
       </tr>

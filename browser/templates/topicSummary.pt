@@ -26,12 +26,11 @@
       </span>
       at
       <span class="date" 
-        tal:define="date python:munge_date(here, lastPostDate)">
+        tal:define="date python:munge_date(options['context'], lastPostDate)">
         <span 
           tal:replace="date">
           Today, Tomorrow, Timaru
         </span>
-        (<span tal:replace="timezone"/>)
       </span>
     </li>
   </ul>

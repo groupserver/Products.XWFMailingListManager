@@ -9,8 +9,7 @@
   showPhoto options/showPhoto;
   postIntro options/postIntro;
   postRemainder options/postRemainder;
-  filesMetadata options/filesMetadata;
-  timezone python:options['context'].Scripts.get.option('timezone')">
+  filesMetadata options/filesMetadata">
   <div tal:attributes="class options/cssClass; id string:post-${postId};">
     <p class="email-metadata">
       <a class="topic" tal:condition="options/topicName"
@@ -28,12 +27,11 @@
       <span class="posted">
         <strong>Date:</strong>
         <span class="date" 
-          tal:define="date python:munge_date(here, post['date'])">
+          tal:define="date python:munge_date(options['context'], post['date'])">
           <span 
             tal:replace="date">
             Today, Tomorrow, Timaru
           </span>
-          (<span tal:replace="timezone"/>)
         </span>
       </span>
       <a class="email-link"
