@@ -199,7 +199,7 @@
                     <td class="posts" title="Number of posts"
                       tal:content="stickyTopic/count">-1</td>
                     <td class="date" title="Date of the most recent post"
-                      tal:define="date python:munge_date(options['context'], stickyTopic['last_post_date'])">
+                      tal:define="date python:munge_date(context, stickyTopic['last_post_date'])">
                       <span 
                       tal:replace="date">
                       Today, Tomorrow, Timaru
@@ -223,7 +223,7 @@
                   <td class="posts" title="Number of posts" 
                     tal:content="topic/count">-1</td>
                   <td class="date" title="Date of the most recent post" 
-                    tal:define="date python:munge_date(options['context'], topic['last_post_date'])">
+                    tal:define="date python:munge_date(context, topic['last_post_date'])">
                     <span 
                       tal:replace="date">
                       Today, Tomorrow, Timaru
