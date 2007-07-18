@@ -170,6 +170,10 @@
                 tal:attributes="title python:'ATOM Feed of the Latest Posts to %s'%view.groupInfo.get_name()"
                 href="posts.atom">Web feed of the latest posts.</a>
             </li>
+            <li>
+              <a tal:attributes="title string:Summary of posts in ${view/groupInfo/get_name}"
+                href="postsSummary.html?limit=60">Summary of Posts</a>
+            </li>
           </ul>
         </div>
         
