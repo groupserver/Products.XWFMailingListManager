@@ -9,7 +9,7 @@ class MemberQuery(object):
         self.userEmailTable = da.createMapper('user_email')[1]
         self.groupUserEmailTable = da.createMapper('group_user_email')[1]
 
-    def get_member_addresses(site_id, group_id, id_getter, preferred_only=True):
+    def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True):
         # TODO: We currently can't use site_id
         site_id = ''
 
@@ -58,7 +58,7 @@ class MemberQuery(object):
 
         return email_addresses
 
-    def get_digest_addresses(site_id, group_id, id_getter):
+    def get_digest_addresses(self, site_id, group_id, id_getter):
         # TODO: We currently can't use site_id
         site_id = ''
         
