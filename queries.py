@@ -51,6 +51,7 @@ class MemberQuery(object):
             email_user.append_whereclause(uet.c.is_preferred==True)
         email_user.append_whereclause(uet.c.user_id.in_(*user_ids))
         
+        r = email_user.execute()
         if r.rowcount:
             for row in r:
                 email_addresses.append(row['email'].lower())
@@ -99,6 +100,7 @@ class MemberQuery(object):
         email_user.append_whereclause(uet.c.is_preferred==True)      
         email_user.append_whereclause(uet.c.user_id.in_(*digest_ids))
         
+        r = email_user.execute()        
         if r.rowcount:
             for row in r:
                 if row['user_id'] in user_ids:
