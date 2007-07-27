@@ -2,6 +2,10 @@ from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
 
 class MemberQuery(object):
+    # how many user ID's should we attempt to pass to the database before
+    # we just do the filtering ourselves to avoid the overhead on the database
+    USER_FILTER_LIMIT = 500
+
     def __init__(self, context, da):
         self.context = context
 
@@ -32,14 +36,13 @@ class MemberQuery(object):
         email_group = guet.select()
         email_group.append_whereclause(guet.c.site_id==site_id)
         email_group.append_whereclause(guet.c.group_id==group_id)
-        email_group.append_whereclause(guet.c.user_id.in_(*ignore_ids))
-        
+         
         r = email_group.execute()
         if r.rowcount:
             for row in r:
                 # double check for security that this user should actually
                 # be receiving email for this group
-                if row['user_id'] in user_ids:
+                if row['user_id'] in user_ids and row['user_id'] not in ignore_ids:
                     ignore_ids.append(row['user_id'])
                     email_addresses.append(row['email'].lower())
 
@@ -49,12 +52,18 @@ class MemberQuery(object):
         email_user = uet.select()
         if preferred_only:
             email_user.append_whereclause(uet.c.is_preferred==True)
-        email_user.append_whereclause(uet.c.user_id.in_(*user_ids))
+        
+        if len(user_ids) <= self.USER_FILTER_LIMIT:
+            email_user.append_whereclause(uet.c.user_id.in_(*user_ids))
         
         r = email_user.execute()
         if r.rowcount:
             for row in r:
-                email_addresses.append(row['email'].lower())
+                if len(user_ids) > self.USER_FILTER_LIMIT:
+                    if row['user_id'] in user_ids:
+                        email_addresses.append(row['email'].lower())                        
+                else:
+                    email_addresses.append(row['email'].lower())
 
         return email_addresses
 
