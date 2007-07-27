@@ -29,11 +29,10 @@ class MemberQuery(object):
         if r.rowcount:
             for row in r:
                 ignore_ids.append(row['user_id'])
-        
         email_group = guet.select()
         email_group.append_whereclause(guet.c.site_id==site_id)
         email_group.append_whereclause(guet.c.group_id==group_id)
-        email_group.append_whereclause(guet.c.user_id!=ignore_ids)
+        email_group.append_whereclause(guet.c.user_id.in_(ignore_ids))
         
         r = email_group.execute()
         if r.rowcount:
@@ -50,7 +49,7 @@ class MemberQuery(object):
         email_user = uet.select()
         if preferred_only:
             email_user.append_whereclause(uet.c.is_preferred==True)
-        email_user.append_whereclause(uet.c.user_id==user_ids)
+        email_user.append_whereclause(uet.c.user_id.in_(user_ids))
         
         if r.rowcount:
             for row in r:
@@ -85,7 +84,7 @@ class MemberQuery(object):
         email_group = guet.select()
         email_group.append_whereclause(guet.c.site_id==site_id)
         email_group.append_whereclause(guet.c.group_id==group_id)
-        email_group.append_whereclause(guet.c.user_id==digest_ids)
+        email_group.append_whereclause(guet.c.user_id.in_(digest_ids))
         
         r = email_group.execute()
         if r.rowcount:
@@ -98,7 +97,7 @@ class MemberQuery(object):
 
         email_user = uet.select()
         email_user.append_whereclause(uet.c.is_preferred==True)      
-        email_user.append_whereclause(uet.c.user_id==digest_ids)
+        email_user.append_whereclause(uet.c.user_id.in_(digest_ids))
         
         if r.rowcount:
             for row in r:

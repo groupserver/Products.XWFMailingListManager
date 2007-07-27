@@ -423,13 +423,13 @@ class XWFMailingList(Folder):
                     addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
                                                     self.get_memberUserObjects)
                 elif key == 'moderator':
-                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
+                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
                                                     self.get_moderatorUserObjects, preferred_only=False)                
                 elif key == 'moderatedlist':
-                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
+                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
                                                     self.get_moderatedUserObjects, preferred_only=False)
                 elif key == 'mailinlist':
-                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
+                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
                                                     self.get_memberUserObjects, preferred_only=False)
                 for email in addresses:
                     email = email.strip()
