@@ -1198,14 +1198,10 @@ class XWFMailingList(Folder):
         return 1
     
     def get_mailUserId(self, addr):
-        addr = addr.lower().strip()
-        site_root = self.site_root()
-        acl_users = site_root.acl_users
-        groupMember = acl_users.get_userByEmail(addr)
-        retval = ''
-        if groupMember:
-            retval = groupMember.getId()
-        return retval
+        """ From the email address, get the user's ID.
+
+        """
+        return self.acl_users.get_userIdByEmail(addr) or ''
 
     security.declareProtected('Add Folders', 'catalogMailBoxerMail')
     def catalogMailBoxerMail(self, MailBoxerMail):

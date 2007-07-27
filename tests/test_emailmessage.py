@@ -48,6 +48,10 @@ def test_emailmessage():
       >>> email_internationalization = file('emails/internationalization.eml').read()
       >>> email_date = file('emails/date.eml').read()
       >>> email_anb = file('emails/attachment-no-body.eml').read()
+      >>> email_jp_mixed = file('emails/apple_mail_utf8_jp_mixed.eml').read()
+      >>> email_jp_mixed_def = file('emails/apple_mail_default_jp_mixed.eml').read()
+      >>> email_jp_def = file('emails/apple_mail_default_jp.eml').read()
+      >>> email_html_only = file('emails/intergen.eml').read()
       
       >>> msg = emailmessage.EmailMessage(email_attachments) 
       >>> msg.sender
@@ -66,6 +70,22 @@ def test_emailmessage():
       u'6Ok4eFuiUzhn2xoPVohcz2'
       >>> msg.inreplyto
       u''
+
+      >>> jpmsg1 = emailmessage.EmailMessage(email_jp_mixed) 
+      >>> jpmsg1.subject
+      >>> jpmsg1.body
+
+      >>> jpmsg2 = emailmessage.EmailMessage(email_jp_mixed_def) 
+      >>> jpmsg2.subject
+      >>> jpmsg2.body
+
+      >>> jpmsg3 = emailmessage.EmailMessage(email_jp_def) 
+      >>> jpmsg3.subject
+      >>> jpmsg3.body
+
+      >>> html = emailmessage.EmailMessage(email_html_only) 
+      >>> html.subject
+      >>> html.body
 
    A second attachments example:
       >>> msg2 = emailmessage.EmailMessage(email_attachments2) 
