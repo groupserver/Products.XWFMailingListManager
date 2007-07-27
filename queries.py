@@ -4,7 +4,7 @@ import sqlalchemy as sa
 class MemberQuery(object):
     # how many user ID's should we attempt to pass to the database before
     # we just do the filtering ourselves to avoid the overhead on the database
-    USER_FILTER_LIMIT = 500
+    USER_FILTER_LIMIT = 200
 
     def __init__(self, context, da):
         self.context = context
