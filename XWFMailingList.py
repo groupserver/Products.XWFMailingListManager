@@ -25,6 +25,8 @@ from emailmessage import IRDBStorageForEmailMessage
 from emailmessage import RDBFileMetadataStorage
 from emailmessage import strip_subject
 
+from queries import MemberQuery
+
 from export import export_archive_as_mbox
 from utils import check_for_commands
 from utils import pin
@@ -298,7 +300,7 @@ class XWFMailingList(Folder):
         prop_loc.manage_changeProperties({key:value})
         
     security.declareProtected('Manage properties', 'get_memberUserObjects')
-    def get_memberUserObjects(self):
+    def get_memberUserObjects(self, ids_only=False):
         """ Get the user objects corresponding to the membership list, assuming we can.
         
         """
@@ -307,6 +309,10 @@ class XWFMailingList(Folder):
         for gid in member_groups:
             group = self.acl_users.getGroupById(gid)
             uids += group.getUsers()
+
+        if ids_only:
+            return uids
+
         users = []
         for uid in uids:
             user = self.acl_users.getUser(uid)
@@ -330,7 +336,7 @@ class XWFMailingList(Folder):
         return len(uids)
     
     security.declareProtected('Manage properties', 'get_moderatedUserObjects')
-    def get_moderatedUserObjects(self):
+    def get_moderatedUserObjects(self, ids_only=False):
         """ Get the user objects corresponding to the moderated list, assuming we can.
         
         """
@@ -342,6 +348,9 @@ class XWFMailingList(Folder):
         
         uids += self.getProperty('moderated_members', [])
         
+        if ids_only:
+            return uids
+
         users = []
         for uid in uids:
             user = self.acl_users.getUser(uid)
@@ -351,7 +360,7 @@ class XWFMailingList(Folder):
         return users
     
     security.declareProtected('Manage properties', 'get_moderatorUserObjects')
-    def get_moderatorUserObjects(self):
+    def get_moderatorUserObjects(self, ids_only=False:
         """ Get the user objects corresponding to the moderator, assuming we can.
         
         """
@@ -363,6 +372,9 @@ class XWFMailingList(Folder):
         
         uids += self.getProperty('moderator_members', [])
         
+        if ids_only:
+            return uids
+
         users = []
         for uid in uids:
             user = self.acl_users.getUser(uid)
@@ -377,31 +389,25 @@ class XWFMailingList(Folder):
             in with the XWFT group framework.
         
         """
-        pass_group_id = False
+        da = self.zsqlalchemy 
+        assert da
+        memberQuery = MemberQuery(self, da)
+
         if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist', 'mailinlist'):
             maillist = []
             if key in ('digestmaillist', 'maillist'):
-                address_getter = 'get_deliveryEmailAddressesByKey'
-                member_getter = 'get_memberUserObjects'
-                pass_group_id = True
                 maillist_script = getattr(self, 'maillist_members', None)
             elif key in ('moderator',):
-                address_getter = 'get_emailAddresses'
-                member_getter = 'get_moderatorUserObjects'
                 maillist_script = None
                 maillist = self.aq_inner.getProperty('moderator', [])
                 if not maillist:
                     maillist = self.aq_parent.getProperty('moderator', [])
             elif key in ('moderatedlist',):
-                address_getter = 'get_emailAddresses'
-                member_getter = 'get_moderatedUserObjects'
                 maillist_script = None
                 maillist = self.aq_inner.getProperty('moderatedlist', [])
                 if not maillist:
                     maillist = self.aq_parent.getProperty('moderatedlist', [])
             else:
-                address_getter = 'get_emailAddresses'
-                member_getter = 'get_memberUserObjects'
                 maillist_script = getattr(self, 'mailinlist_members', None)
                 
             # look for a maillist script
@@ -409,26 +415,27 @@ class XWFMailingList(Folder):
                 return maillist_script()
                 
             try:
-                users = getattr(self, member_getter)()
-                maillist = list(maillist) # make sure we're not a tuple!
-                for user in users:
-                    # we're looking to send out regular email, but this user is set to digest
-                    if key == 'maillist' and user.get_deliverySettingsByKey(self.getId()) == 3:
-                        continue
-                    elif key == 'digestmaillist' and user.get_deliverySettingsByKey(self.getId()) != 3:
-                        continue
-
-                    try:
-                        if pass_group_id:
-                            addresses = getattr(user, address_getter)(self.getId())
-                        else:
-                            addresses = getattr(user, address_getter)()
-                    except:
-                        continue
-                    for email in addresses:
-                        email = email.strip()
-                        if email and email not in maillist:
-                            maillist.append(email)
+                addresses = []
+                if key == 'maillist':
+                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
+                                                    self.get_memberUserObjects)
+                elif key == 'digestmaillist':
+                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
+                                                    self.get_memberUserObjects)
+                elif key == 'moderator':
+                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
+                                                    self.get_moderatorUserObjects, preferred_only=False)                
+                elif key == 'moderatedlist':
+                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
+                                                    self.get_moderatedUserObjects, preferred_only=False)
+                elif key == 'mailinlist':
+                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),                
+                                                    self.get_memberUserObjects, preferred_only=False)
+                for email in addresses:
+                    email = email.strip()
+                    if email and email not in maillist:
+                        maillist.append(email)
+            
             except Exception, x:
                 LOG('XWFMailingList', PROBLEM, 
                     'A problem was experienced while getting values: %s' % x)

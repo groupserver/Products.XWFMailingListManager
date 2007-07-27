@@ -1,6 +1,112 @@
 from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
 
+class MemberQuery(object):
+    def __init__(self, context, da):
+        self.context = context
+
+        self.emailSettingTable = da.createMapper('email_setting')[1]
+        self.userEmailTable = da.createMapper('user_email')[1]
+        self.groupUserEmailTable = da.createMapper('group_user_email')[1]
+
+    def get_member_addresses(site_id, group_id, id_getter, preferred_only=True):
+        # TODO: We currently can't use site_id
+        site_id = ''
+
+        user_ids = id_getter(ids_only=True)
+        est = self.emailSettingTable        
+        uet = self.userEmailTable
+        guet = self.groupUserEmailTable
+
+        email_settings = est.select()
+        email_settings.append_whereclause(est.c.site_id==site_id)
+        email_settings.append_whereclause(est.c.group_id==group_id)
+        
+        r = email_settings.execute()
+        
+        ignore_ids = []
+        email_addresses = []
+        if r.rowcount:
+            for row in r:
+                ignore_ids.append(row['user_id'])
+        
+        email_group = guet.select()
+        email_group.append_whereclause(guet.c.site_id==site_id)
+        email_group.append_whereclause(guet.c.group_id==group_id)
+        email_group.append_whereclause(guet.c.user_id!=ignore_ids)
+        
+        r = email_group.execute()
+        if r.rowcount:
+            for row in r:
+                # double check for security that this user should actually
+                # be receiving email for this group
+                if row['user_id'] in user_ids:
+                    ignore_ids.append(row['user_id'])
+                    email_addresses.append(row['email'].lower())
+
+        # remove any ids we have already processed
+        user_ids = filter(lambda x: x not in ignore_ids, user_ids)
+
+        email_user = uet.select()
+        if preferred_only:
+            email_user.append_whereclause(uet.c.is_preferred==True)
+        email_user.append_whereclause(uet.c.user_id==user_ids)
+        
+        if r.rowcount:
+            for row in r:
+                email_addresses.append(row['email'].lower())
+
+        return email_addresses
+
+    def get_digest_addresses(site_id, group_id, id_getter):
+        # TODO: We currently can't use site_id
+        site_id = ''
+        
+        user_ids = id_getter(ids_only=True)
+        est = self.emailSettingTable        
+        uet = self.userEmailTable
+        guet = self.groupUserEmailTable
+
+        email_settings = est.select()
+        email_settings.append_whereclause(est.c.site_id==site_id)
+        email_settings.append_whereclause(est.c.group_id==group_id)
+        email_settings.append_whereclause(est.c.setting=='digest')
+        
+        r = email_settings.execute()
+        
+        digest_ids = []
+        ignore_ids = []
+        email_addresses = []
+        if r.rowcount:
+            for row in r:
+                if row['user_id'] in user_ids:
+                    digest_ids.append(row['user_id'])
+        
+        email_group = guet.select()
+        email_group.append_whereclause(guet.c.site_id==site_id)
+        email_group.append_whereclause(guet.c.group_id==group_id)
+        email_group.append_whereclause(guet.c.user_id==digest_ids)
+        
+        r = email_group.execute()
+        if r.rowcount:
+            for row in r:
+                ignore_ids.append(row['user_id'])
+                email_addresses.append(row['email'].lower())
+        
+        # remove any ids we have already processed
+        digest_ids = filter(lambda x: x not in ignore_ids, digest_ids)
+
+        email_user = uet.select()
+        email_user.append_whereclause(uet.c.is_preferred==True)      
+        email_user.append_whereclause(uet.c.user_id==digest_ids)
+        
+        if r.rowcount:
+            for row in r:
+                if row['user_id'] in user_ids:
+                    email_addresses.append(row['email'].lower())
+
+        return email_addresses
+        
 class MessageQuery(object):
     def __init__(self, context, da):
         self.context = context
