@@ -360,7 +360,7 @@ class XWFMailingList(Folder):
         return users
     
     security.declareProtected('Manage properties', 'get_moderatorUserObjects')
-    def get_moderatorUserObjects(self, ids_only=False:
+    def get_moderatorUserObjects(self, ids_only=False):
         """ Get the user objects corresponding to the moderator, assuming we can.
         
         """
