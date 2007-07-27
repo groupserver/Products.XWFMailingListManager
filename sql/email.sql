@@ -46,6 +46,13 @@ CREATE TABLE TOPIC_WORD_COUNT (
 
 CREATE UNIQUE INDEX TOPIC_WORD_PKEY ON TOPIC_WORD_COUNT USING BTREE (TOPIC_ID, WORD);
 
+CREATE TABLE word_count (
+    word text NOT NULL,
+    count integer NOT NULL
+);
+
+CREATE UNIQUE INDEX WORD_COUNT_PKEY ON WORD_COUNT USING BTREE (word);
+
 CREATE TABLE FILE (
     FILE_ID           TEXT                     NOT NULL,
     MIME_TYPE         TEXT                     NOT NULL,
@@ -64,3 +71,86 @@ CREATE TABLE POST_ID_MAP (
 );
 
 CREATE UNIQUE INDEX OLD_POST_ID_PKEY ON POST_ID_MAP USING BTREE (OLD_POST_ID);
+
+CREATE TABLE rowcount (
+    table_name  text NOT NULL,
+    total_rows  bigint,
+    PRIMARY KEY (table_name)
+);
+
+CREATE OR REPLACE FUNCTION count_rows()
+RETURNS TRIGGER AS
+'
+   BEGIN
+      IF TG_OP = ''INSERT'' THEN
+         UPDATE rowcount
+            SET total_rows = total_rows + 1
+            WHERE table_name = TG_RELNAME;
+      ELSIF TG_OP = ''DELETE'' THEN
+         UPDATE rowcount
+            SET total_rows = total_rows - 1
+            WHERE table_name = TG_RELNAME;
+      END IF;
+      RETURN NULL;
+   END;
+' LANGUAGE plpgsql;
+
+--
+-- Initialise trigger and rowcount for the topic table
+--
+
+BEGIN;
+   -- Make sure no rows can be added to topic until we have finished
+   LOCK TABLE topic IN SHARE ROW EXCLUSIVE MODE;
+
+   create TRIGGER count_topic_rows
+      AFTER INSERT OR DELETE on topic
+      FOR EACH ROW EXECUTE PROCEDURE count_rows();
+   
+   -- Initialise the row count record
+   DELETE FROM rowcount WHERE table_name = 'topic';
+
+   INSERT INTO rowcount (table_name, total_rows)
+   VALUES  ('topic',  (SELECT COUNT(*) FROM topic));
+
+COMMIT;
+
+--
+-- Initialise the trigger and rowcount for the post table
+--
+
+BEGIN;
+   -- Make sure no rows can be added to post until we have finished
+   LOCK TABLE post IN SHARE ROW EXCLUSIVE MODE;
+
+   create TRIGGER count_post_rows
+      AFTER INSERT OR DELETE on post
+      FOR EACH ROW EXECUTE PROCEDURE count_rows();
+   
+   -- Initialise the row count record
+   DELETE FROM rowcount WHERE table_name = 'post';
+
+   INSERT INTO rowcount (table_name, total_rows)
+   VALUES  ('post',  (SELECT COUNT(*) FROM post));
+
+COMMIT;
+
+--
+-- Initialise the trigger and rowcount for the word_count table
+--
+
+BEGIN;
+   -- Make sure no rows can be added to word_count until we have finished
+   LOCK TABLE word_count IN SHARE ROW EXCLUSIVE MODE;
+   
+   create TRIGGER count_word_count_rows
+      AFTER INSERT OR DELETE on word_count
+      FOR EACH ROW EXECUTE PROCEDURE count_rows();
+   
+   -- Initialise the row count record
+   DELETE FROM rowcount WHERE table_name = 'word_count';
+   
+   INSERT INTO rowcount (table_name, total_rows)
+   VALUES  ('word_count',  (SELECT COUNT(*) FROM word_count));
+   
+COMMIT;
