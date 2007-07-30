@@ -197,7 +197,6 @@ def get_mail_body(text):
     SIDE EFFECTS
         None.  
     """
-    assert text
     # --==mpj17=-- 
     #   I have to check up with rrw to see if posts support has_key
     # assert self.post['mailBody']
@@ -205,11 +204,12 @@ def get_mail_body(text):
     #contentType = getattr(self.post, 'content-type', None)
     #ctct = Products.XWFCore.XWFUtils.convertTextUsingContentType
     #text = ctct(body, contentType)  
-    
-    wrappedText = wrap_message(text)
-    markedUpPost = markup_text(wrappedText).strip()
-    retval = markedUpPost
-    
+    retval = ''
+    if text:    
+        wrappedText = wrap_message(text)
+        markedUpPost = markup_text(wrappedText).strip()
+        retval = markedUpPost
+
     #assert retval # Some messages may be blank
     return retval
 
