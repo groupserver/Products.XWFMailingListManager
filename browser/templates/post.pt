@@ -106,80 +106,56 @@
       - instance.
     -->
     <tal:block metal:fill-slot="body">
-      <form method="post" action="" 
-        enctype="application/x-www-form-urlencoded"
-        onkeypress="javascript:return keypressEventHandler(this, event)">
+      <h1>Post in
+        <cite tal:content="topicName">Topic</cite></h1>
+    
+      <div class="messages-nl" id="singlePostTopicNavigation">
+        <p class="label">Topic Navigation</p>
+        <ul>
+          <li class="first">
+            <a tal:condition="prev"
+              tal:attributes="href string:${first};
+              title string:First post in ${topicName};">First post</a>
+            <span tal:condition="not:prev">First post</span>
+          </li>
+          <li class="prev">
+            <a tal:condition="prev"
+              tal:attributes="href string:${prev};
+              title string:Previous post in ${topicName};">Previous post</a>
+            <span tal:condition="not:prev">Previous post</span>
+          </li>
+          <li class="next">
+            <a tal:condition="next"
+              tal:attributes="href string:${next};
+              title string:Next post in ${topicName};">Next post</a>
+            <span tal:condition="not:next">Next post</span>
+          </li>
+          <li class="last">
+            <a tal:condition="next"
+              tal:attributes="href string:${last};
+              title string:Most recent post in ${topicName};">Last post</a>
+            <span tal:condition="not:next">Last post</span>                
+          </li>
+        </ul>
+      </div>
+      <div class="messages-nl" id="usefulLinks">
+        <p class="label">Useful Links</p>
+        <ul>
+          <li class="topicLink">
+            <a href="#" 
+              tal:attributes="href string:../topic/${last}">
+              All posts in
+            <cite class="topic" 
+                tal:content="topicName">topic name</cite></a>
+          </li>
+        </ul>
+      </div>
       
-        <!-- Site Search -->
-        <div id="searcharea">
-          <h3>Site Search</h3>
-          <input type="text" class="text" name="sitesearch+query"/>
-          <input type="submit" name="__submit+sitesearch+search" 
-            onclick="submitButtonHandler(this)" value="Go" class="button"/>
-        </div>
-
-        <div class="xforms_model">
-          <!-- The site-search model -->
-          <input type="hidden" name="__submit__" value=""/>
-          <input type="hidden" name="__models__" value="sitesearch"/>
-          <input type="hidden" name="__instance+sitesearch+query" value=""/>
-          <input type="hidden" name="__submission_action+sitesearch+search" 
-            value="/search_all.xml"/>
-          <input type="hidden" name="__submission_method+sitesearch+search"
-            value="get"/>
-        </div>
-
-        <h1>Post in
-          <cite tal:content="topicName">Topic</cite></h1>
-      
-        <div class="messages-nl" id="singlePostTopicNavigation">
-          <p class="label">Topic Navigation</p>
-          <ul>
-            <li class="first">
-              <a tal:condition="prev"
-                tal:attributes="href string:${first};
-                title string:First post in ${topicName};">First post</a>
-              <span tal:condition="not:prev">First post</span>
-            </li>
-            <li class="prev">
-              <a tal:condition="prev"
-                tal:attributes="href string:${prev};
-                title string:Previous post in ${topicName};">Previous post</a>
-              <span tal:condition="not:prev">Previous post</span>
-            </li>
-            <li class="next">
-              <a tal:condition="next"
-                tal:attributes="href string:${next};
-                title string:Next post in ${topicName};">Next post</a>
-              <span tal:condition="not:next">Next post</span>
-            </li>
-            <li class="last">
-              <a tal:condition="next"
-                tal:attributes="href string:${last};
-                title string:Most recent post in ${topicName};">Last post</a>
-              <span tal:condition="not:next">Last post</span>                
-            </li>
-          </ul>
-        </div>
-        <div class="messages-nl" id="usefulLinks">
-          <p class="label">Useful Links</p>
-          <ul>
-            <li class="topicLink">
-              <a href="#" 
-                tal:attributes="href string:../topic/${last}">
-                All posts in
-              <cite class="topic" 
-                  tal:content="topicName">topic name</cite></a>
-            </li>
-          </ul>
-        </div>
-        
-        <p tal:define="post python:view.get_post()"
-          tal:replace="structure provider:groupserver.Post">
-          The email message is rendered by the Post content provider,
-          not by this page.
-        </p>
-      </form><!-- The One True XFrom-->
+      <p tal:define="post python:view.get_post()"
+        tal:replace="structure provider:groupserver.Post">
+        The email message is rendered by the Post content provider,
+        not by this page.
+      </p>
     </tal:block>
   </body>
 </html>

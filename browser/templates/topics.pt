@@ -97,24 +97,7 @@
       <form method="post" action="" 
         enctype="application/x-www-form-urlencoded"
         onkeypress="javascript:return keypressEventHandler(this, event)">
-        
-        <!-- Site Search -->
-        <div id="searcharea">
-          <h3>Site Search</h3>
-          <input type="text" class="text" name="sitesearch+query"/>
-          <input type="submit" name="__submit+sitesearch+search" 
-            onclick="submitButtonHandler(this)" value="Go" class="button"/>
-        </div>
-        
-        <div class="xforms_model">
-          <input type="hidden" name="__submit__" value=""/>
-          <input type="hidden" name="__models__" value="sitesearch"/>
-          <input type="hidden" name="__instance+sitesearch+query" value=""/>
-          <input type="hidden" name="__submission_action+sitesearch+search" 
-            value="/search_all.xml"/>
-          <input type="hidden" name="__submission_method+sitesearch+search"
-            value="get"/>
-        </div>
+
         <h1>Topics in 
           <span class="group" 
             tal:content="python:view.groupInfo.get_name()">a Group</span></h1>

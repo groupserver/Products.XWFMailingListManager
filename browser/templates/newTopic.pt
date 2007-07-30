@@ -76,16 +76,6 @@
       - instance.
     -->
     <tal:block metal:fill-slot="body">
-      <form method="get" action="/search_all.xml"
-        enctype="application/x-www-form-urlencoded">
-        <!-- Site Search -->
-        <div id="searcharea">
-          <h3>Site Search</h3>
-          <input type="text" class="text" name="query"/>
-          <input type="submit" name="" value="Go" class="button"/>
-        </div>
-      </form>
-      
       <h1>Start a New Topic</h1>
       <div id="posting" 
         tal:define="canPost python:view.get_user_can_post(True)">
