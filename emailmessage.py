@@ -43,8 +43,9 @@ def strip_subject(subject, list_title, remove_re=True):
     """ A helper function for tidying the subject line.
 
     """
-    # remove the list title from the subject
-    subject = re.sub('\[%s\]' % re.escape(list_title), '', subject).strip()
+    # remove the list title from the subject, if it isn't just an empty string
+    if list_title:
+        subject = re.sub('\[%s\]' % re.escape(list_title), '', subject).strip()
     
     # compress up the whitespace into a single space
     subject = re.sub('\s+', ' ', subject).strip()
