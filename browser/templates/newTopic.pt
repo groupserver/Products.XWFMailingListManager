@@ -39,19 +39,6 @@
         tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
         href python:'%s/help' % view.siteInfo.get_url()"/>
     </tal:block>
-   
-    <tal:block metal:fill-slot="javascript">
-      <!-- Standard GroupServer JavaScript: XForms, Dojo and popup help -->
-      <script type="text/javascript" 
-        src="/Presentation/Tofu/XForms/js/xforms.js">&#160;</script>
-      <script type="text/javascript"
-        src="/++resource++prototype/prototype.js">&#160;</script>
-      <script type="text/javascript"
-          src="/++resource++scriptaculous/scriptaculous.js?load=effects">&#160;</script>
-      <script type="text/javascript"
-        src="/++resource++post.js">&#160;</script>
-    </tal:block>
-    
     <tal:block metal:fill-slot="style">
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
         href="/++resource++singlePost.css">&#160;</link>

@@ -78,21 +78,6 @@
       - the same slots as the GSContent template ("standard.pt").
       -
       -->
-    
-    <!-- Standard GroupServer JavaScript: XForms, Dojo and popup help -->
-    <tal:block metal:fill-slot="javascript">
-      <script type="text/javascript"
-        src="/++resource++prototype/prototype.js">&#160;</script>
-      <script type="text/javascript"
-          src="/++resource++scriptaculous/scriptaculous.js">&#160;</script>
-      <script type="text/javascript"
-        src="/++resource++post.js">&#160;</script>
-      <script type="text/javascript" 
-        src="/Presentation/Tofu/XForms/js/xforms.js">&#160;</script>
-      <script type="text/javascript"
-        src="/++resource++post.js">&#160;</script>
-    </tal:block>
-    
     <tal:block metal:fill-slot="style">
       <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
         href="/++resource++singlePost.css" />

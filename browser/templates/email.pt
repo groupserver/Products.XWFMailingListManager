@@ -48,27 +48,26 @@
         This is the body of the document.
       </p>
     </pre><!--email-body-->
-    <div class="email-remainder"
+    <div class="email-remainder" tal:condition="options/postRemainder"
       tal:define="remId string:emailRemainder${postId}; 
       discloseId string:emailDiscloseButton${postId}">
-      <div class="emailshowremainder" 
-        tal:condition="options/postRemainder">
-        <a tal:define="fn string:showHideInline('${remId}','${discloseId}')"
-          tal:attributes="href string:javascript:${fn}; id discloseId;"
-          href="#" title="Show the footer">&#9654;</a>
-      </div><!--emailshowremander-->
-      <div style="display: none;"
-        tal:condition="options/postRemainder"
-        tal:attributes="id remId">
-        <div>
-          <pre tal:content="structure options/postRemainder">
-            This is the remainder of the email, with such things as the 
-            footer.
-          </pre>
-        </div>
+        <div class="disclosureWidget" id="#"
+          tal:attributes="id remId">
+          <p>
+            <a class="disclosureButton"
+              tal:attributes="href string:javascript:showHideDisclosure('${remId}')"
+              href="#">&#160;</a>
+          </p>
+          <div class="disclosureShowHide" style="display:none;">
+            <div>
+              <pre tal:content="structure options/postRemainder">
+                This is the remainder of the email, with such things as the 
+                footer.
+              </pre>
+            </div>
+          </div>
       </div>
-    </div><!--email-remainder-->
-	
+    </div><!--email-remainder-->	
     <div class="fileNotification" 
       tal:condition="filesMetadata">
       <div class="fileMetadata"
