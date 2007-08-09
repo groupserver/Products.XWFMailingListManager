@@ -610,10 +610,14 @@ class XWFMailingList(Folder):
         email = msg.sender
         
         # Get members
-        try:
-            memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
-        except:
-            memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
+        memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+        
+        # FIXME: why did we fall back to the maillist before? What situation would
+        # have a maillist but no mailinlist?
+        #try:
+        #    memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+        #except:
+        #    memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
 
         # Get moderators
         moderatorlist = MailBoxerTools.lowerList(self.getValueFor('moderator'))
@@ -636,6 +640,9 @@ class XWFMailingList(Folder):
                 self.listMail(REQUEST)
                 
             return email
+
+        LOG('MailBoxer', INFO, 'Mail received from unknown sender <%s> to list <%s>' % (email, self.getId()))
+        LOG('MailBoxer', INFO, 'memberlist was: %s' % memberlist)
 
         # if all previous tests fail, it must be an unknown sender.
         self.mail_reply(self, REQUEST, mail=header, body=body)

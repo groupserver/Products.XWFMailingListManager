@@ -16,7 +16,7 @@
 # CHANGE THESE
 DBHOSTNAME='localhost'
 DBPORT=5432
-DBUSERNAME='richard'
+DBUSERNAME='onlinegroups.net'
 DBPASSWORD=''
 DBNAME='onlinegroups.net'
 
