@@ -48,17 +48,18 @@
         This is the body of the document.
       </p>
     </pre><!--email-body-->
-    <div class="email-remainder" tal:condition="options/postRemainder"
+    <div class="email-remainder"
       tal:define="remId string:emailRemainder${postId}; 
       discloseId string:emailDiscloseButton${postId}">
-        <div class="disclosureWidget" id="#"
+        <div class="disclosureWidget" tal:condition="options/postRemainder"
           tal:attributes="id remId">
           <p>
             <a class="disclosureButton"
               tal:attributes="href string:javascript:showHideDisclosure('${remId}')"
               href="#">&#160;</a>
           </p>
-          <div class="disclosureShowHide" style="display:none;">
+          <div class="disclosureShowHide" style="display:none;"  
+            tal:condition="options/postRemainder">
             <div>
               <pre tal:content="structure options/postRemainder">
                 This is the remainder of the email, with such things as the 
