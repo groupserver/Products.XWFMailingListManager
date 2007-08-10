@@ -143,7 +143,6 @@
             <thead>
               <tr>
                 <th class="topic">Topic</th>
-                <th class="Files">Files</th>
                 <th class="posts">Posts</th>
                 <th class="date">Latest Post</th>
               </tr>
@@ -160,7 +159,6 @@
                       tal:attributes="href string:topic/${stickyTopic/last_post_id}"
                       tal:content="stickyTopic/subject">Wibble</a>
                     </td>
-                    <td class="files"/>
                     <td class="posts" title="Number of posts"
                       tal:content="stickyTopic/count">-1</td>
                     <td class="date" title="Date of the most recent post"
@@ -182,14 +180,12 @@
                     <a class="topic" href="#"
                       tal:attributes="href string:/r/topic/${topic/last_post_id}"
                       tal:content="topic/subject"/>
-                  </td>
-                  <td class="files">
                     <span class="files" tal:condition="topic/files">
                       <tal:block tal:repeat="file topic/files">
                         <a href="#" title="foo"
                           tal:attributes="title file/name;
                             href file/url;
-                            class string:fileIcon ${file/icon}">&#160;</a>
+                            class string:fileName ${file/icon}">&#160;</a>
                       </tal:block>
                     </span>
                   </td>
