@@ -1,16 +1,19 @@
 from Products.Five import BrowserView
 from zope.component import createObject
-import Products.GSContent, queries
+import Products.GSContent
+from Products.GSSearch import queries
 from view import GSPostingInfo # FIX
 
 class GSTopicsView(BrowserView, GSPostingInfo):
       """List of latest topics in the group."""
       __groupInfo = None
+      __author_cache = {}
       def __init__(self, context, request):
           self.context = context
           self.request = request
 
-          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+          self.siteInfo = createObject('groupserver.SiteInfo', 
+            context)
           self.groupInfo = createObject('groupserver.GroupInfo', context)
           
           da = context.zsqlalchemy 
@@ -34,11 +37,14 @@ class GSTopicsView(BrowserView, GSPostingInfo):
           if self.start > self.numTopics:
               self.start = self.numTopics - limit
               
-          self.topics = self.messageQuery.latest_topics(self.siteInfo.get_id(),
-                                                        lists,
-                                                        limit=limit,
-                                                        offset=self.start)
+          searchTokens = createObject('groupserver.SearchTextTokens', '')
+          self.topics = self.messageQuery.topic_search_keyword(
+            searchTokens, self.siteInfo.get_id(), 
+            [self.groupInfo.get_id()], limit=limit, offset=self.start)
 
+          tIds = [t['topic_id'] for t in self.topics]
+          self.topicFiles = self.messageQuery.files_metata_topic(tIds)
+          
       def get_later_url(self):
           newStart = self.start - self.get_summary_length()
           if newStart < 0:
@@ -97,12 +103,37 @@ class GSTopicsView(BrowserView, GSPostingInfo):
 
       def get_non_sticky_topics(self):
           stickyTopics = self.get_sticky_topics()
-          stickyTopicIds = map(lambda t:t['topic_id'], stickyTopics)
+          stickyTopicIds = map(lambda t: t['topic_id'], stickyTopics)
           allTopics = self.get_topics()
-          
-          retval = [topic for topic in allTopics 
-                    if topic['topic_id'] not in stickyTopicIds]
 
+          r = lambda r: r.replace('/','-').replace('.','-')
+          retval = []
+          for topic in self.topics:
+              t = topic
+              authorInfo = self.__author_cache.get(t['last_post_user_id'], None)
+              if not authorInfo:
+                  authorInfo = createObject('groupserver.AuthorInfo', 
+                    self.context, t['last_post_user_id'])
+                  self.__author_cache[t['last_post_user_id']] = authorInfo
+              authorId = authorInfo.get_id()
+              authorD = {
+                'exists': authorInfo.exists(),
+                'id': authorId,
+                'name': authorInfo.get_realnames(),
+                'url': authorInfo.get_url(),
+              }
+              t['last_author'] = authorD
+
+              files = [{'name': f['file_name'],
+                        'url': '/r/topic/%s#post-%s' % (f['post_id'], f['post_id']),
+                        'icon': r(f['mime_type']),
+                       } for f in self.topicFiles 
+                       if f['topic_id'] == t['topic_id']]
+                       
+              t['files'] = files
+              if t['topic_id'] not in stickyTopicIds:
+                  retval.append(t)
           return retval
+
       def process_form(self, *args):
           pass

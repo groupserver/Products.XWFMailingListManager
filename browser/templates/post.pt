@@ -67,21 +67,6 @@
         tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
         href python:view.siteInfo.get_url();" />
     </tal:block>
-
-    <!-- 
-      - The standard template used to display a single post that
-      - has been made to a group on GroupServer.
-      -
-      - Like the other message-based templates, the data is martialed
-      - out of an XWFVirtualMailingList instance into the page. The
-      - template is then passed to the standard GroupServer skin, using
-      - the same slots as the GSContent template ("standard.pt").
-      -
-      -->
-    <tal:block metal:fill-slot="style">
-      <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
-        href="/++resource++singlePost.css" />
-    </tal:block>
   </head>
   
   <body>

@@ -80,10 +80,6 @@
     provides=".emailmessage.IRDBStorageForEmailMessage" />
   
   <!--Resources-->
-  <browser:resource name="singlePost.css"
-    file="browser/stylesheets/post.css" 
-    permission="zope2.View" />
-  
   <browser:resourceDirectory name="postImages"
     directory="browser/images/green/" permission="zope2.View" />
 

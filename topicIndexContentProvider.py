@@ -98,11 +98,9 @@ class GSTopicIndexContentProvider(object):
           return retval
       
       def get_file_from_post(self, post):
-          retval = ()
+          retval = []
           if post['files_metadata']:
-              fm = post['files_metadata'][0]
-              retval = (fm['file_id'], fm['mime_type'])
-              
+              retval = post['files_metadata']
           return retval
 
 provideAdapter(GSTopicIndexContentProvider, provides=IContentProvider,

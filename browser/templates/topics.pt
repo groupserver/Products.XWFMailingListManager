@@ -53,20 +53,6 @@
         tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
         href python:'%s/help' % view.siteInfo.get_url()" />
     </tal:block>
-    
-    <!-- 
-      - The standard template used to display a single topic.
-      -
-      - Like the other message-based templates, the data is martialed
-      - out of an XWFVirtualMailingList instance into the page. The
-      - template is then passed to the standard GroupServer skin, using
-      - the same slots as the GSContent template ("standard.pt").
-      -
-      -->
-    <tal:block metal:fill-slot="style">
-      <link rel="stylesheet" title="Single-Post Stylesheet" type="text/css" 
-        href="/++resource++singlePost.css" />
-    </tal:block>
   </head>
   
   <body>
@@ -144,9 +130,10 @@
         </tal:block>
         
         <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
-          topics python:view.get_topics();
-          stickyTopics python:view.get_sticky_topics();
-          nonStickyTopics python:view.get_non_sticky_topics()">
+          ctx view/context;
+          topics view/get_topics;
+          stickyTopics view/get_sticky_topics;
+          nonStickyTopics view/get_non_sticky_topics">
           <table id="topicsSummary" 
             tal:condition="python:len(topics)>0">
             <caption>Topics in
@@ -156,6 +143,7 @@
             <thead>
               <tr>
                 <th class="topic">Topic</th>
+                <th class="Files">Files</th>
                 <th class="posts">Posts</th>
                 <th class="date">Latest Post</th>
               </tr>
@@ -172,6 +160,7 @@
                       tal:attributes="href string:topic/${stickyTopic/last_post_id}"
                       tal:content="stickyTopic/subject">Wibble</a>
                     </td>
+                    <td class="files"/>
                     <td class="posts" title="Number of posts"
                       tal:content="stickyTopic/count">-1</td>
                     <td class="date" title="Date of the most recent post"
@@ -184,26 +173,37 @@
                   </tr>
                 </tal:block>
               </tal:block>
-              <tal:block 
-                  tal:repeat="topic nonStickyTopics">
-                <tr tal:define="position repeat/topic/number;"
-                  tal:attributes="id string:topic-${topic/topic_id};
-                  class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';">
-                  <td class="topic" title="Topic name">
-                    <a tal:content="python:topic['subject'][:50]"
-                      tal:attributes="href string:topic/${topic/last_post_id};
-                      title string:The topic ${topic/subject}"
-                      href="#">Wibble</a><span 
-                      tal:condition="python:len(topic['subject'])&gt;50">&#8230;</span>
+              <tal:block tal:repeat="topic nonStickyTopics">
+                <tr id="abc123" 
+                  tal:define="position repeat/topic/number;
+                  class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';"
+                  tal:attributes="id topic/topic_id; class class;">
+                  <td class="topic">
+                    <a class="topic" href="#"
+                      tal:attributes="href string:/r/topic/${topic/last_post_id}"
+                      tal:content="topic/subject"/>
                   </td>
-                  <td class="posts" title="Number of posts" 
-                    tal:content="topic/count">-1</td>
-                  <td class="date" title="Date of the most recent post" 
-                    tal:define="date python:munge_date(context, topic['last_post_date'])">
-                    <span 
-                      tal:replace="date">
-                      Today, Tomorrow, Timaru
+                  <td class="files">
+                    <span class="files" tal:condition="topic/files">
+                      <tal:block tal:repeat="file topic/files">
+                        <a href="#" title="foo"
+                          tal:attributes="title file/name;
+                            href file/url;
+                            class string:fileIcon ${file/icon}">&#160;</a>
+                      </tal:block>
                     </span>
+                  </td>
+                  <td class="posts">
+                    <span class="cardinal" tal:content="topic/num_posts"/>
+                  </td>
+                  <td>
+                    <a class="name" href="#" 
+                      tal:omit-tag="not:topic/last_author/exists"
+                      tal:attributes="href topic/last_author/url"
+                      tal:content="topic/last_author/name">Me!</a>
+                    at
+                    <span class="date"
+                      tal:content="python:munge_date(ctx, topic['last_post_date'])"/>
                   </td>
                 </tr>
               </tal:block>

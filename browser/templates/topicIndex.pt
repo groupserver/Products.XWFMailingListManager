@@ -6,22 +6,14 @@
   <caption>Posts with files</caption>
   <thead>
     <tr>
-      <th class="file">File</th>
       <th class="author">From</th>
+      <th class="file">File</th>
       <th class="date">Date</th>
     </tr>
   </thead>
   <tbody>
     <tal:block tal:repeat="entry entries">
-      <tr tal:condition="python:len(entry['files']) == 2">
-        <td class="file">
-          <a tal:attributes="href entry/href">
-            <img alt="File attached to the post" width="16" height="16"
-              src="/++resource++fileIcons/application-octet-stream.png"
-              tal:define="iconName python:'%s.png' % entry['files'][1].replace('/','-')"
-              tal:attributes="src string:/++resource++fileIcons/${iconName}"/>
-          </a>
-        </td>
+      <tr tal:condition="python:len(entry['files']) > 0">
         <td class="author">
           <a tal:condition="not:entry/user" 
             tal:attributes="href entry/href" 
@@ -30,6 +22,18 @@
             tal:attributes="href entry/href">
             <span class="emailname-self"
               tal:content="structure entry/name">Me!</span></a>
+        </td>
+        <td class="file" tal:define="files entry/files">
+          <tal:block tal:repeat="fm files">
+            <a class="file" href="/favicon.ico" 
+              type="application/octet-stream"
+              tal:define="t fm/mime_type;
+                iconName python:t.replace('/','-').replace('.','-').strip()"
+              tal:attributes="href entry/href;
+                type fm/mime_type;
+                class string:fileName ${iconName};
+                title fm/file_name;">&#160;</a>
+          </tal:block>
         </td>
         <td tal:define="date python:munge_date(options['context'], entry['date'])"
           class="date">
