@@ -34,26 +34,33 @@ class GSAuthorInfo(object):
     def __init__(self, context, authorId):
         self.context = context
         self.authorId = authorId
-        self.author = get_user(self.context, authorId)
+        
+        author = get_user(self.context, authorId)
+        self._exists = author and True or False
+        self.image = None
+        if self._exists:
+            self.image = author.get_image()
+        self.realnames = get_user_realnames(author, authorId )
 
     def user_authored(self, userId):
         return userId == self.authorId
 
     def exists(self):
-        assert hasattr(self, 'author')
-        return self.author and True or False
+        retval = self._exists
+        assert retval in (True, False)
+        return retval
     
     def get_id(self):
-        return self.authorId
+        retval = self.authorId
+        assert retval
+        return retval
 
     def get_image(self):
-        retval = None
-        if self.exists():
-            retval = self.author.get_image()
+        retval = self.image
         return retval
           
     def get_realnames(self):
-        retval = get_user_realnames( self.author, self.authorId )
+        retval = self.realnames
         return retval
 
     def get_url(self):
