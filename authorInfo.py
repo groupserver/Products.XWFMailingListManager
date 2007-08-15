@@ -52,7 +52,6 @@ class GSAuthorInfo(object):
     
     def get_id(self):
         retval = self.authorId
-        assert retval
         return retval
 
     def get_image(self):
