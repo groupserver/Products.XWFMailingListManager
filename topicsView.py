@@ -6,7 +6,6 @@ from view import GSPostingInfo # FIX
 
 class GSTopicsView(BrowserView, GSPostingInfo):
       """List of latest topics in the group."""
-      __groupInfo = None
       def __init__(self, context, request):
           self.context = context
           self.request = request
