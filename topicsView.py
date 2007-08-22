@@ -7,10 +7,11 @@ from view import GSPostingInfo # FIX
 class GSTopicsView(BrowserView, GSPostingInfo):
       """List of latest topics in the group."""
       __groupInfo = None
-      __author_cache = {}
       def __init__(self, context, request):
           self.context = context
           self.request = request
+
+          self.__author_cache = {}
 
           self.siteInfo = createObject('groupserver.SiteInfo', 
             context)
