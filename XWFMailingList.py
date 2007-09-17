@@ -868,6 +868,11 @@ class XWFMailingList(Folder):
             Returns a tuple containing:
             (isblocked (boolean), unblock time (datetime))
         """
+
+         # TODO
+         # --=mpj17=-- This needs to be converted to use the new 
+         # IGSMessagePosting adaptors.
+
         senderlimit = self.getValueFor('senderlimit')
         senderinterval = self.getValueFor('senderinterval')
         user = self.acl_users.getUserById(user_id)
