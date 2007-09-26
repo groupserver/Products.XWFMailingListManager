@@ -25,7 +25,7 @@ from emailmessage import IRDBStorageForEmailMessage
 from emailmessage import RDBFileMetadataStorage
 from emailmessage import strip_subject
 
-from queries import MemberQuery
+from queries import MemberQuery, MessageQuery
 
 from export import export_archive_as_mbox
 from utils import check_for_commands
@@ -596,6 +596,9 @@ class XWFMailingList(Folder):
         os.remove(lockfilepath)
         
     def processMail(self, REQUEST):
+        da = self.zsqlalchemy 
+        assert da
+
         # Checks if member is allowed to send a mail to list
         mailString = getMailFromRequest(REQUEST)
         
@@ -606,19 +609,19 @@ class XWFMailingList(Folder):
         
         (header, body) = MailBoxerTools.splitMail(mailString)
         
+        # First sanity check ... have we already archived this message?
+        messageQuery = MessageQuery(self, da)
+        if messageQuery.post(msg.post_id):
+            LOG('MailBoxer', INFO, 'Post from "%s" has already been archived with post ID "%s"' %
+                (msg.sender, msg.post_id))
+            # discard message here        
+
         # get lower case email for comparisons
         email = msg.sender
         
         # Get members
         memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
         
-        # FIXME: why did we fall back to the maillist before? What situation would
-        # have a maillist but no mailinlist?
-        #try:
-        #    memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
-        #except:
-        #    memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
-
         # Get moderators
         moderatorlist = MailBoxerTools.lowerList(self.getValueFor('moderator'))
         
