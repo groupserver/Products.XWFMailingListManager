@@ -608,17 +608,17 @@ class XWFMailingList(Folder):
                                        sender_id_cb=self.get_mailUserId)
         
         (header, body) = MailBoxerTools.splitMail(mailString)
-        
+
         # First sanity check ... have we already archived this message?
         messageQuery = MessageQuery(self, da)
         if messageQuery.post(msg.post_id):
             LOG('MailBoxer', INFO, 'Post from "%s" has already been archived with post ID "%s"' %
                 (msg.sender, msg.post_id))
-            # discard message here        
+            return "Message already archived"
 
         # get lower case email for comparisons
         email = msg.sender
-        
+                
         # Get members
         memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
         
