@@ -39,6 +39,7 @@ import smtplib
 import os
 import re
 import time
+import transaction
 
 from cgi import escape
     
@@ -430,7 +431,7 @@ class XWFMailingList(Folder):
                                                     self.get_moderatedUserObjects, preferred_only=False)
                 elif key == 'mailinlist':
                     addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
-                                                    self.get_memberUserObjects, preferred_only=False)
+                                                    self.get_memberUserObjects, preferred_only=False, process_settings=False)
                 for email in addresses:
                     email = email.strip()
                     if email and email not in maillist:
@@ -1487,6 +1488,13 @@ class XWFMailingList(Folder):
                                      topic=topic)
         file.reindex_file()
         
+        #
+        # Commit the ZODB transaction -- this basically makes it impossible for
+        # us to rollback, but since our RDB transactions won't be rolled back
+        # anyway, we do this so we don't have dangling metadata.
+        # 
+        transaction.commit()
+
         return id
 
     def addMailBoxerFile(self, archiveObject, id, title, data, content_type):

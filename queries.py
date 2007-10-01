@@ -13,7 +13,7 @@ class MemberQuery(object):
         self.userEmailTable = da.createMapper('user_email')[1]
         self.groupUserEmailTable = da.createMapper('group_user_email')[1]
 
-    def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True):
+    def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True):
         # TODO: We currently can't use site_id
         site_id = ''
 
@@ -22,17 +22,21 @@ class MemberQuery(object):
         uet = self.userEmailTable
         guet = self.groupUserEmailTable
 
-        email_settings = est.select()
-        email_settings.append_whereclause(est.c.site_id==site_id)
-        email_settings.append_whereclause(est.c.group_id==group_id)
-        
-        r = email_settings.execute()
         
         ignore_ids = []
         email_addresses = []
-        if r.rowcount:
-            for row in r:
-                ignore_ids.append(row['user_id'])
+
+        if process_settings:
+            email_settings = est.select()
+            email_settings.append_whereclause(est.c.site_id==site_id)
+            email_settings.append_whereclause(est.c.group_id==group_id)
+            
+            r = email_settings.execute()
+        
+            if r.rowcount:
+                for row in r:
+                    ignore_ids.append(row['user_id'])
+        
         email_group = guet.select()
         email_group.append_whereclause(guet.c.site_id==site_id)
         email_group.append_whereclause(guet.c.group_id==group_id)
