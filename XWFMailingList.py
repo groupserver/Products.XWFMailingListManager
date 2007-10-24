@@ -1074,7 +1074,7 @@ class XWFMailingList(Folder):
         # get email-address
         email = msg.sender
         
-        memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+        memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
         
         # process digest commands
         if email in memberlist and msg.sender_id:
