@@ -228,6 +228,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """ Process a bounce for a particular list.
         
         """
+        from Products.XWFCore.XWFUtils import get_site_by_id, getOption, get_support_email
         action = 'bounce_detection %s' % email
         
         user = self.acl_users.get_userByEmail(email)
@@ -264,11 +265,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         last_action = obj.getProperty('last_bounce_time', 0)
         bounce_count = obj.getProperty('bounce_count', 1)
         had_success = False
+        list_object = getattr(self.aq_explicit, group_id, None)
         if last_action:
             last_failure_diff = now-last_action       
             # we look for the second-to-last email, since the last one is
             # probably the one that bounced!
-            list_object = getattr(self.aq_explicit, group_id, None)
             if list_object:
                 archives = getattr(list_object, 'archive', None)
                 last_success_object = None
@@ -344,8 +345,28 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 addresses.remove(email)
             except:
                 pass
+                
             if addresses:
-                user.send_notification(notification_type, group_id, n_dict={'bounced_email': email}, email_only=addresses)
+                n_dict = {}
+                if list_object:
+                    site_id = list_object.getProperty('siteId', '')
+                    site_obj = get_site_by_id(list_object, siteId)
+                    support_email = get_support_email(group_obj, siteId)
+                    
+                    n_dict =  {
+                                  'bounced_email' : email,
+                                  'memberId'      : user.getId(),
+                                  'groupId'       : group_id,
+                                  'groupName'     : group_obj.title_or_id(),
+                                  'siteId'        : site_id,
+                                  'siteName'      : site_obj.title_or_id(),
+                                  'canonical'     : getOption(group_obj, 'canonicalHost'),
+                                  'supportEmail'  : support_email
+                              }
+                try:
+                    user.send_notification(notification_type, group_id, n_dict=n_dict, email_only=addresses)
+                except:
+                    pass
                 
                 if not obj.hasProperty('notification_times'):
                     obj.manage_addProperty('notification_times', [str(now)], 'lines')
