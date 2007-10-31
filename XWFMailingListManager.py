@@ -12,6 +12,8 @@ from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Globals import InitializeClass
 from OFS.Folder import Folder
 
+from Products.XWFCore.XWFUtils import get_site_by_id, getOption, get_support_email
+
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 import DateTime
@@ -228,7 +230,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """ Process a bounce for a particular list.
         
         """
-        from Products.XWFCore.XWFUtils import get_site_by_id, getOption, get_support_email
         action = 'bounce_detection %s' % email
         
         user = self.acl_users.get_userByEmail(email)
