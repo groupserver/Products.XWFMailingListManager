@@ -351,7 +351,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 n_dict = {}
                 if list_object:
                     site_id = list_object.getProperty('siteId', '')
-                    site_obj = get_site_by_id(list_object, siteId)
+                    site_obj = get_site_by_id(list_object, site_id)
                     support_email = get_support_email(group_obj, siteId)
                     
                     n_dict =  {
