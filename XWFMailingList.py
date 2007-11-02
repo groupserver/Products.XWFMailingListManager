@@ -468,7 +468,8 @@ class XWFMailingList(Folder):
         # there is an assumption that if we're including a listid we should
         # strip any existing listid reference
         if include_listid:
-            list_title = self.getValueFor('title')
+            # this *must* be a string, it cannot be unicode
+            list_title = str(self.getValueFor('title'))
         else:
             list_title = ''
             
@@ -525,7 +526,7 @@ class XWFMailingList(Folder):
             body = customHeader.body
         else:
             body = msg.body
-        
+
         # unlike the header, the footer is just a footer
         customFooter = self.mail_footer(self, REQUEST, 
                                               getValueFor=self.getValueFor, 
