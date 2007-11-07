@@ -1309,19 +1309,23 @@ class XWFMailingList(Folder):
         reply = getattr(self, 'email_subscribe_key', None)
         
         thepin = pin( msg.sender, self.getValueFor('hashkey') )
+
+        member = self.acl_users.getUser(msg.sender_id)
+        memberName = member.getProperty('preferredName','')
         
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
                                    getValueFor=self.getValueFor, 
                                    pin=thepin,
                                    email=msg.sender,
-                                   sender_id=msg.sender_id)
+                                   sender_id=msg.sender_id,
+                                   member_name=memberName)
             
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         else:
             pass
-            
-        smtpserver.quit()
+
+		smtpserver.quit()
 
     security.declarePrivate('mail_unsubscribe_key')
     def mail_unsubscribe_key(self, context, REQUEST, msg):
@@ -1339,12 +1343,16 @@ class XWFMailingList(Folder):
         
         thepin = pin( msg.sender, self.getValueFor('hashkey') )
         
+        member = self.acl_users.getUser(msg.sender_id)
+        memberName = member.getProperty('preferredName','')
+
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
                                    getValueFor=self.getValueFor, 
                                    pin=thepin,
                                    email=msg.sender,
-                                   sender_id=msg.sender_id)
+                                   sender_id=msg.sender_id,
+                                   member_name=memberName)
             
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         else:

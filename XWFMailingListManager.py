@@ -12,7 +12,8 @@ from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Globals import InitializeClass
 from OFS.Folder import Folder
 
-from Products.XWFCore.XWFUtils import get_site_by_id, getOption, get_support_email
+from Products.XWFCore.XWFUtils import getOption, get_support_email
+from Products.XWFCore.XWFUtils import get_site_by_id, get_group_by_siteId_and_groupId
 
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
@@ -351,17 +352,18 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 n_dict = {}
                 if list_object:
                     site_id = list_object.getProperty('siteId', '')
-                    site_obj = get_site_by_id(list_object, site_id)
-                    support_email = get_support_email(group_obj, site_id)
+                    site = get_site_by_id(list_object, site_id)
+                    group = get_group_by_siteId_and_groupId(site_id, group_id)
+                    support_email = get_support_email(group, site_id)
                     
                     n_dict =  {
                                   'bounced_email' : email,
                                   'memberId'      : user.getId(),
                                   'groupId'       : group_id,
-                                  'groupName'     : group_obj.title_or_id(),
+                                  'groupName'     : group.title_or_id(),
                                   'siteId'        : site_id,
-                                  'siteName'      : site_obj.title_or_id(),
-                                  'canonical'     : getOption(group_obj, 'canonicalHost'),
+                                  'siteName'      : site.title_or_id(),
+                                  'canonical'     : getOption(group, 'canonicalHost'),
                                   'supportEmail'  : support_email
                               }
                 try:
