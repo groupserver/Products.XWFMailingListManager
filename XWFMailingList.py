@@ -1292,7 +1292,7 @@ class XWFMailingList(Folder):
         else:
             pass
             
-        smtpserver.quit()
+
 
     security.declarePrivate('mail_subscribe_key')
     def mail_subscribe_key(self, context, REQUEST, msg):
@@ -1325,7 +1325,7 @@ class XWFMailingList(Folder):
         else:
             pass
 
-    		smtpserver.quit()
+
 
     security.declarePrivate('mail_unsubscribe_key')
     def mail_unsubscribe_key(self, context, REQUEST, msg):
