@@ -713,6 +713,7 @@ class XWFMailingList(Folder):
             #                    pin=pin, mail=header, body=body)
 
             moderatedUsers = self.get_moderatedUserObjects()
+            assert moderatedUsers, 'Moderated users is %s' % moderatedUsers
             moderatedUser = [user for user in moderatedUsers
               if user.getId() == msg.sender_id][0]
             
