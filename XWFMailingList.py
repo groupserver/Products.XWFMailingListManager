@@ -1290,10 +1290,7 @@ class XWFMailingList(Folder):
             reply_text = reply(REQUEST, list_object=context, 
                                mail=mail, body=body)
             smtpserver.sendmail(returnpath, [email_address], reply_text)
-        else:
-            pass
-            
-
+        smtpserver.quit()            
 
     security.declarePrivate('mail_subscribe_key')
     def mail_subscribe_key(self, context, REQUEST, msg):
@@ -1323,9 +1320,7 @@ class XWFMailingList(Folder):
                                    member_name=memberName)
             
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
-        else:
-            pass
-
+        smtpserver.quit()
 
 
     security.declarePrivate('mail_unsubscribe_key')
