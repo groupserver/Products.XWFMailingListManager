@@ -650,7 +650,7 @@ class XWFMailingList(Folder):
         LOG('MailBoxer', INFO, 'memberlist was: %s' % memberlist)
 
         # if all previous tests fail, it must be an unknown sender.
-        self.mail_reply(self, REQUEST, mail=header, body=body)
+        self.mail_reply(self, REQUEST, mail=msg.headers, body=msg.body)
         
     def processModeration(self, REQUEST):
         # a hook for handling the moderation stage of processing the email
