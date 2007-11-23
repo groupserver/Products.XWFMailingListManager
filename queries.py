@@ -21,11 +21,12 @@ class MemberQuery(object):
         est = self.emailSettingTable        
         uet = self.userEmailTable
         guet = self.groupUserEmailTable
-
         
         ignore_ids = []
         email_addresses = []
 
+        # process anything that might include/exclude specific email addresses
+        # or block email delivery
         if process_settings:
             email_settings = est.select()
             email_settings.append_whereclause(est.c.site_id==site_id)
@@ -37,21 +38,21 @@ class MemberQuery(object):
                 for row in r:
                     ignore_ids.append(row['user_id'])
         
-        email_group = guet.select()
-        email_group.append_whereclause(guet.c.site_id==site_id)
-        email_group.append_whereclause(guet.c.group_id==group_id)
+            email_group = guet.select()
+            email_group.append_whereclause(guet.c.site_id==site_id)
+            email_group.append_whereclause(guet.c.group_id==group_id)
          
-        r = email_group.execute()
-        if r.rowcount:
-            for row in r:
-                # double check for security that this user should actually
-                # be receiving email for this group
-                if row['user_id'] in user_ids and row['user_id'] not in ignore_ids:
-                    ignore_ids.append(row['user_id'])
-                    email_addresses.append(row['email'].lower())
+            r = email_group.execute()
+            if r.rowcount:
+                for row in r:
+                    # double check for security that this user should actually
+                    # be receiving email for this group
+                    if row['user_id'] in user_ids and row['user_id'] not in ignore_ids:
+                        ignore_ids.append(row['user_id'])
+                        email_addresses.append(row['email'].lower())
 
-        # remove any ids we have already processed
-        user_ids = filter(lambda x: x not in ignore_ids, user_ids)
+            # remove any ids we have already processed
+            user_ids = filter(lambda x: x not in ignore_ids, user_ids)
 
         email_user = uet.select()
         if preferred_only:
