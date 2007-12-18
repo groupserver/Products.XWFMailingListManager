@@ -5,7 +5,7 @@
   authorName python:options['authorName'];
   authorExists python:options['authorExists'];
   authored python:options['authored'];
-  authorImage python:options['authorImage'];
+  author python:options['author'];
   showPhoto options/showPhoto;
   postIntro options/postIntro;
   postRemainder options/postRemainder;
@@ -38,12 +38,9 @@
         tal:attributes="href string:/r/post/${postId};"
         title="A short link to this post">Short link</a>
       </p><!--email-metadata-->
-    <div tal:condition="python:showPhoto and authorImage" 
-      class="userimage">
-      <a tal:attributes="href string:/contacts/${authorId}">
-        <img tal:attributes="src string:/${authorImage}; alt string:Photo of ${authorName}"/>
-      </a>
-    </div><!--authorImage-->
+    <div tal:condition="showPhoto"
+      tal:define="user author"
+      tal:replace="structure provider:groupserver.UserImage"/>
     <pre class="email-body"><p tal:replace="structure options/postIntro">
         This is the body of the document.
       </p>
@@ -100,3 +97,4 @@
     </div><!--fileNotification-->
   </div><!--email-details-->
 </tal:block>
+

@@ -1,6 +1,5 @@
 import Products.Five, Products.GSContent, DateTime, Globals
 import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 from zope.component import createObject

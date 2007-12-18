@@ -2,7 +2,6 @@ import sys, re, datetime, time, types, string
 import Products.Five, DateTime, Globals
 #import Products.Five.browser.pagetemplatefile
 import zope.schema
-import zope.app.pagetemplate.viewpagetemplatefile
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 

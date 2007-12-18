@@ -1,14 +1,12 @@
-from Products.GSContent.view import GSSiteInfo
 from Products.XWFCore.XWFUtils import get_user, get_user_realnames
 from Products.XWFCore.cache import LRUCache, SimpleCache
 from interfaces import IGSPostContentProvider
-import textwrap, re
-
 from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
 from zope.interface import implements, Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.component import adapts, provideAdapter, createObject
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+from zope.app.pagetemplate import ViewPageTemplateFile, metaconfigure
+from zope.contentprovider import tales
 
 from emailbody import get_email_intro_and_remainder
 
@@ -101,11 +99,11 @@ class GSPostContentProvider(object):
                                    self.topicName)
           
           if not self.cookedResult.has_key(self.cacheKey):
+              self.author = self.get_author()
               self.authorId = self.post['author_id']
               self.authorName = self.get_author_realnames()
               self.authored = self.user_authored()
               self.authorExists = self.author_exists()
-              self.authorImage = self.get_author_image()
              
               ir = get_email_intro_and_remainder(self.post['body'])
               self.postIntro, self.postRemainder = ir
@@ -114,7 +112,8 @@ class GSPostContentProvider(object):
               
               self.filesMetadata = self.post['files_metadata']
               
-              self.siteInfo = GSSiteInfo(self.context)
+              self.siteInfo  = createObject('groupserver.SiteInfo', 
+                self.context)
               self.groupInfo = createObject('groupserver.GroupInfo', 
                 self.context)
           
@@ -135,25 +134,34 @@ class GSPostContentProvider(object):
           if not r:
               pageTemplate = self.cookedTemplates.get(self.pageTemplateFileName)
               if not pageTemplate:
-                  pageTemplate = PageTemplateFile(self.pageTemplateFileName)    
+                  pageTemplate = ViewPageTemplateFile(self.pageTemplateFileName)    
                   self.cookedTemplates.add(self.pageTemplateFileName, pageTemplate)
               
-              r = pageTemplate(authorId=self.authorId, 
-                                  authorName=self.authorName, 
-                                  authorImage=self.authorImage, 
-                                  authorExists=self.authorExists, 
-                                  showPhoto=self.showPhoto, 
-                                  authored=self.authored, 
-                                  postIntro=self.postIntro, 
-                                  postRemainder=self.postRemainder, 
-                                  cssClass=self.cssClass, 
-                                  topicName=self.topicName, 
-                                  filesMetadata=self.filesMetadata,
-                                  post=self.post, 
-                                  context=self.context, 
-                                  siteName = self.siteInfo.get_name(), 
-                                  siteURL = self.siteInfo.get_url(), 
-                                  groupId = self.groupInfo.get_id())
+                  # --=mpj17=-- All explanations as to why I have to load
+                  #   the "provider" TAL expression can be made to
+                  #       Michael JasonSmith <mpj17@onlinegroups.net>
+                  #   as I have /absolutely/ no clue.
+                  metaconfigure.registerType('provider', 
+                    tales.TALESProviderExpression)
+                              
+              self.request.debug = False
+              r = pageTemplate(self, 
+                                author=self.author,
+                                authorId=self.authorId, 
+                                authorName=self.authorName, 
+                                authorExists=self.authorExists,
+                                showPhoto=self.showPhoto, 
+                                authored=self.authored, 
+                                postIntro=self.postIntro, 
+                                postRemainder=self.postRemainder, 
+                                cssClass=self.cssClass, 
+                                topicName=self.topicName, 
+                                filesMetadata=self.filesMetadata,
+                                post=self.post, 
+                                context=self.context, 
+                                siteName = self.siteInfo.get_name(), 
+                                siteURL = self.siteInfo.get_url(), 
+                                groupId = self.groupInfo.get_id())
               
               self.cookedResult.add(self.post['post_id'], r)
           
@@ -209,11 +217,12 @@ class GSPostContentProvider(object):
              The user object if the author has an account, otherwise None.
           
           """
+          authorId = self.post['author_id']
           author_cache = getattr(self.view, '__author_object_cache', {})
-          user = author_cache.get(self.authorId, None)
+          user = author_cache.get(authorId, None)
           if not user:
-              user = get_user(self.context, self.authorId)
-              author_cache[self.authorId] = user
+              user = get_user(self.context, authorId)
+              author_cache[authorId] = user
               self.view.__author_object_cache = author_cache
               
           return user
@@ -223,24 +232,6 @@ class GSPostContentProvider(object):
           
           """
           return self.get_author() and True or False
-      
-      def get_author_image(self):
-          """Get the URL for the image of the post's author.
-          
-          RETURNS
-             A string, representing the URL, if the author has an image,
-             "None" otherwise.
-             
-          SIDE EFFECTS
-             None.
-          
-          """
-          user = self.get_author()
-          retval = None
-          if user:
-              retval = user.get_image()
-              
-          return retval
            
       def get_author_realnames(self):
           """Get the names of the post's author.
