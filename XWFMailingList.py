@@ -1104,18 +1104,9 @@ class XWFMailingList(Folder):
                     if user: # if the user exists, send out a subscription email
                         self.mail_subscribe_key(self, REQUEST, msg )
                     else: # otherwise handle subscription as part of registration
-                        nparts = msg.name.split()
-                        if len(nparts) >= 2:
-                            first_name = nparts[0]
-                            last_name = ' '.join(nparts[1:])
-                        elif len(nparts) == 1:
-                            first_name = last_name = nparts[0]
-                        else:
-                            first_name = last_name = msg.name
                         user_id, password, verification_code = \
                                  self.acl_users.register_user(email=email, 
-                                                              first_name=first_name, 
-                                                              last_name=last_name)
+                                                              preferred_name=msg.name)
                         user = self.acl_users.getUser(user_id)
                         group_object = self.Scripts.get.group_by_id(self.getId())
                         
