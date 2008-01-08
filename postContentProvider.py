@@ -141,9 +141,12 @@ class GSPostContentProvider(object):
                   #   the "provider" TAL expression can be made to
                   #       Michael JasonSmith <mpj17@onlinegroups.net>
                   #   as I have /absolutely/ no clue.
-                  metaconfigure.registerType('provider', 
-                    tales.TALESProviderExpression)
-                              
+                  try:
+                      metaconfigure.registerType('provider', 
+                        tales.TALESProviderExpression)
+                  except:
+                      pass
+                                                
               self.request.debug = False
               r = pageTemplate(self, 
                                 author=self.author,

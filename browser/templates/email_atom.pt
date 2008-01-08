@@ -4,7 +4,7 @@
   authorName python:options['authorName'];
   authorExists python:options['authorExists'];
   authored python:options['authored'];
-  authorImage python:options['authorImage'];
+  author python:options['author'];
   postIntro options/postIntro;
   postRemainder options/postRemainder;
   filesMetadata options/filesMetadata;">
@@ -43,3 +43,4 @@
     </div>
   </content>
 </entry>
+
