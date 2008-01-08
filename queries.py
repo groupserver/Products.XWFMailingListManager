@@ -44,12 +44,15 @@ class MemberQuery(object):
          
             r = email_group.execute()
             if r.rowcount:
+                n_ignore_ids = []
                 for row in r:
                     # double check for security that this user should actually
                     # be receiving email for this group
                     if row['user_id'] in user_ids and row['user_id'] not in ignore_ids:
-                        ignore_ids.append(row['user_id'])
+                        n_ignore_ids.append(row['user_id'])
                         email_addresses.append(row['email'].lower())
+
+                ignore_ids += n_ignore_ids
 
             # remove any ids we have already processed
             user_ids = filter(lambda x: x not in ignore_ids, user_ids)
