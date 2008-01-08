@@ -410,6 +410,8 @@ class XWFMailingList(Folder):
                     maillist = self.aq_parent.getProperty('moderatedlist', [])
             else:
                 maillist_script = getattr(self, 'mailinlist_members', None)
+
+            maillist = list(maillist)
                 
             # look for a maillist script
             if maillist_script:
@@ -664,8 +666,6 @@ class XWFMailingList(Folder):
           group_id=self.getId(), site_id=self.getProperty('siteId', ''), 
           sender_id_cb=self.get_mailUserId)
         
-        # email = msg.sender
-        
         # Get members
         try:
             memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
@@ -680,12 +680,14 @@ class XWFMailingList(Folder):
         
         # if we have a moderated list we _only_ moderate those individual
         # members, no others.
-        moderate = 0
+        moderate = False
         if len(moderatedlist):
+            LOG('XWFMailingList', INFO, 'hunting for individual moderation')
             if msg.sender in moderatedlist:
-                moderate = 1
+                LOG('XWFMailingList', INFO, 'found individual moderation: %s, %s' % (msg.sender, moderatedlist))
+                moderate = True
         elif (msg.sender in memberlist) or unclosed:
-            moderate = 1
+            moderate = True
         else:
             self.mail_reply(self, REQUEST, mail=header, body=body)
             return msg.sender

@@ -15,10 +15,10 @@
 
 # CHANGE THESE
 DBHOSTNAME='localhost'
-DBPORT=5433
-DBUSERNAME='onlinegroups'
+DBPORT=5432
+DBUSERNAME='edemocracy'
 DBPASSWORD=''
-DBNAME='onlinegroups.net'
+DBNAME='edemocracy'
 
 # Shouldn't need to change below here
 import os, sys
