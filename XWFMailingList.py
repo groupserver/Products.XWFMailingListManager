@@ -427,10 +427,10 @@ class XWFMailingList(Folder):
                                                     self.get_memberUserObjects)
                 elif key == 'moderator':
                     addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
-                                                    self.get_moderatorUserObjects, preferred_only=False)                
+                                                    self.get_moderatorUserObjects, preferred_only=False, process_settings=False)                
                 elif key == 'moderatedlist':
                     addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
-                                                    self.get_moderatedUserObjects, preferred_only=False)
+                                                    self.get_moderatedUserObjects, preferred_only=False, process_settings=False)
                 elif key == 'mailinlist':
                     addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
                                                     self.get_memberUserObjects, preferred_only=False, process_settings=False)
