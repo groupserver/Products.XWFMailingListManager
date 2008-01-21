@@ -23,9 +23,9 @@ def markup_text(messageText):
         
     """
     # substitute email addresses
-    text = email_matcher.sub('<email obscured>', text)
+    text = email_matcher.sub('<email obscured>', messageText)
     
-    text = cgi.escape(messageText)
+    text = cgi.escape(text)
     text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
             '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
             text)
