@@ -1,12 +1,14 @@
 import re, cgi, textwrap
 
+email_matcher = re.compile("""\b([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4})\b""",
+                           re.I|re.M)
 
 def markup_text(messageText):
     """Mark up the plain text
     
-    Used to mark up the email: the URLs are escaped, and "@"
-    characters are  replaced with "( at )". 
-    
+    Used to mark up the email: the URLs are escaped, and email addresses are 
+    obfuscated.
+
     ARGUMENTS
         "messageText" The text to alter.
           
@@ -20,11 +22,13 @@ def markup_text(messageText):
         Originally found in XWFCore.
         
     """
+    # substitute email addresses
+    text = email_matcher.sub('<email obscured>', text)
+    
     text = cgi.escape(messageText)
     text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
             '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
             text)
-    retval = text.replace('@', ' ( at ) ')
     
     return retval
 
