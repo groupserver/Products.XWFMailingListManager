@@ -1,7 +1,7 @@
 import re, cgi, textwrap
 
-email_matcher = re.compile(r"![A-Z0-9._%+-]([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4})\b",
-                           re.I|re.M)
+email_matcher = re.compile(r"\b([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4})\b",
+                           re.I|re.M|re.U)
 
 def markup_text(messageText):
     """Mark up the plain text
