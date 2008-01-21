@@ -30,7 +30,7 @@ def markup_text(messageText):
             '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
             text)
     
-    return retval
+    return text
 
 def wrap_message(messageText, width=79):
     """Word-wrap the message
