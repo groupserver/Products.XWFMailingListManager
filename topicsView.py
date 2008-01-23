@@ -15,7 +15,7 @@ class GSTopicsView(BrowserView, GSPostingInfo):
           self.siteInfo = createObject('groupserver.SiteInfo', 
             context)
           self.groupInfo = createObject('groupserver.GroupInfo', context)
-          
+
           da = context.zsqlalchemy 
           assert da
           self.messageQuery = queries.MessageQuery(context, da)
@@ -27,7 +27,7 @@ class GSTopicsView(BrowserView, GSPostingInfo):
               tmp = self.end
               self.end = self.start
               self.start = tmp
-          
+
           messages = self.context.messages
           lists = messages.getProperty('xwf_mailing_list_ids')
 
@@ -36,15 +36,15 @@ class GSTopicsView(BrowserView, GSPostingInfo):
           self.numTopics = self.messageQuery.topic_count(self.siteInfo.get_id(), lists)
           if self.start > self.numTopics:
               self.start = self.numTopics - limit
-              
+
           searchTokens = createObject('groupserver.SearchTextTokens', '')
           self.topics = self.messageQuery.topic_search_keyword(
             searchTokens, self.siteInfo.get_id(), 
             [self.groupInfo.get_id()], limit=limit, offset=self.start)
 
           tIds = [t['topic_id'] for t in self.topics]
-          self.topicFiles = self.messageQuery.files_metata_topic(tIds)
-          
+          self.topicFiles = self.messageQuery.files_metadata_topic(tIds)
+
       def get_later_url(self):
           newStart = self.start - self.get_summary_length()
           if newStart < 0:
