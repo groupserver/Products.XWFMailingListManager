@@ -1108,6 +1108,7 @@ class XWFMailingList(Folder):
                     if user: # if the user exists, send out a subscription email
                         self.mail_subscribe_key(self, REQUEST, msg )
                     else: # otherwise handle subscription as part of registration
+                        # --=mpj17=-- Update this to the new system.
                         user_id, password, verification_code = \
                                  self.acl_users.register_user(email=email, 
                                                               preferred_name=msg.name)
