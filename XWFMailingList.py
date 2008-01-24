@@ -600,6 +600,8 @@ class XWFMailingList(Folder):
         os.remove(lockfilepath)
         
     def processMail(self, REQUEST):
+        # Zeroth sanity check ... herein lies only madness.
+
         da = self.zsqlalchemy 
         assert da
 
