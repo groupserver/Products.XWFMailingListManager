@@ -352,12 +352,9 @@ class XWFMailingList(Folder):
         if ids_only:
             return uids
 
-        users = []
-        for uid in uids:
-            user = self.acl_users.getUser(uid)
-            if user and (user not in users):
-                users.append(user)
-                
+        # AM: Avoid nastiness associated with empty strings and null users
+        users = filter(lambda x: x, [ self.acl_users.getUser(uid) for uid in uids if uid ])
+
         return users
     
     security.declareProtected('Manage properties', 'get_moderatorUserObjects')
@@ -376,12 +373,9 @@ class XWFMailingList(Folder):
         if ids_only:
             return uids
 
-        users = []
-        for uid in uids:
-            user = self.acl_users.getUser(uid)
-            if user and (user not in users):
-                users.append(user)
-                
+        # AM: Avoid nastiness associated with empty strings and null users
+        users = filter(lambda x: x, [ self.acl_users.getUser(uid) for uid in uids if uid ])
+               
         return users
        
     security.declareProtected('Access contents information', 'getValueFor')
