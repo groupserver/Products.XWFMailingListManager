@@ -942,6 +942,7 @@ class XWFMailingList(Folder):
         # or other infinite mail-loops...
         email = msg.sender
         sender_id = msg.sender_id
+        user = None
         
         disabled = list(self.getValueFor('disabled'))
 
@@ -982,7 +983,6 @@ class XWFMailingList(Folder):
                 else:
                     break
 
-            user = None
             if sender_id:
                 user = self.acl_users.getUser(sender_id)
             ptnCoachId = self.getProperty('ptn_coach_id', '')
@@ -1027,7 +1027,8 @@ class XWFMailingList(Folder):
         blocked_members = filter(None, self.getProperty('blocked_members', []))
         required_properties = filter(None, self.getProperty('required_properties', []))
         
-        user = self.acl_users.getUser(sender_id)
+        if sender_id:
+            user = self.acl_users.getUser(sender_id)
         if (blocked_members or required_properties) and user:
             if user and user.getId() in blocked_members:
                 message = 'Blocked user "%s" from posting' % sender_id
