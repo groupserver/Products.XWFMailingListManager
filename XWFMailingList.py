@@ -982,7 +982,9 @@ class XWFMailingList(Folder):
                 else:
                     break
 
-            user = self.acl_users.getUser(sender_id)
+            user = None
+            if sender_id:
+                user = self.acl_users.getUser(sender_id)
             ptnCoachId = self.getProperty('ptn_coach_id', '')
 
             if count >= senderlimit:
