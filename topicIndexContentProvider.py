@@ -6,6 +6,7 @@ from zope.interface.interface import Interface
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 import Products.GSContent
+from Products.XWFCore.XWFUtils import get_user, get_user_realnames
 
 class GSTopicIndexContentProvider(object):
       """GroupServer Topic Index Content Provider
@@ -66,7 +67,7 @@ class GSTopicIndexContentProvider(object):
           assert post
           
           authorId = post['author_id']
-          retval = self.context.Scripts.get.user_realnames(authorId)
+          retval = get_user_realnames(get_user(self.context, authorId))
 
           return retval
           
