@@ -15,6 +15,7 @@ class MemberQuery(object):
 
     def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True):
         # TODO: We currently can't use site_id
+        # TODO: Should only get verified addresses
         site_id = ''
 
         user_ids = id_getter(ids_only=True)
@@ -77,6 +78,7 @@ class MemberQuery(object):
 
     def get_digest_addresses(self, site_id, group_id, id_getter):
         # TODO: We currently can't use site_id
+        # TODO: Should only get verified addresses
         site_id = ''
         
         user_ids = id_getter(ids_only=True)
@@ -626,4 +628,5 @@ class MessageQuery(object):
                         'last_post_id': x['last_post_id'], 
                         'count': x['num_posts'], 
                         'last_post_date': x['last_post_date']} for x in r ]
-        return retval        
+        return retval
+
