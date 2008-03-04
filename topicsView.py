@@ -19,9 +19,16 @@ class GSTopicsView(BrowserView, GSPostingInfo):
           da = context.zsqlalchemy 
           assert da
           self.messageQuery = queries.MessageQuery(context, da)
-  
-          self.start = int(self.request.form.get('start', 0))
-          self.end = int(self.request.form.get('end', 20))
+          
+          try:
+              self.start = int(self.request.form.get('start', 0))
+          except ValueError, e:
+              self.start = 0
+          try:
+              self.end = int(self.request.form.get('end', 20))
+          except ValueError, e:
+              self.end = 0
+              
           # Swap the start and end, if necessary
           if self.start > self.end:
               tmp = self.end
