@@ -45,7 +45,7 @@
   </div>
   
   <fieldset id="post-optional-fields">
-    <legend>Optional Fields</legend>
+    <!--legend>Optional</legend>
     <div class="formelementtext" id="tags-fields">
       <label class="text" for="tags">Tags
         <a href="/help/manual/#groupserver-tags"
@@ -54,9 +54,10 @@
       <div class="hint">The keywords that summarise your post.</div>
       <input id="tags" name="tags" class="text" type="text" 
         value="" title="The keywords that summarise your post." />
-    </div>
+    </div-->
+    <input id="tags" name="tags" class="hidden" type="hidden" value=""/>
     <div class="formelementtext" id="post-file-fields">
-      <label class="text" for="file">File
+      <label class="text" for="file">File (optional)
         <a href="/help/manual/#groupserver-posting-files-using-the-web"
           title="Help with posting files"
           class="helpLink">[?]</a></label>
