@@ -13,7 +13,7 @@ class MemberQuery(object):
         self.userEmailTable = da.createMapper('user_email')[1]
         self.groupUserEmailTable = da.createMapper('group_user_email')[1]
 
-    def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True):
+    def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True, verified_only=True):
         # TODO: We currently can't use site_id
         # TODO: Should only get verified addresses
         site_id = ''
@@ -61,11 +61,12 @@ class MemberQuery(object):
         email_user = uet.select()
         if preferred_only:
             email_user.append_whereclause(uet.c.is_preferred==True)
-        email_user.append_whereclause(uet.c.verified_date != None)
+        if verified_only:
+            email_user.append_whereclause(uet.c.verified_date != None)
                     
         if len(user_ids) <= self.USER_FILTER_LIMIT:
             email_user.append_whereclause(uet.c.user_id.in_(*user_ids))
-        print email_user
+
         r = email_user.execute()
         if r.rowcount:
             for row in r:
