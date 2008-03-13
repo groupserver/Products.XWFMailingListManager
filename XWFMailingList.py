@@ -602,7 +602,10 @@ class XWFMailingList(Folder):
         
     def processMail(self, REQUEST):
         # Zeroth sanity check ... herein lies only madness.
-
+        m = '%s (%s) Processing mail' %\
+          (self.getProperty('title', ''), self.getId())
+        log.info(m)
+        
         da = self.zsqlalchemy 
         assert da
 
@@ -666,8 +669,12 @@ class XWFMailingList(Folder):
         
     def processModeration(self, REQUEST):
         # a hook for handling the moderation stage of processing the email
+        m = '%s (%s) Processing moderation' %\
+          (self.getProperty('title', ''), self.getId())
+        log.info(m)
+
         mailString = getMailFromRequest(REQUEST)
-        
+                    
         # TODO: erradicate splitMail usage
         (header, body) = MailBoxerTools.splitMail(mailString)
 
@@ -1588,6 +1595,10 @@ class XWFMailingList(Folder):
         #
         # run through the spool, and actually send the mail out
         #
+        m = '%s (%s) Processing spool' %\
+          (self.getProperty('title', ''), self.getId())
+        log.info(m)
+        
         archive = self.restrictedTraverse(self.getValueFor('storage'))
         for spoolfilepath in os.listdir(MAILDROP_SPOOL):
             if os.path.exists(os.path.join(MAILDROP_SPOOL,
