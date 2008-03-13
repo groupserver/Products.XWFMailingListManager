@@ -707,6 +707,7 @@ class XWFMailingList(Folder):
                 log.info(m)
 
         elif (msg.sender in memberlist) or unclosed:
+            # --=mpj17=-- If we are here, then we are moderating *everyone*
             moderate = True
         else:
             self.mail_reply(self, REQUEST, mail=header, body=body)
