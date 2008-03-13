@@ -32,7 +32,9 @@ from utils import check_for_commands
 from utils import pin
 from utils import getMailFromRequest
 
-from zLOG import LOG, PROBLEM, INFO
+# from zLOG import LOG, PROBLEM, INFO
+import logging
+log = logging.getLogger('XWFMailingList')
 
 import random
 import smtplib
@@ -434,8 +436,9 @@ class XWFMailingList(Folder):
                         maillist.append(email)
             
             except Exception, x:
-                LOG('XWFMailingList', PROBLEM, 
-                    'A problem was experienced while getting values: %s' % x)
+                m = '%s (%s): A problem was experienced while getting '
+                  'values: %s' % (self.getProperty('title', ''), self.getId(), x)
+                log.error(m)
                 maillist = None
             
             # last ditch effort
@@ -494,6 +497,10 @@ class XWFMailingList(Folder):
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
                                        sender_id_cb=self.get_mailUserId)
+        m = '%s (%s) Listing message %s from <%s>' %\
+          (self.getProperty('title', ''), self.getId(), msg.post_id, 
+           msg.sender)
+        log.info(m)
         
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
@@ -612,8 +619,10 @@ class XWFMailingList(Folder):
         # First sanity check ... have we already archived this message?
         messageQuery = MessageQuery(self, da)
         if messageQuery.post(msg.post_id):
-            LOG('MailBoxer', INFO, 'Post from "%s" has already been archived with post ID "%s"' %
-                (msg.sender, msg.post_id))
+            m = '%s (%s): Post from <%s> has already been archived with post '\
+              'ID %s' % (self.getProperty('title', ''), self.getId(), 
+                msg.sender, msg.post_id)
+            log.info(m)
             return "Message already archived"
 
         # get lower case email for comparisons
@@ -630,6 +639,10 @@ class XWFMailingList(Folder):
         
         # message to a moderated list... relay all mails from a moderator
         if moderated and (email not in moderatorlist):
+            m = ' %s (%s): relaying message %s from moderator <%s>' %\
+              (self.getProperty('title', ''), self.getId(), 
+               msg.post_id, email)
+            log.info(m)
             modresult = self.processModeration(REQUEST)
             if modresult:
                 return modresult
@@ -643,9 +656,10 @@ class XWFMailingList(Folder):
                 self.listMail(REQUEST)
                 
             return email
-
-        LOG('MailBoxer', INFO, 'Mail received from unknown sender <%s> to list <%s>' % (email, self.getId()))
-        LOG('MailBoxer', INFO, 'memberlist was: %s' % memberlist)
+        m = '%s (%s): Mail received from unknown sender <%s>' %\
+          (self.getProperty('title', ''), self.getId(), email)
+        log.info(m)
+        log.info( 'memberlist was: %s' % memberlist)
 
         # if all previous tests fail, it must be an unknown sender.
         self.mail_reply(self, REQUEST, mail=header, body=body)
@@ -678,10 +692,20 @@ class XWFMailingList(Folder):
         # members, no others.
         moderate = False
         if len(moderatedlist):
-            LOG('XWFMailingList', INFO, 'hunting for individual moderation')
+            m = '%s (%s) is a moderated list; hunting for individual '
+              'moderation' % (self.getProperty('title', ''), self.getId())
+            log.info(m)
             if msg.sender in moderatedlist:
-                LOG('XWFMailingList', INFO, 'found individual moderation: %s, %s' % (msg.sender, moderatedlist))
+                m = '%s (%s): found individual moderation <%s> %s' % \
+                  (self.getProperty('title', ''), self.getId(),
+                   msg.sender, moderatedlist)
+                log.info(m)
                 moderate = True
+            else:
+                m = '%s (%s): not moderating <%s>' % \
+                  (self.getProperty('title', ''), self.getId(), msg.sender)
+                log.info(m)
+
         elif (msg.sender in memberlist) or unclosed:
             moderate = True
         else:
@@ -805,11 +829,23 @@ class XWFMailingList(Folder):
                 pass
             elif attachment['filename'] == '' and attachment['subtype'] == 'html':
                 # We might want to do something with the HTML body some day
-                LOG('MailBoxer', INFO, 'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
+                m = '%s (%s): stripped, but not archiving %s attachment '\
+                  '%s; it appears to be part of an HTML message.' % \
+                  (self.getProperty('title'), self.getId(),
+                   attachment['maintype'], attachment['filename'])
+                log.info(m)
             elif attachment['contentid']:
-                LOG('MailBoxer', INFO, 'stripped, but not archiving attachment %s %s. Appeared to be part of an HTML message.' % (attachment['filename'], attachment['maintype']))
+                # --=mpj17=-- ?
+                m = '%s (%s): stripped, but not archiving %s attachment '\
+                  '%s; it appears to be part of an HTML message.' % \
+                  (self.getProperty('title'), self.getId(),
+                   attachment['maintype'], attachment['filename'])
+                log.info(m)
             else:
-                LOG('MailBoxer', INFO, 'stripped and archiving attachment %s %s' % (attachment['filename'], attachment['maintype']))
+                m = '%s (%s): stripped and archiving %s attachment %s' %\
+                  (self.getProperty('title'), self.getId(),
+                   attachment['maintype'], attachment['filename'])
+                log.info(m)
                 
                 if archive:
                     id = self.addMailBoxerFile(mailObject, 
@@ -905,7 +941,7 @@ class XWFMailingList(Folder):
 
     def checkMail(self, REQUEST):
         # Check for ip, loops and spam.
-        
+
         # Check for correct IP
         mtahosts = self.getValueFor('mtahosts')
         if mtahosts:
@@ -915,8 +951,9 @@ class XWFMailingList(Folder):
                 REMOTE_IP = self.REQUEST.environ['REMOTE_ADDR']
 
             if REMOTE_IP not in mtahosts:
-                message = 'Host %s is not allowed' % (REMOTE_IP)
-                LOG('MailBoxer', PROBLEM, message)
+                message = '%s (%s): Host %s is not allowed' %\
+                  (self.getProperty('title', ''), self.getId(), REMOTE_IP)
+                log.error(message)
                 return message
 
         # Check for x-mailer-loop
@@ -925,17 +962,21 @@ class XWFMailingList(Folder):
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
                                        sender_id_cb=self.get_mailUserId)
-        
+        m  = '%s (%s): processing message from <%s>' %\
+          (self.getProperty('title', ''), self.getId(), msg.sender)
+        log.info(m)
+                
         if msg.get('x-mailer') == self.getValueFor('xmailer'):
-            message = 'X-Mailer header detected, a loop is likely'
-            LOG('MailBoxer', PROBLEM, message)
+            message = '%s (%s): X-Mailer header detected, a loop is '\
+              'likely' % (self.getProperty('title', ''), self.getId())
+            log.error(message)
             return message
         
         # Check for empty return-path => automatic mail
         if msg.get('return-path') == '<>':
-            message = 'Automated response detected from %s' % (msg.get('from', 
-                                                                          '<>'))
-            LOG('MailBoxer', PROBLEM, message)
+            message = '%s (%s): automated response detected from <%s>' %\
+              (self.getProperty('title', ''), self.getId(), msg.get('from', '<>'))
+            log.error(message)
             return message
         
         # Check for hosed denial-of-service-vacation mailers
@@ -947,8 +988,9 @@ class XWFMailingList(Folder):
         disabled = list(self.getValueFor('disabled'))
 
         if email in disabled:
-            message = 'Email address "%s" is disabled.' % email
-            LOG('MailBoxer', PROBLEM, message)
+            message = '%s (%s): Email address <%s> is disabled.' %\
+              (self.getProperty('title', ''), self.getId(), email)
+            log.error(message)
             return message
         
         senderlimit = self.getValueFor('senderlimit')
@@ -958,8 +1000,9 @@ class XWFMailingList(Folder):
         # A sanity check ... was this email the last one we saw (tight loop)?
         # TODO: expand this to check the archives
         if self.last_email_checksum and (self.last_email_checksum == msg.post_id):
-            message = 'Detected duplicate message from "%s"' % msg.get('from')
-            LOG('MailBoxer', PROBLEM, message)
+            message = '%s (%s): Detected duplicate message from <%s>' % \
+              (self.getProperty('title', ''), self.getId(), msg.get('from'))
+            log.error(message)
             return message
 
         # if the person is unsubscribing, we can't handle it with the loop
@@ -995,9 +1038,11 @@ class XWFMailingList(Folder):
                                            self.listId(), 
                                            n_dict={'expiry_time': expTime, 
                                                    'email': mailString})
-                    rm = r'Sender "%s" has sent "%s" mails in "%s" seconds'
-                    message = (rm % (email, count, senderinterval))
-                    LOG('MailBoxer', PROBLEM, message)
+                    rm = r'%s (%s): user %s (%s) has sent %s mails in %s seconds'
+                    message = (rm % (self.getProperty('title', ''), 
+                      self.getId(), user.getProperty('fn', ''), user.getId(), 
+                      count, senderinterval))
+                    log.error(message)
                     
                     self.last_email_checksum = msg.post_id
             
@@ -1019,8 +1064,9 @@ class XWFMailingList(Folder):
         # Check for spam
         for regexp in self.getValueFor('spamlist'):
             if regexp and re.search(regexp, mailString):
-                message = 'Spam detected: %s\n\n%s\n' % (regexp, mailString)
-                LOG('MailBoxer', PROBLEM, message)
+                message = '%s (%s): Spam detected: %s\n\n%s\n' %\
+                  (self.getProperty('title', ''), self.getId(), regexp, mailString)
+                log.error(message)
                 return message
         
         # GroupServer specific checks
@@ -1031,8 +1077,10 @@ class XWFMailingList(Folder):
             user = self.acl_users.getUser(sender_id)
         if (blocked_members or required_properties) and user:
             if user and user.getId() in blocked_members:
-                message = 'Blocked user "%s" from posting' % sender_id
-                LOG('MailBoxer', PROBLEM, message)
+                message = '%s (%s): Blocked user %s (%s) from posting' %\
+                  (self.getProperty('title', ''), self.getId(), 
+                   user.getProperty('fn', ''), user.getId())
+                log.error(message)
                 user.send_notification('post_blocked', self.listId(), 
                                        n_dict={'email': mailString})
                 return message
@@ -1044,8 +1092,12 @@ class XWFMailingList(Folder):
                 prop_val = str(user.getProperty(required_property, None))
                 prop_val = prop_val.strip()
                 if not prop_val or prop_val == 'None':
-                    message = 'Blocked user "%s" because of missing user properties' % sender_id
-                    LOG('MailBoxer', PROBLEM, message)
+                    message = '%s (%s) blocked user %s (%s) because of '\
+                      'missing user property %s' %\
+                        (self.getProperty('title', ''), self.getId(), 
+                         user.getProperty('fn', ''), user.getId(),
+                         required_property)
+                    log.error(message)
                     user.send_notification('missing_properties', self.listId(), 
                                            n_dict={'email': mailString})
                     return message
@@ -1542,7 +1594,7 @@ class XWFMailingList(Folder):
             spoolfile = file(os.path.join(MAILDROP_SPOOL, spoolfilepath))
             line = spoolfile.readline().strip()
             if len(line) < 5 or line[:2] != ';;' or line[-2:] != ';;':
-                LOG('MailBoxer', PROBLEM, 'Spooled email has no group specified')
+                log.error('Spooled email has no group specified')
                 continue
 
             groupname = line[2:-2]
@@ -1555,10 +1607,13 @@ class XWFMailingList(Folder):
             # a robustness check -- if we an archive ID, and we aren't in
             # the archive, what are we doing here?
             archive_id = header.get('x-archive-id', None)
-            LOG('MailBoxer', PROBLEM, 'archive_id = "%s"' % archive_id)
+            log.error('archive_id = "%s"' % archive_id)
             if archive_id and not hasattr(archive.aq_explicit,
                                           archive_id.strip()):
-                LOG('MailBoxer', PROBLEM, 'Spooled email had archive_id, but did not exist in archive')                
+                m= 'Spooled email had archive_id %s, but did not exist in '\
+                  ' archive %s (%s)' %\
+                  (archive_id, self.getProperty('title', ''), self.getId())
+                log.error(m)
                 continue
 
             self.sendMail(mailString)
