@@ -436,7 +436,7 @@ class XWFMailingList(Folder):
                         maillist.append(email)
             
             except Exception, x:
-                m = '%s (%s): A problem was experienced while getting '
+                m = '%s (%s): A problem was experienced while getting '\
                   'values: %s' % (self.getProperty('title', ''), self.getId(), x)
                 log.error(m)
                 maillist = None
@@ -692,7 +692,7 @@ class XWFMailingList(Folder):
         # members, no others.
         moderate = False
         if len(moderatedlist):
-            m = '%s (%s) is a moderated list; hunting for individual '
+            m = '%s (%s) is a moderated list; hunting for individual '\
               'moderation' % (self.getProperty('title', ''), self.getId())
             log.info(m)
             if msg.sender in moderatedlist:
