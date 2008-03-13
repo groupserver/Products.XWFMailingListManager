@@ -735,11 +735,12 @@ class XWFMailingList(Folder):
             # self.mail_moderator(self, REQUEST, mid=msg.post_id, 
             #                    pin=pin, mail=header, body=body)
 
-            moderatedUsers = self.get_moderatedUserObjects()
-            assert moderatedUsers, 'Moderated users is %s' % moderatedUsers
-            moderatedUser = [user for user in moderatedUsers
-              if user.getId() == msg.sender_id][0]
-            
+            #
+            # FIXME: Moderation *totally* broken for the unclosed case
+            # 
+            moderatedUser = self.acl_users.getUser(msg.sender_id)
+            assert moderatedUser, 'Moderated user %s not found' % msg.sender_id
+
             moderators = self.get_moderatorUserObjects()
             for moderator in moderators:
                   nDict = {'mailingList': self,
