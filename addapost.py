@@ -2,6 +2,9 @@ from Products.PythonScripts.standard import html_quote
 from zLOG import LOG, WARNING, PROBLEM, INFO
 import queries
 
+import logging
+log = logging.getLogger('addapost')
+
 def tagProcess(tagsString):
     # --=mpj17=-- Not the most elegant function, but I did not want to
     #   use the regular-expression library.
@@ -36,7 +39,7 @@ def tagProcess(tagsString):
 
 def add_a_post(groupId, siteId, replyToId, topic, message,
                tags, email, uploadedFile, context, request):
-
+    
     result = {'error': False, 'message': 'No errror'}
 
     tagsList = tagProcess(tags)
@@ -78,6 +81,13 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     else:
         subject = topic
         emailMessageReplyToId = ''
+
+    m = 'Adding post from %s (%s) via the Web, to the topic "%s" in %s '\
+      '(%s) on %s (%s)'%\
+      (user.getProperty('fn', ''), user.getId(), 
+       topic, groupObj.title_or_id(), groupObj.getId(),
+       siteObj.title_or_id(), siteObj.getId())
+    log.info(m)
 
     # Step 1, check if the user is blocked
     blocked_members = groupList.getProperty('blocked_members')
@@ -149,3 +159,4 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     result['error'] = False
     result['message'] = "Message posted."
     return result
+
