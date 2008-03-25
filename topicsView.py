@@ -108,6 +108,14 @@ class GSTopicsView(BrowserView, GSPostingInfo):
           assert hasattr(self, 'stickyTopics'), 'Sticky topics not cached'
           return retval
 
+      def get_author(self, userId):
+          authorInfo = self.__author_cache.get(userId, None)
+          if not authorInfo:
+              authorInfo = createObject('groupserver.UserFromId',
+                self.context, userId)
+              self.__author_cache[authorInfo] = authorInfo
+          return authorInfo
+
       def get_non_sticky_topics(self):
           stickyTopics = self.get_sticky_topics()
           stickyTopicIds = map(lambda t: t['topic_id'], stickyTopics)
@@ -117,17 +125,12 @@ class GSTopicsView(BrowserView, GSPostingInfo):
           retval = []
           for topic in self.topics:
               t = topic
-              authorInfo = self.__author_cache.get(t['last_post_user_id'], None)
-              if not authorInfo:
-                  authorInfo = createObject('groupserver.AuthorInfo', 
-                    self.context, t['last_post_user_id'])
-                  self.__author_cache[t['last_post_user_id']] = authorInfo
-              authorId = authorInfo.get_id()
+              authorInfo = self.get_author(t['last_post_user_id'])
               authorD = {
-                'exists': authorInfo.exists(),
-                'id': authorId,
-                'name': authorInfo.get_realnames(),
-                'url': authorInfo.get_url(),
+                'exists': authorInfo.url != '#',
+                'id': authorInfo.id,
+                'name': authorInfo.name,
+                'url': authorInfo.url,
               }
               t['last_author'] = authorD
 
@@ -144,3 +147,4 @@ class GSTopicsView(BrowserView, GSPostingInfo):
 
       def process_form(self, *args):
           pass
+
