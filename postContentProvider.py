@@ -99,11 +99,9 @@ class GSPostContentProvider(object):
                                    self.topicName)
           
           if not self.cookedResult.has_key(self.cacheKey):
-              self.author = self.get_author()
-              self.authorId = self.post['author_id']
-              self.authorName = self.get_author_realnames()
+              
               self.authored = self.user_authored()
-              self.authorExists = self.author_exists()
+              self.authorInfo = self.get_author()
              
               ir = get_email_intro_and_remainder(self.post['body'])
               self.postIntro, self.postRemainder = ir
@@ -117,6 +115,7 @@ class GSPostContentProvider(object):
               self.groupInfo = createObject('groupserver.GroupInfo', 
                 self.context)
           
+          
       def render(self):
           """Render the post
           
@@ -129,7 +128,7 @@ class GSPostContentProvider(object):
           """
           if not self.__updated:
               raise UpdateNotCalled
-          
+              
           r = self.cookedResult.get(self.cacheKey)
           if not r:
               pageTemplate = self.cookedTemplates.get(self.pageTemplateFileName)
@@ -149,12 +148,9 @@ class GSPostContentProvider(object):
                                                 
               self.request.debug = False
               r = pageTemplate(self, 
-                                author=self.author,
-                                authorId=self.authorId, 
-                                authorName=self.authorName, 
-                                authorExists=self.authorExists,
-                                showPhoto=self.showPhoto, 
+                                authorInfo=self.authorInfo,
                                 authored=self.authored, 
+                                showPhoto=self.showPhoto, 
                                 postIntro=self.postIntro, 
                                 postRemainder=self.postRemainder, 
                                 cssClass=self.cssClass, 
@@ -208,7 +204,7 @@ class GSPostContentProvider(object):
           user = self.request.AUTHENTICATED_USER
           retval = False
           if user.getId():
-              retval = user.getId() == self.authorId
+              retval = user.getId() == self.post['author_id']
               
           assert retval in (True, False)
           return retval
@@ -224,32 +220,12 @@ class GSPostContentProvider(object):
           author_cache = getattr(self.view, '__author_object_cache', {})
           user = author_cache.get(authorId, None)
           if not user:
-              user = get_user(self.context, authorId)
+              user = createObject('groupserver.UserFromId',
+                self.context, self.post['author_id'])
               author_cache[authorId] = user
               self.view.__author_object_cache = author_cache
               
           return user
-
-      def author_exists(self):
-          """ Does the author exist?
-          
-          """
-          return self.get_author() and True or False
-           
-      def get_author_realnames(self):
-          """Get the names of the post's author.
-          
-          RETURNS
-              The name of the post's author. 
-          
-          SIDE EFFECTS
-             None.
-          
-          """
-          retval = get_user_realnames( self.get_author(), self.authorId )
-          
-          return retval
-          
 # State that the GSPostContentProvider is a Content Provider, and attach
 #     to "groupserver.Post".
 provideAdapter(GSPostContentProvider, 
