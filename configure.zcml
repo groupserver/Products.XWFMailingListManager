@@ -86,14 +86,4 @@
   <browser:resource name="post.js"
     file="browser/javascript/showHideInlineElements.js" 
     permission="zope2.View" />
-
-  <utility factory=".authorInfo.GSAuthorInfoFactory"
-    name="groupserver.AuthorInfo"
-    permission="zope.Public"/>
-
-  <adapter provides=".interfaces.IGSAuthorInfo"
-    for="zope.app.folder.interfaces.IFolder"
-    permission="zope2.Public"
-    factory=".authorInfo.GSAuthorInfo"/>
-
 </configure>
