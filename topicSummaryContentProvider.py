@@ -44,8 +44,8 @@ class GSTopicSummaryContentProvider(object):
           self.__updated = True
           self.lastPost = self.topic[-1]
           self.authorId = self.lastPost['author_id']
-          self.authorName = self.get_author_realnames()
-          self.authorExists = self.author_exists()
+          self.authorInfo = createObject('groupserver.UserFromId', 
+            self.context, self.authorId)
 
           authorIds = []
           for post in self.topic:
@@ -75,9 +75,7 @@ class GSTopicSummaryContentProvider(object):
                               lenAuthors=self.lenAuthors,
                               lastPostId = self.lastPost['post_id'],
                               lastPostDate = self.lastPost['date'],
-                              authorId=self.authorId, 
-                              authorName=self.authorName,
-                              authorExists=self.authorExists,
+                              authorInfo=self.authorInfo, 
                               context=self.context,
                               siteName = self.siteInfo.get_name(),
                               siteURL = self.siteInfo.get_url(),
@@ -109,33 +107,7 @@ class GSTopicSummaryContentProvider(object):
           
           assert retval in (True, False)
           return retval
-
-      def author_exists(self):
-          """Does the author of the post exist?
-          
-          RETURNS
-             True if the author of the post exists on the system, False
-             otherwise.
-              
-          SIDE EFFECTS
-              None."""
-          retval = get_user(self.context, self.authorId) and True or False
-          
-          return retval
-
-      def get_author_realnames(self):
-          """Get the names of the post's author.
-          
-          RETURNS
-              The name of the post's author. 
-          
-          SIDE EFFECTS
-             None.
-          """
-          retval = get_user_realnames(get_user(self.context, self.authorId))
-          
-          return retval
-          
+                    
 # State that the GSPostContentProvider is a Content Provider, and attach
 #     to "groupserver.Post".
 provideAdapter(GSTopicSummaryContentProvider, provides=IContentProvider,

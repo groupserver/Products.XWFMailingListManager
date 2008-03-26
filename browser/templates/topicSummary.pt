@@ -3,9 +3,7 @@
   lenAuthors options/lenAuthors;
   lastPostId options/lastPostId;
   lastPostDate options/lastPostDate;
-  authorId python:options['authorId']; 
-  authorName python:options['authorName'];
-  authorExists python:options['authorExists'];
+  authorInfo python:options['authorInfo']; 
   munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date">
   <p class="label">Summary</p>
   <ul>
@@ -16,16 +14,9 @@
     <li><a title="View the latest post"
       tal:attributes="href string:${lastPostId}#post-${lastPostId}"
       href="#">Latest post</a> made by
-      <span tal:condition="authorExists">
-        <a tal:content="authorName"
-          tal:attributes="href string:/contacts/${authorId};
-          title string:View the profile of ${authorName};"
-          class="name">me</a>
-      </span>
-      <span tal:condition="not:authorExists">
-        <span tal:content="authorName"
-          class="name">me</span>
-      </span>
+      <a tal:omit-tag="python:authorInfo.anonymous" class="fn"
+        tal:attributes="href python:authorInfo.url"
+        tal:content="python:authorInfo.name">Me!</a>
       at
       <span class="date" 
         tal:define="date python:munge_date(options['context'], lastPostDate)">
