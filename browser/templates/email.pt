@@ -14,7 +14,7 @@
         tal:content="options/topicName">A Topic</a>
       <span class="author vcard">
         <strong>From:</strong>
-        <a class="fn url" tal:omit-tag="python:authorInfo.url == '#'"
+        <a class="fn url" tal:omit-tag="python:not authorInfo.anonymous"
           tal:attributes="href python:authorInfo.url;
             title python:'Profile of %s' % authorInfo.name;"
           tal:content="python:authorInfo.name">Me!</a>

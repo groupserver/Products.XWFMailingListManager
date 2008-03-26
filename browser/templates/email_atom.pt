@@ -1,10 +1,7 @@
 <entry tal:define="post python:options['post'];
   postId python:post['post_id'];
-  authorId python:options['authorId']; 
-  authorName python:options['authorName'];
-  authorExists python:options['authorExists'];
+  authorInfo python:options['authorInfo']; 
   authored python:options['authored'];
-  author python:options['author'];
   postIntro options/postIntro;
   postRemainder options/postRemainder;
   filesMetadata options/filesMetadata;">
@@ -27,9 +24,9 @@
   </tal:block>
   <id tal:content="string:${options/siteURL}/r/post/${postId}">abc123</id>
   <author>
-    <name tal:content="authorName">Me!</name>
-    <uri tal:condition="authorExists" 
-      tal:content="string:/contacts/${authorId};">http://bla/</uri>
+    <name tal:content="python:authorInfo.name">Me!</name>
+    <uri tal:condition="python:not authorInfo.anonymous" 
+      tal:content="python:authorInfo.url">http://bla/</uri>
   </author>
   <updated tal:define="d post/date"
     tal:content="python:(d-d.utcoffset()).strftime('%Y-%m-%dT%H:%M:%SZ')">
