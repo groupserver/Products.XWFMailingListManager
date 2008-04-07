@@ -1,5 +1,7 @@
 from Products.PythonScripts.standard import html_quote
 from zLOG import LOG, WARNING, PROBLEM, INFO
+from zExceptions import BadRequest
+from sqlalchemy.exceptions import SQLError
 import queries
 
 import logging
@@ -133,6 +135,12 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     assert templateDir.message
     messageTemplate = templateDir.message
 
+    result = {}
+    result['error'] = False
+    result['message'] = "Message posted."
+    errorM = u'The post was not added to the topic '\
+      u'<code class="topic">%s</code> because a post already exists in '\
+      u'the topic with the same body.' % subject
     for list_id in messages.getProperty('xwf_mailing_list_ids', []):
         curr_list = listManager.get_list(list_id)
         m = messageTemplate(request, list_object=curr_list,
@@ -144,19 +152,39 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                             reply_to_id=emailMessageReplyToId,
                             n_type='new_file', n_id=groupObj.getId(),
                             file=fileObj)
+
         if via_mailserver:
             # If the message is being moderated, we have to emulate
             #   a post via email so it can go through the moderation
             #   subsystem.
             mailto = curr_list.getValueFor('mailto')
-            listManager.MailHost._send(mfrom=email,
-                                       mto=mailto,
-                                       messageText=m)
+            try:
+                listManager.MailHost._send(mfrom=email,
+                                           mto=mailto,
+                                           messageText=m)
+            except BadRequest, e:
+                result['error'] = True
+                result['message'] = errorM
+                break
+            except SQLError, e:
+                result['error'] = True
+                result['message'] = errorM
+                break
         else:
-            groupList.manage_listboxer({'Mail': m})
-
-    result = {}
-    result['error'] = False
-    result['message'] = "Message posted."
+            try:
+                # TODO: Complelely rewrite message handling so we actually
+                #       have a vague idea what is going on.
+                r = (groupList.manage_listboxer({'Mail': m}) != 'FALSE')
+                # --=mpj17=-- I kid you not, the above code is legit.
+                #   Too legit. Too legit to quit.
+            except BadRequest, e:
+                result['error'] = True
+                result['message'] = errorM
+                break
+            if (not r):
+                # This could be lies.
+                result['error'] = True
+                result['message'] = errorM
+                break
     return result
 
