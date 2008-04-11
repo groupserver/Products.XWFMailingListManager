@@ -44,9 +44,7 @@ class GSPostView(BrowserView, Traversable):
           self.request = request
 
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
-          self.groupInfo = Products.GSContent.groupInfo.GSGroupInfo( context )
-          #self.siteInfo = createObject('groupserver.SiteInfo', self.context)
-          #self.groupInfo = createObject('groupserver.GroupInfo', self.context)
+          self.groupInfo = createObject('groupserver.GroupInfo', context)
           
           self.archive = context.messages
             
