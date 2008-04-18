@@ -1,13 +1,15 @@
 from zope.component import getMultiAdapter
+from zope.app.traversing.interfaces import TraversalError
 from interfaces import IGSPostView
 from zope.interface import implements
 from zope.component import createObject
+from Products.Five.traversable import Traversable
 from Products.Five import BrowserView
+from zope.app.traversing.interfaces import ITraversable
 import Products.GSContent, queries, view
-from zope.publisher.interfaces import IPublishTraverse
 
-class GSPostTraversal(BrowserView):
-    implements(IPublishTraverse)
+class GSPostTraversal(BrowserView, Traversable):
+    implements(ITraversable)
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -19,7 +21,7 @@ class GSPostTraversal(BrowserView):
         assert da, 'No data-adaptor found'
         self.messageQuery = queries.MessageQuery(self.context, da)
         
-    def publishTraverse(self, request, name):
+    def traverse(self, name, furtherPath):
         if not self.postId:
             self.postId = name
             
@@ -28,7 +30,7 @@ class GSPostTraversal(BrowserView):
     def __call__(self):
       return getMultiAdapter((self.context, self.request), name="gspost")()
       
-class GSPostView(BrowserView):
+class GSPostView(BrowserView, Traversable):
       """A view of a single post.
       
       A view of a single post shares much in common with a view of an 
@@ -36,7 +38,7 @@ class GSPostView(BrowserView):
       semantic difference is the ID specifies post to display, rather than
       the first post in the topic.   
       """
-      implements(IGSPostView)
+      implements(IGSPostView, ITraversable)
       def __init__(self, context, request):
           self.context = context
           self.request = request
