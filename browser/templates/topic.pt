@@ -144,7 +144,7 @@
         </div>
 
         <div tal:define="topic topicList" 
-          tal:condition="python:len(topic) &gt; 1;"
+          tal:condition="python:len(topic) &gt; 1"
           tal:replace="structure provider:groupserver.TopicSummary"/>
         
         <p tal:define="topic topicList"
