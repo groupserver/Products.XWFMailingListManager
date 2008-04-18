@@ -1,14 +1,39 @@
+from zope.component import getMultiAdapter
 from zope.component import createObject
 from zope.interface import implements
 from zope.app.traversing.interfaces import TraversalError
 from interfaces import IGSTopicView
-from Products.Five.traversable import Traversable
-from zope.app.traversing.interfaces import ITraversable
+from zope.publisher.interfaces import IPublishTraverse
+from Products.Five import BrowserView
 import Products.GSContent, queries, view, stickyTopicToggleContentProvider
 
-class GSTopicView(view.GSPostingInfo, Traversable):
+class GSTopicTraversal(BrowserView):
+    implements(IPublishTraverse)
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.postId = None
+        self.post = None
+        
+    def publishTraverse(self, request, name):
+        #
+        # TODO: this would probably be a good spot to check if the
+        # postId is valid, and if not redirect to a helpful message
+        #
+        if not self.postId:
+            self.postId = name
+        else:
+            raise TraversalError, "Post ID was already specified"
+        
+        return self
+          
+    def __call__(self):
+      return getMultiAdapter((self.context, self.request), name="gstopic")()
+
+class GSTopicView(BrowserView, view.GSPostingInfo):
       """View of a single GroupServer Topic"""
-      implements(IGSTopicView, ITraversable)
+      implements(IGSTopicView)
       def __init__(self, context, request):
           self.retval = {}
           self.context = context
@@ -18,22 +43,10 @@ class GSTopicView(view.GSPostingInfo, Traversable):
           self.groupInfo = createObject('groupserver.GroupInfo', context)
           
           self.archive = context.messages
-          self.postId = None
+          self.postId = self.context.postId
           
           self.da = self.context.zsqlalchemy 
           assert self.da, 'No data-adaptor found'
-          
-      def traverse(self, name, furtherPath):
-          #
-          # TODO: this would probably be a good spot to check if the
-          # postId is valid, and if not redirect to a helpful message
-          #
-          if not self.postId:
-              self.postId = name
-          else:
-              raise TraversalError, "Post ID was already specified"
-          
-          return self
           
       def update(self):
           assert hasattr(self, 'postId'), 'PostID not set'
