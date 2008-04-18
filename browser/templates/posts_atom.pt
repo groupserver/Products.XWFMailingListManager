@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  tal:define="posts python:view.get_posts(); 
+  pageTemplateFileName string:browser/templates/email_atom.pt;
+  feedURL string:${view/groupInfo/get_url}/messages/posts.atom">
+  
+  <title><span tal:replace="python:view.groupInfo.get_name()"/> Latest Posts</title>
+  <updated 
+    tal:content="view/get_most_recent_post_date">
+    2003-12-13T14:15:16Z
+  </updated>
+  <author>
+    <name tal:content="python:view.siteInfo.get_name()">OnlineGroups.Net</name>
+    <uri tal:content="python:view.siteInfo.get_url()">http://onlinegroups.net/</uri>
+  </author>
+  
+  <id tal:content="feedURL">abc123</id>
+  <generator uri="http://groupserver.org/">GroupServer</generator>
+  <icon><span tal:replace="python:view.siteInfo.get_url()"/>/favicon.ico</icon>
+  <link rel="self" href="http://onlinegroups.net/groups/demo" 
+    tal:attributes="href feedURL"/>
+  <tal:block tal:repeat="post posts">
+    <entry tal:define="topicName post/subject"
+      tal:replace="structure provider:groupserver.PostAtom">
+    </entry>
+  </tal:block>
+</feed>

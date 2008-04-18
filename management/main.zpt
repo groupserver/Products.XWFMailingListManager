@@ -1,0 +1,40 @@
+<h1 tal:replace="structure here/manage_page_header">Header</h1>
+<h2 tal:define="manage_tabs_message options/manage_tabs_message | nothing"
+    tal:replace="structure here/manage_tabs">Tabs</h2>
+<tal:block tal:define="counters container/get_counters">
+<table style="padding-top:10px;" width="100%"
+       tal:condition="counters">
+ <form action="manage_deregister" method="post">
+ <tr class="row-hilite">
+   <th style="text-align: left;">namespace</th>
+   <th style="text-align: left;">counter value</th>
+   <th style="text-align: left;">remove</th>
+ </tr>
+ <tr tal:repeat="nsitems counters/items"
+     tal:attributes="class python:repeat['nsitems'].odd() and 'row-hilite' or 'row-normal'">
+   <td tal:content="python:nsitems[0]"></td>
+   <td tal:content="python:nsitems[1]"></td>
+   <td><input type="checkbox" name="namespaces:list"
+              tal:attributes="value python:nsitems[0]"/></td>
+ </tr>
+ <tr>
+   <td colspan="3" style="text-align: right;">
+     <input type="submit" name="submit" value="remove namespaces"/>
+   </td>
+ </tr>
+ </form>
+</table>
+
+<div style="padding-top:10px; font-weight: bold;" tal:condition="counters">
+  No namespaces yet registered.
+</div>
+</tal:block>
+
+<div style="padding-top:10px;">
+  <form action="manage_register" method="post">
+    <input type="text" name="namespaces" value=""/>
+    <input type="submit" name="add namespace" value="add namespace"/>
+  </form>
+</div>
+
+<h1 tal:replace="structure here/manage_page_footer">Footer</h1>
