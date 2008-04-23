@@ -38,20 +38,20 @@
         tal:attributes="href python:view.get_last_url()" />
       
       <link rel="up" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
         href python:view.groupInfo.get_url()" />
       
       <link rel="bookmark" href="posts.html"
-        tal:attributes="title python:'Posts in %s' % view.groupInfo.get_name()" />
+        tal:attributes="title python:u'Posts in %s' % view.groupInfo.get_name()" />
       <link rel="bookmark" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
         href python:view.groupInfo.get_url()" />
       <link rel="home" 
-        tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
         href python:view.siteInfo.get_url()" />
       <link rel="help" 
-        tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
-        href python:'%s/help' % view.siteInfo.get_url()" />
+        tal:attributes="title python:u'%s Help' % view.siteInfo.get_name();
+        href python:u'%s/help' % view.siteInfo.get_url()" />
     </tal:block>
   </head>
   

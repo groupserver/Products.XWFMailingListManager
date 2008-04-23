@@ -32,26 +32,26 @@
           tal:condition="python:later and later[0]" 
           rel="prev" title="Previous topic" href="wibble"
           tal:attributes="href python:later[0]; 
-          title python:'Later topic: %s' % later[1];" />
+          title python:u'Later topic: %s' % later[1];" />
         
         <link tal:define="global earlier python:view.get_next_topic()" 
           tal:condition="python:earlier and earlier[0]" 
           rel="next" title="earlier topic" href="wibble"
           tal:attributes="href python:earlier[0]; 
-          title python:'Earlier topic: %s' % earlier[1];" />
+          title python:u'Earlier topic: %s' % earlier[1];" />
         
         <link rel="up" title="All topics" href="../topics.html"
           tal:attributes="title string:Topics in ${view/groupInfo/get_name};"/>
         
         <link rel="bookmark" title="Group Homepage" href="#"
-          tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+          tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
           href python:view.groupInfo.get_url()" />
         <link rel="home" 
-          tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+          tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
           href python:view.siteInfo.get_url()" />
         <link rel="help" 
-          tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
-          href python:'%s/help' % view.siteInfo.get_url()" />
+          tal:attributes="title python:u'%s Help' % view.siteInfo.get_name();
+          href python:u'%s/help' % view.siteInfo.get_url()" />
       </tal:block>
     </head>
     
@@ -118,7 +118,7 @@
                 topic</span>
             <a href="foo" tal:condition="python:later and later[0]"
                 tal:attributes="href python:later[0];
-                  title python:'The topic with more recent posts:%s'%later[1];">
+                  title python:u'The topic with more recent posts:%s'%later[1];">
                 Later topic: <cite tal:content="python:later[1]">Topic Name</cite>
               </a>
             </li>
@@ -127,7 +127,7 @@
                 topic</span>
               <a href="foo"
                 tal:attributes="href python:earlier[0];
-                title python:'The topic with older posts:%s'%later[1];"
+                title python:u'The topic with older posts:%s'%later[1];"
                 tal:condition="python:earlier and earlier[0]">Earlier topic:
               <cite tal:content="python:earlier[1]">Topic Name</cite></a>
             </li>

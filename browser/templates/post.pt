@@ -31,40 +31,40 @@
       <link rel="next" 
         tal:define="global next python:view.get_next_post();"
         tal:condition="next"
-        tal:attributes="title python:'Next post in &#8220;%s&#8221;' % topicName;
+        tal:attributes="title python:u'Next post in &#8220;%s&#8221;' % topicName;
         href string:${next};" />
       <link rel="prev" 
         tal:define="global prev python:view.get_previous_post();"
         tal:condition="prev"
-        tal:attributes="title python:'Previous post in &#8220;%s&#8221;' % topicName;
-        href string:${prev}};" />
+        tal:attributes="title python:u'Previous post in &#8220;%s&#8221;' % topicName;
+        href string:${prev};" />
       <link rel="first"
         tal:condition="prev"
         tal:define="global first python:view.get_first_post()"
-        tal:attributes="title python:'First post in &#8220;%s&#8221;' % topicName;
+        tal:attributes="title python:u'First post in &#8220;%s&#8221;' % topicName;
         href string:${first};" />
       <link rel="last"
         tal:condition="next"
         tal:define="global last python:view.get_last_post()"
-        tal:attributes="title python:'Latest post in &#8220;%s&#8221;' % topicName;
+        tal:attributes="title python:u'Latest post in &#8220;%s&#8221;' % topicName;
         href string:${last}" />
       <tal:block 
-        tal:define="title python:'All posts in &#8220;%s&#8221;' % topicName;">
+        tal:define="title python:u'All posts in &#8220;%s&#8221;' % topicName;">
         <link rel="up" href="#" 
-          tal:attributes="title title; href python:'../topic/%s'%last" />
+          tal:attributes="title title; href python:u'../topic/%s' % last" />
       <link rel="home" 
-        tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
         href python:view.siteInfo.get_url()" />
       <link rel="help" 
-        tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
-        href python:'%s/help' % view.siteInfo.get_url()" />
+        tal:attributes="title python:u'%s Help' % view.siteInfo.get_name();
+        href python:u'%s/help' % view.siteInfo.get_url()" />
       </tal:block>
       
       <link rel="bookmark" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
         href python:view.groupInfo.get_url()" />
       <link rel="bookmark" title="Division Homepage" href="/"
-        tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
         href python:view.siteInfo.get_url();" />
     </tal:block>
   </head>

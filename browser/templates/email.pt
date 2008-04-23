@@ -16,7 +16,7 @@
         <strong>From:</strong>
         <a class="fn url" tal:omit-tag="python:authorInfo.anonymous"
           tal:attributes="href python:authorInfo.url;
-            title python:'Profile of %s' % authorInfo.name;"
+            title python:u'Profile of %s' % authorInfo.name;"
           tal:content="python:authorInfo.name">Me!</a>
         </span>
       <span class="posted">
@@ -85,7 +85,7 @@
             <li>
               Size:
               <span class="size"
-                tal:content="python:'%1.2fKB' % (fm['file_size']/1024.0)">-1B</span>
+                tal:content="python:u'%1.2fKB' % (fm['file_size']/1024.0)">-1B</span>
             </li>
           </ul>
       </div><!--fileMetadata-->
