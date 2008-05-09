@@ -4,6 +4,7 @@ from zExceptions import BadRequest
 from sqlalchemy.exceptions import SQLError
 import queries
 import random
+import time
 
 import logging
 log = logging.getLogger('addapost')
