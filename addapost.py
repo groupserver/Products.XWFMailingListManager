@@ -3,6 +3,7 @@ from zLOG import LOG, WARNING, PROBLEM, INFO
 from zExceptions import BadRequest
 from sqlalchemy.exceptions import SQLError
 import queries
+import random
 
 import logging
 log = logging.getLogger('addapost')
@@ -79,10 +80,12 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
         topic = origEmail['subject']
         subject = 'Re: %s'  % topic
         emailMessageReplyToId = replyToId
+        emailMessageId = ''
         # --=mpj17=-- I should really handle the References header here.
     else:
         subject = topic
         emailMessageReplyToId = ''
+        emailMessageId = '%s.%2.0f.%s.%s' % (time.time(), (random.random()*10000), groupId, siteId)
 
     m = 'Adding post from %s (%s) via the Web, to the topic "%s" in %s '\
       '(%s) on %s (%s)'%\
@@ -149,7 +152,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                             canonicalHost=canonicalHost,
                             group=groupObj, ptn_coach_id=ptnCoachId,
                             message=message,
-                            reply_to_id=emailMessageReplyToId,
+                            reply_to_id=emailMessageReplyToId, message_id=emailMessageId,
                             n_type='new_file', n_id=groupObj.getId(),
                             file=fileObj)
 
