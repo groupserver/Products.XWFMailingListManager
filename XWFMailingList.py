@@ -492,35 +492,38 @@ class XWFMailingList(Folder):
         
         # Send a mail to all members of the list.
         mailString = getMailFromRequest(REQUEST)
-        
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
                                        sender_id_cb=self.get_mailUserId)
-        m = '%s (%s) Listing message %s from <%s>' %\
-          (self.getProperty('title', ''), self.getId(), msg.post_id, 
-           msg.sender)
+        m = 'listMail: Processing message in group "%s", post id "%s" from <%s>' % \
+                (self.getId(), msg.post_id, msg.sender)
         log.info(m)
-        
+
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
         if self.getValueFor('archived') != self.archive_options[0]:
             (post_id, file_ids) = self.manage_addMail(msg)
-                    
+        
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again
         headers = {}
         for item in msg.message.items():
             headers[item[0].lower()] = item[1]
-            
-        customHeader = EmailMessage(self.mail_header(self, 
-                                                    REQUEST, 
-                                                    getValueFor=self.getValueFor, 
-                                                    title=self.getValueFor('title'), 
-                                                    mail=headers, 
-                                                    body=msg.body, 
-                                                    file_ids=file_ids, 
-                                                    post_id=post_id).strip())
+      
+        mail_header = self.mail_header(self,
+                                       REQUEST, 
+                                       getValueFor=self.getValueFor, 
+                                       title=self.getValueFor('title'), 
+                                       mail=headers, 
+                                       body=msg.body, 
+                                       file_ids=file_ids, 
+                                       post_id=post_id)
+
+        # the mail header needs to be committed to a bytestream, not just a unicode object
+        mail_header = mail_header.encode('utf-8', 'ignore').strip()
+
+        customHeader = EmailMessage(mail_header)
         
         # If customBody is not empty, use it as new mailBody, and we need to
         # fetch it before any other changes are made, since changing the
@@ -602,8 +605,7 @@ class XWFMailingList(Folder):
         
     def processMail(self, REQUEST):
         # Zeroth sanity check ... herein lies only madness.
-        m = '%s (%s) Processing mail' %\
-          (self.getProperty('title', ''), self.getId())
+        m = 'processMail: list (%s)' % self.getId()
         log.info(m)
         
         da = self.zsqlalchemy 
@@ -971,7 +973,7 @@ class XWFMailingList(Folder):
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
                                        sender_id_cb=self.get_mailUserId)
-        m  = '%s (%s): processing message from <%s>' %\
+        m  = 'checkMail: %s (%s), checking message from <%s>' %\
           (self.getProperty('title', ''), self.getId(), msg.sender)
         log.info(m)
                 
@@ -1388,7 +1390,7 @@ class XWFMailingList(Folder):
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
-            
+
         reply = getattr(self, 'email_unsubscribe_key', None)
         
         thepin = pin( msg.sender, self.getValueFor('hashkey') )
@@ -1500,13 +1502,17 @@ class XWFMailingList(Folder):
         """
         header = getattr(self, 'xwf_email_header', None)
         if header:
-            return header(REQUEST, list_object=context, 
+            text = header(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
                                    title=title, mail=mail, body=body, 
                                    file_ids=file_ids, 
                                    post_id=post_id)
+
+            if not isinstance(text, unicode):
+                text = unicode(text, 'utf-8', 'ignore')
+            return text
         else:
-            return ""
+            return u''
     
     security.declarePrivate('mail_footer')
     def mail_footer(self, context, REQUEST, getValueFor=None, title='', 
@@ -1595,8 +1601,7 @@ class XWFMailingList(Folder):
         #
         # run through the spool, and actually send the mail out
         #
-        m = '%s (%s) Processing spool' %\
-          (self.getProperty('title', ''), self.getId())
+        m = 'processSpool: %s (%s)' % (self.getProperty('title', ''), self.getId())
         log.info(m)
         
         archive = self.restrictedTraverse(self.getValueFor('storage'))
