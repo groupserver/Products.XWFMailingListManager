@@ -184,7 +184,10 @@ class GSPostingInfo:
         if (localScripts
             and hasattr(localScripts, 'get')
             and hasattr(localScripts.get, 'userCanPostToGroup')):
-            retval = localScripts.get.userCanPostToGroup(True)
+            retval = localScripts.get.userCanPostToGroup(reasonNeeded=True,
+                                               siteId=self.siteInfo.get_id(),
+                                               groupId=self.groupInfo.get_id(),
+                              	                     )
 
         if not reasonNeeded:
             retval = retval[1]
