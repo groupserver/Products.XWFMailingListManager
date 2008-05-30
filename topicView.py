@@ -7,6 +7,10 @@ from zope.publisher.interfaces import IPublishTraverse
 from Products.Five import BrowserView
 import Products.GSContent, queries, view, stickyTopicToggleContentProvider
 
+import time
+import logging
+log = logging.getLogger('topicView')
+
 class GSTopicTraversal(BrowserView):
     implements(IPublishTraverse)
     def __init__(self, context, request):
@@ -49,6 +53,8 @@ class GSTopicView(BrowserView, view.GSPostingInfo):
           assert self.da, 'No data-adaptor found'
           
       def update(self):
+          a = time.time()
+          log.info('GSTopicView, start update')
           assert hasattr(self, 'postId'), 'PostID not set'
           assert self.postId, 'self.postID set to %s' % self.postId
           
@@ -70,6 +76,8 @@ class GSTopicView(BrowserView, view.GSPostingInfo):
           self.topic = self.messageQuery.topic_posts(self.topicId)
           assert len(self.topic) >= 1, "No posts in the topic %s" % self.topicId
           self.lastPostId = self.topic[-1]['post_id']
+          b = time.time()
+          log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
 
       def do_error_redirect(self):
           if not self.postId:

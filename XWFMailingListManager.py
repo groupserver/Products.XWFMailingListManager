@@ -204,7 +204,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 listobj._p_deactivate()
                 
         bottom = time.time()
-        log.info("Took %s secs to find list ID" % (bottom-top))
+        log.info("Took %.2f ms to find list ID" % ((bottom-top)*1000.0))
 
         if self.ListMailtoCache.has_key(mailto):
             listId = self.ListMailtoCache.get(mailto) or ''
