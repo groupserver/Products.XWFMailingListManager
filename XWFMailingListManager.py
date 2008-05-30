@@ -14,12 +14,15 @@ from OFS.Folder import Folder
 
 from Products.XWFCore.XWFUtils import getOption, get_support_email
 from Products.XWFCore.XWFUtils import get_site_by_id, get_group_by_siteId_and_groupId
+from Products.XWFCore.cache import LRUCache
 
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 import DateTime
 
-import os, time
+import os, time, logging
+
+log = logging.getLogger('XWFMailingListManager.XWFMailingListManager')
 
 MAILDROP_SPOOL = '/tmp/mailboxer_spool2'
 
@@ -32,6 +35,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     """
     security = ClassSecurityInfo()
     security.setPermissionDefault('View', ('Manager',))
+    
+    ListMailtoCache = LRUCache()
+    ListMailtoCache.set_max_objects(256)
     
     meta_type = 'XWF Mailing List Manager'
     version = 0.99
@@ -168,20 +174,58 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """
         return getattr(self.aq_explicit, list_id)
 
-    security.declareProtected('View','get_listPropertiesFromMailto')
-    def get_listPropertiesFromMailto(self, mailto):
+    security.declareProtected('View','get_listFromMailto')
+    def get_listFromMailto(self, mailto):
         """ Get a contained list, given the list mailto.
         
         """
+        mailto = mailto.lower()
+        top = time.time()
+
+        listId = ''
+        if self.ListMailtoCache.has_key(mailto):
+            log.info("list ID was cached")
+            
+            listId = self.ListMailtoCache.get(mailto)
+        else:
+            log.info("list ID was not cached")
+            # we always try to cache everything first up -- otherwise the
+            # worst case time is triggered for just about every cache miss
+            #
+            # This has the side-effect that we occasionally update the whole
+            # cache as well ... not a bad thing
+            for listobj in self.objectValues('XWF Mailing List'):
+                list_mailto = getattr(listobj, 'mailto', '').lower()
+                listId = listobj.getId()
+
+                if list_mailto:
+                    self.ListMailtoCache.add(list_mailto, listId)
+                
+                listobj._p_deactivate()
+                
+        bottom = time.time()
+        log.info("Took %s secs to find list ID" % (bottom-top))
+
+        if ListMailtoCache.has_key(mailto):
+            listId = self.ListMailtoCache.get(mailto) or ''
+             
+        return self.get_list(listId)
+
+    security.declareProtected('View','get_listPropertiesFromMailto')
+    def get_listPropertiesFromMailto(self, mailto):
+        """ Get a contained list's properties, given the list mailto.
+        
+        """
         list_props = {}
-        for listobj in self.objectValues('XWF Mailing List'):
-            if getattr(listobj, 'mailto', '').lower() == mailto.lower():
-                for prop in self._properties:
-                    pid = prop['id']
-                    list_props[pid] = getattr(listobj, pid, None)
-                list_props['id'] = listobj.getId()
-                return list_props
-        return {}
+
+        listobj = self.get_listFromMailto(mailto)               
+        if listobj:
+            for prop in self._properties:
+                pid = prop['id']
+                list_props[pid] = getattr(listobj, pid, None)
+            list_props['id'] = listobj.getId()
+            
+        return list_props
 
     security.declareProtected('View','get_listProperty')
     def get_listProperty(self, list_id, property, default=None):
