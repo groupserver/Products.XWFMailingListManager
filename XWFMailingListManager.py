@@ -206,7 +206,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         bottom = time.time()
         log.info("Took %s secs to find list ID" % (bottom-top))
 
-        if ListMailtoCache.has_key(mailto):
+        if self.ListMailtoCache.has_key(mailto):
             listId = self.ListMailtoCache.get(mailto) or ''
              
         return self.get_list(listId)
