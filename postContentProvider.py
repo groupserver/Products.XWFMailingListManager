@@ -34,18 +34,14 @@ class GSPostContentProvider(object):
       adapts(Interface,
              IDefaultBrowserLayer, 
              Interface)
-      
-      # These following are *CLASS* attributes, because we want the cache to
-      # be accessible across all instances!
-      
+
       # We want a really simple cache for templates, because there aren't
-      #  many of them
-      cookedTemplates = SimpleCache()
+      # many of them
+      cookedTemplates = SimpleCache("GSPostContentProvider.cookedTemplates")
       
-      # Setup a least recently used expiry cache for results, with a K
-      #   of posts, maximum.
-      cookedResult = LRUCache()
-      cookedResult.set_max_objects(1024)
+      # Setup a least recently used expiry cache for results
+      cookedResult = LRUCache("GSPostContentProvider.cookedResult")
+      cookedResult.set_max_objects(512)
       
       post = None
       def __init__(self, context, request, view):
@@ -162,7 +158,7 @@ class GSPostContentProvider(object):
                                 siteURL = self.siteInfo.get_url(), 
                                 groupId = self.groupInfo.get_id())
               
-              self.cookedResult.add(self.post['post_id'], r)
+              self.cookedResult.add(self.cacheKey, r)
           
           return r
 
@@ -174,15 +170,17 @@ class GSPostContentProvider(object):
           retval = ''
           even = (self.position % 2) == 0
           if even:
-              if self.authored:
-                  retval = 'emaildetails-self-even'
-              else:
-                  retval = 'emaildetails-even'
+              retval = 'emaildetails-even'
+#              if self.authored:
+#                  retval = 'emaildetails-self-even'
+#              else:
+#                  retval = 'emaildetails-even'
           else:
-              if self.authored:
-                  retval = 'emaildetails-self-odd'
-              else:
-                  retval = 'emaildetails-odd'
+              retval = 'emaildetails-odd'
+#              if self.authored:
+#                  retval = 'emaildetails-self-odd'
+#              else:
+#                  retval = 'emaildetails-odd'
                   
           assert retval
           return retval
@@ -226,6 +224,7 @@ class GSPostContentProvider(object):
               self.view.__author_object_cache = author_cache
               
           return user
+
 # State that the GSPostContentProvider is a Content Provider, and attach
 #     to "groupserver.Post".
 provideAdapter(GSPostContentProvider, 

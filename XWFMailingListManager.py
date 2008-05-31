@@ -14,7 +14,7 @@ from OFS.Folder import Folder
 
 from Products.XWFCore.XWFUtils import getOption, get_support_email
 from Products.XWFCore.XWFUtils import get_site_by_id, get_group_by_siteId_and_groupId
-from Products.XWFCore.cache import LRUCache
+from Products.XWFCore.cache import SimpleCache
 
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
@@ -35,9 +35,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     """
     security = ClassSecurityInfo()
     security.setPermissionDefault('View', ('Manager',))
-    
-    ListMailtoCache = LRUCache()
-    ListMailtoCache.set_max_objects(256)
+
+    ListMailtoCache = SimpleCache("ListMailtoCache")
     
     meta_type = 'XWF Mailing List Manager'
     version = 0.99
@@ -206,8 +205,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         bottom = time.time()
         log.info("Took %.2f ms to find list ID" % ((bottom-top)*1000.0))
 
-        if self.ListMailtoCache.has_key(mailto):
-            listId = self.ListMailtoCache.get(mailto) or ''
+        listId = self.ListMailtoCache.get(mailto) or ''
              
         return self.get_list(listId)
 

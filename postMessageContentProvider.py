@@ -15,7 +15,7 @@ class GSPostMessageContentProvider(object):
 
       # We want a really simple cache for templates, because there aren't
       #  many of them
-      cookedTemplates = SimpleCache()
+      cookedTemplates = SimpleCache("GSPostMessageContentProvider.cookedTemplates")
       
       def __init__(self, context, request, view):
           self.__parent = view
