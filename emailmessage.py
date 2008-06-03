@@ -1,7 +1,7 @@
 from sqlalchemy.exceptions import SQLError
 import re
 import md5
-import sqlalchemy
+import sqlalchemy as sa
 import string
 import datetime, time
 import codecs
@@ -96,8 +96,11 @@ class RDBFileMetadataStorage(object):
         self.file_ids = file_ids
     
     def set_zalchemy_adaptor(self, da):
-        self.fileTable = da.createMapper('file')[1]
-        self.postTable = da.createMapper('post')[1]
+        engine = da.engine
+        metadata = sa.BoundMetaData(engine)
+
+        self.fileTable = sa.Table('file', metadata, autoload=True)
+        self.postTable = sa.Table('post', metadata, autoload=True)
         
     def insert(self):
         # FIXME: references like this should *NOT* be hardcoded!
@@ -125,14 +128,17 @@ class RDBEmailMessageStorage(object):
         self.email_message = email_message
 
     def set_zalchemy_adaptor(self, da):
-        self.postTable = da.createMapper('post')[1]
-        self.topicTable = da.createMapper('topic')[1]
-        self.topic_word_countTable = da.createMapper('topic_word_count')[1]
-        self.post_tagTable = da.createMapper('post_tag')[1]
-        self.post_id_mapTable = da.createMapper('post_id_map')[1]
+        engine = da.engine
+        metadata = sa.BoundMetaData(engine)
+
+        self.postTable = sa.Table('post', metadata, autoload=True)
+        self.topicTable = sa.Table('topic', metadata, autoload=True)
+        self.topic_word_countTable = sa.Table('topic_word_count', metadata, autoload=True)
+        self.post_tagTable = sa.Table('post_tag', metadata, autoload=True)
+        self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
 
     def _get_topic(self):
-        and_ = sqlalchemy.and_
+        and_ = sa.and_
         
         r = self.topicTable.select(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
                                         self.topicTable.c.group_id == self.email_message.group_id, 
@@ -141,7 +147,7 @@ class RDBEmailMessageStorage(object):
         return r.fetchone()
 
     def insert(self):
-        and_ = sqlalchemy.and_
+        and_ = sa.and_
 
         #
         # add the post itself
@@ -208,7 +214,7 @@ class RDBEmailMessageStorage(object):
                       new_post_id=self.email_message.post_id)
 
     def insert_keyword_count( self ):
-        and_ = sqlalchemy.and_
+        and_ = sa.and_
         #    
         # add/update the word count for the topic
         #
