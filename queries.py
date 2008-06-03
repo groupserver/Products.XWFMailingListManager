@@ -1,6 +1,9 @@
 from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
 
+import logging
+log = logging.getLogger("XMLMailingListManager.queries")
+
 class MemberQuery(object):
     # how many user ID's should we attempt to pass to the database before
     # we just do the filtering ourselves to avoid the overhead on the database
@@ -9,9 +12,12 @@ class MemberQuery(object):
     def __init__(self, context, da):
         self.context = context
 
-        self.emailSettingTable = da.createMapper('email_setting')[1]
-        self.userEmailTable = da.createMapper('user_email')[1]
-        self.groupUserEmailTable = da.createMapper('group_user_email')[1]
+        engine = da.engine
+#       sa.create_session(bind_to=engine)
+        metadata = sa.BoundMetaData(engine)
+        self.emailSettingTable = sa.Table('email_setting', metadata, autoload=True)
+        self.userEmailTable = sa.Table('user_email', metadata, autoload=True)
+        self.groupUserEmailTable = sa.Table('group_user_email', metadata, autoload=True)
 
     def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True, verified_only=True):
         # TODO: We currently can't use site_id
@@ -133,13 +139,16 @@ class MessageQuery(object):
     def __init__(self, context, da):
         self.context = context
 
-        self.topicTable = da.createMapper('topic')[1]
-        self.topic_word_countTable = da.createMapper('topic_word_count')[1]
-        self.postTable = da.createMapper('post')[1]
-        self.fileTable = da.createMapper('file')[1]
+        engine = da.engine
+#       sa.create_session(bind_to=engine)
+        metadata = sa.BoundMetaData(engine)
+        self.topicTable = sa.Table('topic', metadata, autoload=True)
+        self.topic_word_countTable = sa.Table('topic_word_count', metadata, autoload=True)
+        self.postTable = sa.Table('post', metadata, autoload=True)
+        self.fileTable = sa.Table('file', metadata, autoload=True)
         
         try:
-            self.post_id_mapTable = da.createMapper('post_id_map')[1]
+            self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
         except NoSuchTableError:
             self.post_id_mapTable = None
 
