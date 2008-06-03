@@ -171,7 +171,10 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """ Get a contained list, given the list ID.
         
         """
-        return getattr(self.aq_explicit, list_id)
+        try:
+            return getattr(self.aq_explicit, list_id)
+        except AttributeError:
+            raise AttributeError("No such list %s" % list_id)
 
     security.declareProtected('View','get_listFromMailto')
     def get_listFromMailto(self, mailto):
@@ -181,12 +184,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         mailto = mailto.lower()
         top = time.time()
 
+        site = self.site_root()
+        siteId = site.getId()
+        thisCacheKey = '%s:%s' % (siteId, mailto)
         listId = ''
-        if self.ListMailtoCache.has_key(mailto):
-            log.info("list ID was cached")
-            
-            listId = self.ListMailtoCache.get(mailto)
-        else:
+        if not self.ListMailtoCache.has_key(thisCacheKey):
             log.info("list ID was not cached")
             # we always try to cache everything first up -- otherwise the
             # worst case time is triggered for just about every cache miss
@@ -196,16 +198,19 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             for listobj in self.objectValues('XWF Mailing List'):
                 list_mailto = getattr(listobj, 'mailto', '').lower()
                 listId = listobj.getId()
+                cacheKey = '%s:%s' % (siteId, list_mailto)
 
                 if list_mailto:
-                    self.ListMailtoCache.add(list_mailto, listId)
+                    self.ListMailtoCache.add(cacheKey, listId)
                 
                 listobj._p_deactivate()
-                
+        else:
+            log.info("list ID was cached")
+            
+        listId = self.ListMailtoCache.get(thisCacheKey) or ''
+
         bottom = time.time()
         log.info("Took %.2f ms to find list ID" % ((bottom-top)*1000.0))
-
-        listId = self.ListMailtoCache.get(mailto) or ''
              
         return self.get_list(listId)
 
