@@ -92,7 +92,7 @@ class GSPostContentProvider(object):
           
           # setup a cache key based on the unique attributes of this post
           self.cacheKey = '%s:%s:%s:%s' % (self.post['post_id'], 
-            self.position, self.topicName, self.pageTemplate)
+            self.position, self.topicName, self.pageTemplateFileName)
           
           if not self.cookedResult.has_key(self.cacheKey):
               
