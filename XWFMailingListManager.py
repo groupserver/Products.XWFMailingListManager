@@ -342,7 +342,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         if do_notification:
             addresses = user.get_verifiedEmailAddresses()
-            
+            addresses.remove(email)
             if addresses:
                 n_dict = {}
                 try:
