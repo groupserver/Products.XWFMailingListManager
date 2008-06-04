@@ -345,6 +345,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             
             if addresses:
                 n_dict = {}
+                try:
+                    list_object = self.get_list(group_id)
+                except AttributeError:
+                    list_object = None
+
                 if list_object:
                     site_id = list_object.getProperty('siteId', '')
                     site = get_site_by_id(list_object, site_id)
