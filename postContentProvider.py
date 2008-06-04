@@ -41,7 +41,7 @@ class GSPostContentProvider(object):
       
       # Setup a least recently used expiry cache for results
       cookedResult = LRUCache("GSPostContentProvider.cookedResult")
-      cookedResult.set_max_objects(512)
+      cookedResult.set_max_objects(1024)
       
       post = None
       def __init__(self, context, request, view):
@@ -91,8 +91,8 @@ class GSPostContentProvider(object):
           self.__updated = True
           
           # setup a cache key based on the unique attributes of this post
-          self.cacheKey = '%s:%s:%s' % (self.post['post_id'], self.position,
-                                   self.topicName)
+          self.cacheKey = '%s:%s:%s:%s' % (self.post['post_id'], 
+            self.position, self.topicName, self.pageTemplate)
           
           if not self.cookedResult.has_key(self.cacheKey):
               

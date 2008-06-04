@@ -80,6 +80,7 @@ class GSTopicView(BrowserView, view.GSPostingInfo):
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
 
       def do_error_redirect(self):
+          # TODO Fix URLs
           if not self.postId:
               self.request.response.redirect('/r/topic-no-id')
           else:
