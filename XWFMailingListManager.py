@@ -21,6 +21,9 @@ from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 import DateTime
 
 import os, time, logging
+from Products.CustomUserFolder.queries import UserQuery
+import sqlalchemy as sa
+import datetime
 
 log = logging.getLogger('XWFMailingListManager.XWFMailingListManager')
 
@@ -254,13 +257,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             spoolfile = file(spoolfilepath)
             line = spoolfile.readline().strip()
             if len(line) < 5 or line[:2] != ';;' or line[-2:] != ';;':
-                #logger.error('No group was specified (line was "%s")' % line)
                 continue
 
             groupname = line[2:-2]
             group = self.get_list(groupname)
             if not group:
-                #logger.error('No such group "%s"' % groupname)
                 continue
 
             mailString = spoolfile.read()
@@ -274,127 +275,74 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             except:
                 pass
 
+    security.declarePublic('add_to_bounce_table')
+    def add_to_bounce_table(self, date, user_id, group_id, email):
+        """ """
+        da = self.site_root().zsqlalchemy
+        engine = da.engine
+        metadata = sa.BoundMetaData(engine)
+        bounceTable = sa.Table('bounce', metadata, autoload=True)
+        bt_insert = bounceTable.insert()
+
+        # insert into the bounce table
+        bt_insert.execute(date=date, group_id=group_id,
+                          site_id='', email=email, user_id=user_id)
+
     def processBounce(self, group_id, email):
         """ Process a bounce for a particular list.
         
         """
-        action = 'bounce_detection %s' % email
+        da = self.site_root().zsqlalchemy
+        engine = da.engine
+        metadata = sa.BoundMetaData(engine)
+        bounceTable = sa.Table('bounce', metadata, autoload=True)
+        bt_insert = bounceTable.insert()
+        bt_select = bounceTable.select()
+        bt_select.append_whereclause(bounceTable.c.email==email)
+        bt_select.order_by(sa.desc(bounceTable.c.date))
+
+        r = bt_select.execute()
+        previous_bounces = []
+        if r.rowcount:
+            for row in r:
+                bounce_date = row['date'].strftime("%Y%m%d")
+                if bounce_date not in previous_bounces:
+                    previous_bounces.append(bounce_date)
         
         user = self.acl_users.get_userByEmail(email)
         if not user:
-            return 'no user with email %s' % email
+            m = 'Bounce detection failure: no user with email %s' % email
+            log.info(m)
+            return m
+
+        user_id = user.getId()
+        log.info('Bounce detected for %s (%s) in group %s' % (user_id, email, group_id))
         
-        Bounces = getattr(self, 'Bounces', False)
-        
-        if not Bounces:
-            self.manage_addFolder('Bounces')
-            Bounces = getattr(self, 'Bounces')
-        
-        group_obj = getattr(Bounces.aq_explicit, group_id, False)
-        if not group_obj:
-            Bounces.manage_addFolder(group_id)
-            group_obj = getattr(Bounces.aq_explicit, group_id)
-        
-        obj = getattr(group_obj.aq_explicit, user.getId(), False)
-        if not obj:
-            group_obj.manage_addProduct['CustomProperties'].manage_addCustomProperties(user.getId())
-            obj = getattr(group_obj.aq_explicit, user.getId())
-        
-        bounce_addresses = obj.getProperty('bounce_addresses', [email])
-        if not obj.hasProperty('bounce_addresses'):
-            obj.manage_addProperty('bounce_addresses', bounce_addresses, 'lines')
-        else:
-            if email not in bounce_addresses:
-                bounce_addresses.append(email)
-            obj.manage_changeProperties(bounce_addresses=bounce_addresses)
-        
-        # Perform a little heuristic analysis ... figure out if we've had any successful emails since the last bounce
-        now = DateTime.DateTime()
-        
-        last_action = obj.getProperty('last_bounce_time', 0)
-        bounce_count = obj.getProperty('bounce_count', 1)
-        had_success = False
-        list_object = getattr(self.aq_explicit, group_id, None)
-        if last_action:
-            last_failure_diff = now-last_action       
-            # we look for the second-to-last email, since the last one is
-            # probably the one that bounced!
-            if list_object:
-                archives = getattr(list_object, 'archive', None)
-                last_success_object = None
-                if archives:
-                    items = archives.objectValues()
-                    if len(items) > 2:
-                        last_success_object = items[-2]
-                
-                last_success_diff = 0
-                if last_success_object:                         
-                    last_success_diff = now - last_success_object.getProperty('mailDate')
-                    
-                if last_failure_diff > last_success_diff:
-                    # if we haven't detected a bounce in the last 24 hours, give a bonus 'point'
-                    if last_failure_diff > 1.0:
-                        bounce_count -= 2
-                    else:
-                        bounce_count -= 1
-                    
-                    had_success = True
-        
-        if not obj.hasProperty('bounce_count'):
-            obj.manage_addProperty('bounce_count', 1, 'int')
-        else:
-            # only increment the bounce count if we haven't detected
-            # a failure in the last 24 hours. This is to give temporary
-            # failures a chance to recover
-            if last_action and last_failure_diff > 1.0:
-                bounce_count += 1
-            else:
-                action = '24_hours_allowance %s' % email
-            bounce_count = bounce_count > 1 and bounce_count or 1
-            obj.manage_changeProperties(bounce_count=bounce_count)
-        
-        if not obj.hasProperty('last_bounce_time'):
-            obj.manage_addProperty('last_bounce_time', now, 'date')
-        else:
-            obj.manage_changeProperties(last_bounce_time=now)
-        
+        # insert into the bounce table
+        date = datetime.datetime.now()
+        bt_insert.execute(date=date, group_id=group_id,
+                          site_id='', email=email, user_id=user_id)
+
         do_notification = False
-        lnt = filter(None, map(lambda x: x.strip(), obj.getProperty('notification_times', [])))
-        
-        if len(lnt) >= 1:
-            lnt_elapsed = now - DateTime.DateTime(lnt[-1])
-        else:
-            lnt_elapsed = 0
-        
-        if (not lnt) or (lnt_elapsed > 1.0):
-            do_notification = True
-        
+        bounce_date = date.strftime("%Y%m%d")
+        if bounce_date not in previous_bounces:
+            previous_bounces.append(bounce_date)
+            do_notification=True
+
+        log.info("Detected %s bounces on unique days" % len(previous_bounces))
+
         notification_type = 'bounce_detection'
-        # disable delivery
-        if bounce_count >= 3:
-            user.remove_defaultDeliveryEmailAddress(email)
-            # reset the bounce counter, but penalize them a single point for having
-            # been disabled before
-            obj.manage_changeProperties(bounce_count=1)
-            do_notification = True
-            bounce_addresses = obj.getProperty('bounce_addresses')
-            try:
-                bounce_addresses.remove(email)
-            except:
-                pass
-            obj.manage_changeProperties(bounce_addresses=bounce_addresses)
-            action = 'disabled_email %s' % email
+        # disable address by unverifying after 3 bounces
+        if len(previous_bounces) >= 3:
+            # TODO: might want to clear the bounce table at this point perhaps
+            uq = UserQuery(user, da)
+            uq.unverify_userEmail(email)
+            log.info('Unverified %s (%s)' % (user_id, email))
             notification_type = 'disabled_email'
-        elif had_success:
-            action = 'reprieve %s' % email
         
         if do_notification:
-            addresses = user.get_emailAddresses()
-            try:
-                addresses.remove(email)
-            except:
-                pass
-                
+            addresses = user.get_verifiedEmailAddresses()
+            
             if addresses:
                 n_dict = {}
                 if list_object:
@@ -418,33 +366,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 except:
                     pass
                 
-                if not obj.hasProperty('notification_times'):
-                    obj.manage_addProperty('notification_times', [str(now)], 'lines')
-                else:
-                    lnt.append(str(now))
-                    obj.manage_changeProperties(notification_times=lnt)
-                    
-                nt = obj.getProperty('notification_types', [])        
-                if not obj.hasProperty('notification_types'):
-                    obj.manage_addProperty('notification_types', [notification_type], 'lines')
-                else:
-                    nt.append(notification_type)
-                    obj.manage_changeProperties(notification_types=nt)
-        
-        if not obj.hasProperty('action_taken_times'):
-            obj.manage_addProperty('action_taken_times', [str(now)], 'lines')
-        else:
-            att = obj.getProperty('action_taken_times')
-            att.append(str(now))
-            obj.manage_changeProperties(action_taken_times=att)
-        
-        if not obj.hasProperty('action_taken'):
-            obj.manage_addProperty('action_taken', [action], 'lines')
-        else:
-            at = obj.getProperty('action_taken')
-            at.append(action)
-            obj.manage_changeProperties(action_taken=at)    
-        
         return True
                 
     security.declareProtected('Upgrade objects', 'upgrade')
