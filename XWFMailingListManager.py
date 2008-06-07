@@ -331,18 +331,23 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
 
         log.info("Detected %s bounces on unique days" % len(previous_bounces))
 
+        addresses = map(lambda e: e.lower(), user.get_verifiedEmailAddresses())
+        try:
+            addresses.remove(email.lower())
+        except ValueError:
+            log.info('%s (%s) was already unverified' % (user_id, email))
+            do_notification = False
+        
         notification_type = 'bounce_detection'
         # disable address by unverifying after 3 bounces
         if len(previous_bounces) >= 3:
             # TODO: might want to clear the bounce table at this point perhaps
             uq = UserQuery(user, da)
             uq.unverify_userEmail(email)
-            log.info('Unverified %s (%s)' % (user_id, email))
-            notification_type = 'disabled_email'
+            log.info('Unverifying %s (%s)' % (user_id, email))
+            notification_type = 'disabled_email'            
         
         if do_notification:
-            addresses = user.get_verifiedEmailAddresses()
-            addresses.remove(email)
             if addresses:
                 n_dict = {}
                 try:
