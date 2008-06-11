@@ -38,10 +38,15 @@ class MemberQuery(object):
             if r.rowcount:
                 for row in r:
                     ignore_ids.append(row['user_id'])
-        
-            email_group = guet.select()
+
+            cols = [guet.c.user_id, guet.c.email]
+            email_group = sa.select(cols)
+            
             email_group.append_whereclause(guet.c.site_id==site_id)
             email_group.append_whereclause(guet.c.group_id==group_id)
+            if verified_only:
+                email_group.append_whereclause(guet.c.email==uet.c.email)
+                email_group.append_whereclause(uet.c.verified_date != None)
          
             r = email_group.execute()
             if r.rowcount:
