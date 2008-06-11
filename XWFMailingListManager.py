@@ -224,7 +224,10 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """
         list_props = {}
 
-        listobj = self.get_listFromMailto(mailto)               
+        try:
+            listobj = self.get_listFromMailto(mailto)
+        except AttributeError:
+            log.info("Could not find list for mailto (%s)" % mailto)
         if listobj:
             for prop in self._properties:
                 pid = prop['id']
