@@ -223,13 +223,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         """
         list_props = {}
-
-        try:
+       	try:
             listobj = self.get_listFromMailto(mailto)
         except AttributeError:
             log.info("Could not find list for mailto (%s)" % mailto)
             listobj = None
-
         if listobj:
             for prop in self._properties:
                 pid = prop['id']
@@ -280,19 +278,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             except:
                 pass
 
-    security.declarePublic('add_to_bounce_table')
-    def add_to_bounce_table(self, date, user_id, group_id, email):
-        """ """
-        da = self.site_root().zsqlalchemy
-        engine = da.engine
-        metadata = sa.BoundMetaData(engine)
-        bounceTable = sa.Table('bounce', metadata, autoload=True)
-        bt_insert = bounceTable.insert()
-
-        # insert into the bounce table
-        bt_insert.execute(date=date, group_id=group_id,
-                          site_id='', email=email, user_id=user_id)
-
     def processBounce(self, group_id, email):
         """ Process a bounce for a particular list.
         
@@ -303,16 +288,20 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         bounceTable = sa.Table('bounce', metadata, autoload=True)
         bt_insert = bounceTable.insert()
         bt_select = bounceTable.select()
-        bt_select.append_whereclause(bounceTable.c.email==email)
-        bt_select.order_by(sa.desc(bounceTable.c.date))
+        
+        now = datetime.datetime.now()        
 
+        bt_select.append_whereclause(bounceTable.c.email==email)
+        bt_select.append_whereclause(bounceTable.c.date > (now-datetime.timedelta(60)))
+        bt_select.order_by(sa.desc(bounceTable.c.date))
+        
         r = bt_select.execute()
         previous_bounces = []
         if r.rowcount:
             for row in r:
-                bounce_date = row['date'].strftime("%Y%m%d")
+                bounce_date = row['date']
                 if bounce_date not in previous_bounces:
-                    previous_bounces.append(bounce_date)
+                    previous_bounces.append(bounce_date.strftime("%Y%m%d"))
         
         user = self.acl_users.get_userByEmail(email)
         if not user:
@@ -324,17 +313,16 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         log.info('Bounce detected for %s (%s) in group %s' % (user_id, email, group_id))
         
         # insert into the bounce table
-        date = datetime.datetime.now()
-        bt_insert.execute(date=date, group_id=group_id,
+        bt_insert.execute(date=now, group_id=group_id,
                           site_id='', email=email, user_id=user_id)
 
         do_notification = False
-        bounce_date = date.strftime("%Y%m%d")
+        bounce_date = now.strftime("%Y%m%d")
         if bounce_date not in previous_bounces:
             previous_bounces.append(bounce_date)
             do_notification=True
 
-        log.info("Detected %s bounces on unique days" % len(previous_bounces))
+        log.info("Detected %s bounces on unique days in last 60 days" % len(previous_bounces))
 
         addresses = map(lambda e: e.lower(), user.get_verifiedEmailAddresses())
         try:
@@ -344,8 +332,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             do_notification = False
         
         notification_type = 'bounce_detection'
-        # disable address by unverifying after 3 bounces
-        if len(previous_bounces) >= 3:
+        # disable address by unverifying after 5 bounces
+        if len(previous_bounces) >= 5:
             # TODO: might want to clear the bounce table at this point perhaps
             uq = UserQuery(user, da)
             uq.unverify_userEmail(email)
