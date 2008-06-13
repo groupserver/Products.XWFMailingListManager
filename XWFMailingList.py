@@ -692,13 +692,16 @@ class XWFMailingList(Folder):
         # Get individually moderated members
         moderatedlist = filter(None, 
                                MailBoxerTools.lowerList(self.getValueFor('moderatedlist') or []))
-        
+        moderateduserlist = self.get_moderatedUserObjects(True)
+
         unclosed = self.getValueFor('unclosed')
         
         # if we have a moderated list we _only_ moderate those individual
-        # members, no others.
+        # members, no others. It's possible, due to the fact that we have
+        # unverified email addresses that moderatedlist can be empty, so
+        # we also check for the existence of moderated users
         moderate = False
-        if len(moderatedlist):
+        if len(moderatedlist) or len(moderateduserlist):
             m = '%s (%s) is a moderated list; hunting for individual '\
               'moderation' % (self.getProperty('title', ''), self.getId())
             log.info(m)
