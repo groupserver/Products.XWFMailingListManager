@@ -299,9 +299,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         previous_bounces = []
         if r.rowcount:
             for row in r:
-                bounce_date = row['date']
+                bounce_date = row['date'].strftime("%Y%m%d")
                 if bounce_date not in previous_bounces:
-                    previous_bounces.append(bounce_date.strftime("%Y%m%d"))
+                    previous_bounces.append(bounce_date)
         
         user = self.acl_users.get_userByEmail(email)
         if not user:
