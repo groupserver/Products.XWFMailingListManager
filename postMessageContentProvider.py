@@ -32,18 +32,19 @@ class GSPostMessageContentProvider(object):
           self.groupName = self.groupInfo.get_name()
           self.groupId = self.groupInfo.get_id()
           self.siteId = self.siteInfo.get_id()
-          user = self.request.AUTHENTICATED_USER
-          if user.getId() != None:
-              self.fromEmailAddresses = user.get_emailAddresses()
+          self.user = self.request.AUTHENTICATED_USER
+          if self.user.getId() != None:
+              self.fromEmailAddresses = self.user.get_emailAddresses()
               assert (len(self.fromEmailAddresses) > 0), \
                 "User has no email addresses set."
               self.preferredEmailAddresses = \
-                user.get_defaultDeliveryEmailAddresses()
-              assert (len(self.preferredEmailAddresses) > 0), \
-                "User has no preferred email addresses set."
-              self.preferredEmailAddress = self.preferredEmailAddresses[0]
-              if self.preferredEmailAddress not in self.fromEmailAddresses:
-                  self.preferredEmailAddress = self.fromEmailAddresses[0]
+                self.user.get_defaultDeliveryEmailAddresses()
+              if self.preferredEmailAddresses:
+                  self.preferredEmailAddress = self.preferredEmailAddresses[0]
+                  if self.preferredEmailAddress not in self.fromEmailAddresses:
+                      self.preferredEmailAddress = self.fromEmailAddresses[0]
+              else:
+                  self.preferredEmailAddress = None
           else:
               self.fromEmailAddresses = []
               self.preferredEmailAddress = None
@@ -53,20 +54,29 @@ class GSPostMessageContentProvider(object):
       def render(self):
           if not self.__updated:
               raise UpdateNotCalled
+          retval = None
           
           pageTemplate = self.cookedTemplates.get(self.pageTemplateFileName)
           if not pageTemplate:
               pageTemplate = PageTemplateFile(self.pageTemplateFileName)    
               self.cookedTemplates.add(self.pageTemplateFileName, pageTemplate)
-              
-          return pageTemplate(startNew=self.startNew,
-                              topic=self.topic,
-                              groupName=self.groupName,
-                              groupId=self.groupId,
-                              siteId=self.siteId,
-                              replyToId=self.replyToId,
-                              fromEmailAddresses=self.fromEmailAddresses,
-                              preferredEmailAddress=self.preferredEmailAddress)
+          if self.preferredEmailAddress:
+              retval = pageTemplate(startNew=self.startNew,
+                                    topic=self.topic,
+                                    groupName=self.groupName,
+                                    groupId=self.groupId,
+                                    siteId=self.siteId,
+                                    replyToId=self.replyToId,
+                                    fromEmailAddresses=self.fromEmailAddresses,
+                                    preferredEmailAddress=self.preferredEmailAddress)
+          elif (not(self.preferredEmailAddress) and 
+                (self.user.getId() != None)):
+              retval = u'<p class="message-error">You cannot post '\
+                u'because you have no default email address set. Go to '\
+                u'your profile and '\
+                u'<a href="%s/email.html">change your email '\
+                u'settings</a> to set a default address' % userInfo.url
+          return retval
           
       #########################################
       # Non standard methods below this point #
