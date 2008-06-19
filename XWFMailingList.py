@@ -1222,10 +1222,9 @@ class XWFMailingList(Folder):
             mailoptions = []
 
         # we want to handle bounces with XVERP
+        returnpath = self.getValueFor('digestreturnpath') or self.getValueFor('moderator')[0]
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
-        elif:
-            returnpath = self.getValueFor('digestreturnpath') or self.getValueFor('moderator')[0]
 
         digest = self.xwf_email_topic_digest(REQUEST, list_object=self, 
                                              getValueFor=self.getValueFor)
@@ -1656,17 +1655,15 @@ class XWFMailingList(Folder):
                 maillist.append(email)
 
         # if no returnpath is set, use first moderator as returnpath
-        returnpath=self.getValueFor('returnpath')
+        returnpath = self.getValueFor('returnpath') or self.getValueFor('moderator')[0]
         
         mailoptions = self.getValueFor('mailoptions')
         if not mailoptions:
             mailoptions = []
 
         # we want to handle bounces with XVERP
-        if not returnpath and 'XVERP' in mailoptions:
+        if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
-        elif not returnpath:
-            returnpath = self.getValueFor('moderator')[0]
         
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host') 
