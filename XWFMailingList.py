@@ -1222,11 +1222,10 @@ class XWFMailingList(Folder):
             mailoptions = []
 
         # we want to handle bounces with XVERP
-        if not returnpath and 'XVERP' in mailoptions:
+        if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
-        elif not returnpath:
-            returnpath=self.getValueFor('digestreturnpath')
-            returnpath = self.getValueFor('moderator')[0]
+        elif:
+            returnpath = self.getValueFor('digestreturnpath') or self.getValueFor('moderator')[0]
 
         digest = self.xwf_email_topic_digest(REQUEST, list_object=self, 
                                              getValueFor=self.getValueFor)
