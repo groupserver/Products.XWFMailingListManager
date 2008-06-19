@@ -1217,11 +1217,17 @@ class XWFMailingList(Folder):
             if '@' in email and email not in maillist:
                 maillist.append(email)
         
-        # if no digestreturnpath is set, use first moderator as returnpath
-        returnpath=self.getValueFor('digestreturnpath')
-        if not returnpath:
+        mailoptions = self.getValueFor('mailoptions')
+        if not mailoptions:
+            mailoptions = []
+
+        # we want to handle bounces with XVERP
+        if not returnpath and 'XVERP' in mailoptions:
+            returnpath = self.getValueFor('mailto')
+        elif not returnpath:
+            returnpath=self.getValueFor('digestreturnpath')
             returnpath = self.getValueFor('moderator')[0]
-        
+
         digest = self.xwf_email_topic_digest(REQUEST, list_object=self, 
                                              getValueFor=self.getValueFor)
         
@@ -1253,7 +1259,7 @@ class XWFMailingList(Folder):
             else:
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                                           int(self.MailHost.smtp_port))
-                smtpserver.sendmail(returnpath, maillist[0:batch], digest)
+                smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
                 smtpserver.quit()
 
             # remove already bulked addresses
