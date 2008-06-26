@@ -1664,7 +1664,7 @@ class XWFMailingList(Folder):
             mailoptions = []
 
         # we want to handle bounces with XVERP
-        if not returnpath and 'XVERP' in mailoptions:
+        if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
         
         if ((MaildropHostIsAvailable and
