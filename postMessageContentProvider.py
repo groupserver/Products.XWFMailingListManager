@@ -5,6 +5,7 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
 import Products.GSContent
 from Products.XWFCore.cache import LRUCache, SimpleCache
+from Products.CustomUserFolder.interfaces import IGSUserInfo
 from interfaces import IGSPostMessageContentProvider
 
 class GSPostMessageContentProvider(object):
@@ -54,7 +55,7 @@ class GSPostMessageContentProvider(object):
       def render(self):
           if not self.__updated:
               raise UpdateNotCalled
-          retval = None
+          retval = u''
           
           pageTemplate = self.cookedTemplates.get(self.pageTemplateFileName)
           if not pageTemplate:
@@ -71,6 +72,7 @@ class GSPostMessageContentProvider(object):
                                     preferredEmailAddress=self.preferredEmailAddress)
           elif (not(self.preferredEmailAddress) and 
                 (self.user.getId() != None)):
+              userInfo = IGSUserInfo(self.user)
               retval = u'<p class="message-error">You cannot post '\
                 u'because you have no default email address set. Go to '\
                 u'your profile and '\
