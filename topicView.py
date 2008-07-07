@@ -71,11 +71,14 @@ class GSTopicView(BrowserView, view.GSPostingInfo):
           if not self.topicId:
               self.postId = self.messageQuery.post_id_from_legacy_id(self.postId)
               self.topicId = self.messageQuery.topic_id_from_post_id(self.postId)
-          assert self.topicId, 'self.topicID set to %s' % self.topicId
-
-          self.topic = self.messageQuery.topic_posts(self.topicId)
-          assert len(self.topic) >= 1, "No posts in the topic %s" % self.topicId
-          self.lastPostId = self.topic[-1]['post_id']
+              
+          if self.topicId:
+              self.topic = self.messageQuery.topic_posts(self.topicId)
+              assert len(self.topic) >= 1, "No posts in the topic %s" % self.topicId
+              self.lastPostId = self.topic[-1]['post_id']
+          else:
+              self.topic = []
+              self.lastPostId = ''
           b = time.time()
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
 
@@ -87,12 +90,14 @@ class GSTopicView(BrowserView, view.GSPostingInfo):
               self.request.response.redirect('/topic-not-found?id=%s' % self.postId)
 
       def get_topic(self):
-          assert self.topic
+          #assert self.topic
           return self.topic
       
       def get_topic_name(self):
-          assert self.topic
-          retval = self.topic[0]['subject']
+          if self.topic != []:
+              retval = self.topic[0]['subject']
+          else:
+              retval = ''
           return retval
           
       def get_next_topic(self):

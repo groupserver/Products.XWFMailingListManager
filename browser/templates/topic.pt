@@ -73,7 +73,8 @@
         - instance.
         -->
       <tal:block metal:fill-slot="body"
-        tal:define="topicList python:view.get_topic()">
+        define="topicList python:view.get_topic()"
+        condition="topicList">
         <h1>All posts in the topic
           <cite tal:content="python:view.get_topic_name()">This Topic</cite>
           <a href="#" title="A short link to this topic" class="shortLink"
