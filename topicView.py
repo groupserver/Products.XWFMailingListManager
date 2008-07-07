@@ -82,9 +82,9 @@ class GSTopicView(BrowserView, view.GSPostingInfo):
       def do_error_redirect(self):
           # TODO Fix URLs
           if not self.postId:
-              self.request.response.redirect('/r/topic-no-id')
+              self.request.response.redirect('/topic-no-id')
           else:
-              self.request.response.redirect('/r/topic-not-found?id=%s' % self.postId)
+              self.request.response.redirect('/topic-not-found?id=%s' % self.postId)
 
       def get_topic(self):
           assert self.topic
