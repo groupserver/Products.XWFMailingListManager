@@ -2,6 +2,9 @@ import zope.interface, zope.component, zope.publisher.interfaces
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 from zope.schema import *
 
+class IMarkupEmail(zope.interface.Interface):
+    pass
+
 class IGSMessagesFolder(zope.interface.Interface):
     pass
 

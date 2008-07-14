@@ -1,9 +1,11 @@
 import re, cgi, textwrap
+from zope.component import getUtility
+from interfaces import IMarkupEmail
 
 email_matcher = re.compile(r"\b([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4})\b",
                            re.I|re.M|re.U)
 
-def markup_text(messageText):
+def markup_uris(messageText):
     """Mark up the plain text
     
     Used to mark up the email: the URLs are escaped, and email addresses are 
@@ -22,13 +24,27 @@ def markup_text(messageText):
         Originally found in XWFCore.
         
     """
-    # substitute email addresses
-    text = email_matcher.sub('<email obscured>', messageText)
+    text = cgi.escape(messageText)
+    otext = text
     
-    text = cgi.escape(text)
+    # substitute email addresses
+    text = email_matcher.sub('<email obscured>', text)
+    if text != otext:
+        return text
+
+    # substitute youtube
+    text = re.sub('(?i)(http://www.youtube.com/watch\?v\=)(.*)\s',
+                  '<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/\g<2>=en&amp;fs=1"></param><param name="allowFullScreen" value="true"></param><embed src="http://www.youtube.com/v/\g<2>&amp;hl=en&amp;fs=1" type="application/x-shockwave-flash" allowfullscreen="true" width="425" height="344"></embed></object>',
+                  text)
+    if text != otext:
+        return text
+    
+    # substitute other uris
     text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
             '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
             text)
+    if text != otext:
+        return text
     
     return text
 
@@ -179,6 +195,34 @@ def split_message(messageText, max_consecutive_comment=12,
     assert len(retval) == 2
     return retval
 
+def markup_email(context, text):
+    retval = ''
+    if text:
+        wrappedText = wrap_message(text)
+        markedUpPost = markup_uris(wrappedText).strip()
+        return markedUpPost
+        out_text = ''
+        curr_word = ''
+        for char in wrappedText:
+            if char.isspace():
+                if curr_word:
+                    markedUpWord = markup_uris(curr_word)
+                    curr_word = ''
+                    out_text += markedUpWord
+                out_text += char
+            else:
+                curr_word += char
+ 
+        if curr_word:
+            markedUpWord = markup_uris(curr_word)
+            out_text += markedUpWord
+
+        #markedUpPost = markup_uris(wrappedText).strip()
+        retval = out_text.strip()
+
+    #assert retval # Some messages may be blank
+    return retval    
+
               
 def get_mail_body(text):
     """Get the body of the mail message, formatted for the Web.
@@ -210,9 +254,12 @@ def get_mail_body(text):
     #text = ctct(body, contentType)  
     retval = ''
     if text:    
-        wrappedText = wrap_message(text)
-        markedUpPost = markup_text(wrappedText).strip()
-        retval = markedUpPost
+        markupEmailUtility = getUtility(IMarkupEmail)
+        retval = markupEmailUtility(None, text)
+
+        #wrappedText = wrap_message(text)
+        #markedUpPost = markup_text(wrappedText).strip()
+        #retval = markedUpPost
 
     #assert retval # Some messages may be blank
     return retval
