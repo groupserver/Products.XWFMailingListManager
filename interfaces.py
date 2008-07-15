@@ -5,6 +5,9 @@ from zope.schema import *
 class IMarkupEmail(zope.interface.Interface):
     pass
 
+class IWrapEmail(zope.interface.Interface):
+    pass
+
 class IGSMessagesFolder(zope.interface.Interface):
     pass
 

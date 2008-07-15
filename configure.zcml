@@ -91,8 +91,10 @@
     file="browser/javascript/showHideInlineElements.js" 
     permission="zope2.View" />
 
-
   <utility component=".emailbody.markup_email"
            provides=".interfaces.IMarkupEmail" />
+
+  <utility component=".emailbody.wrap_message"
+           provides=".interfaces.IWrapEmail" />
 
 </configure>

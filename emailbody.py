@@ -1,52 +1,57 @@
-import re, cgi, textwrap
+import re, cgi, textwrap, logging
+
 from zope.component import getUtility
-from interfaces import IMarkupEmail
+from interfaces import IMarkupEmail, IWrapEmail
+
+log = logging.getLogger('emailbody')
 
 email_matcher = re.compile(r"\b([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4})\b",
                            re.I|re.M|re.U)
 
-def markup_uris(messageText):
-    """Mark up the plain text
+def escape_word(word):
+    word = cgi.escape(word)
     
-    Used to mark up the email: the URLs are escaped, and email addresses are 
-    obfuscated.
+    return word
 
-    ARGUMENTS
-        "messageText" The text to alter.
-          
-    RETURNS
-        A string containing the marked-up text.
-        
-    SIDE EFFECTS
-        None.
-
-    NOTE    
-        Originally found in XWFCore.
-        
+def markup_uri(word, substituted, substituted_words):
+    """ Markup URI in word.
+    
     """
-    text = cgi.escape(messageText)
-    otext = text
-    
-    # substitute email addresses
-    text = email_matcher.sub('<email obscured>', text)
-    if text != otext:
-        return text
+    if substituted:
+        return word
 
-    # substitute youtube
-    text = re.sub('(?i)(http://www.youtube.com/watch\?v\=)(.*)\s',
-                  '<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/\g<2>=en&amp;fs=1"></param><param name="allowFullScreen" value="true"></param><embed src="http://www.youtube.com/v/\g<2>&amp;hl=en&amp;fs=1" type="application/x-shockwave-flash" allowfullscreen="true" width="425" height="344"></embed></object>',
-                  text)
-    if text != otext:
-        return text
-    
-    # substitute other uris
-    text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
+    word = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
             '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
-            text)
-    if text != otext:
-        return text
+            word)
+
+    return word    
+
+def obfuscate_email(word, substituted, substituted_words):
+    """ Obfuscate email addresses in word.
+
+    """
+    if substituted:
+        return word
+
+    word = email_matcher.sub('<email obscured>', word)
     
-    return text
+    return word
+
+def markup_youtube(word, substituted, substituted_words):
+    """ Markup youtube URIs.
+    
+    """
+    if substituted:
+        return word
+
+    if word in substituted_words:
+        return word
+
+    word = re.sub('(?i)(http://www.youtube.com/watch\?v\=)(.*)($|\s)',
+                  '<object width="425" height="344"><param name="movie" value="http://www.youtube.com/v/\g<2>=en&amp;fs=1"></param><param name="allowFullScreen" value="true"></param><embed src="http://www.youtube.com/v/\g<2>&amp;hl=en&amp;fs=1" type="application/x-shockwave-flash" allowfullscreen="true" width="425" height="344"></embed></object>\g<3>',
+                  word)
+    
+    return word
 
 def wrap_message(messageText, width=79):
     """Word-wrap the message
@@ -195,18 +200,33 @@ def split_message(messageText, max_consecutive_comment=12,
     assert len(retval) == 2
     return retval
 
+markup_functions = (obfuscate_email, markup_youtube, markup_uri)
+
+def markup_word(context, word, substituted_words):
+    word = escape_word(word)
+    substituted = False
+    
+    for function in markup_functions:
+        nword = function(word, substituted, substituted_words)
+        if nword != word:
+            substituted = True
+            if word not in substituted_words:
+                substituted_words.append(word)
+        
+        word = nword
+
+    return word
+
 def markup_email(context, text):
     retval = ''
+    substituted_words = []
     if text:
-        wrappedText = wrap_message(text)
-        markedUpPost = markup_uris(wrappedText).strip()
-        return markedUpPost
         out_text = ''
         curr_word = ''
-        for char in wrappedText:
+        for char in text:
             if char.isspace():
                 if curr_word:
-                    markedUpWord = markup_uris(curr_word)
+                    markedUpWord = markup_word(None, curr_word, substituted_words)
                     curr_word = ''
                     out_text += markedUpWord
                 out_text += char
@@ -214,13 +234,11 @@ def markup_email(context, text):
                 curr_word += char
  
         if curr_word:
-            markedUpWord = markup_uris(curr_word)
+            markedUpWord = markup_word(None, curr_word, substituted_words)
             out_text += markedUpWord
 
-        #markedUpPost = markup_uris(wrappedText).strip()
         retval = out_text.strip()
 
-    #assert retval # Some messages may be blank
     return retval    
 
               
@@ -245,23 +263,16 @@ def get_mail_body(text):
     SIDE EFFECTS
         None.  
     """
-    # --==mpj17=-- 
-    #   I have to check up with rrw to see if posts support has_key
-    # assert self.post['mailBody']
-
-    #contentType = getattr(self.post, 'content-type', None)
-    #ctct = Products.XWFCore.XWFUtils.convertTextUsingContentType
-    #text = ctct(body, contentType)  
     retval = ''
     if text:    
-        markupEmailUtility = getUtility(IMarkupEmail)
-        retval = markupEmailUtility(None, text)
+        wrapEmail = getUtility(IWrapEmail)
+        text = wrapEmail(text)
+        
+        markupEmail = getUtility(IMarkupEmail)
+        text = markupEmail(None, text)
+        
+        retval = text
 
-        #wrappedText = wrap_message(text)
-        #markedUpPost = markup_text(wrappedText).strip()
-        #retval = markedUpPost
-
-    #assert retval # Some messages may be blank
     return retval
 
 def get_email_intro_and_remainder(text):
