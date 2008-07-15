@@ -1,11 +1,16 @@
 import time, pytz
 from datetime import datetime, timedelta
+
+from zope.app.apidoc import interface
+
 from Products.CustomUserFolder.interfaces import ICustomUser, IGSUserInfo
 from Products.XWFChat.interfaces import IGSGroupFolder
 from Products.GSContent.interfaces import IGSGroupInfo
 from Products.GSGroupMember.groupmembership import user_member_of_group,
   user_participation_coach_of_group, user_admin_of_group
 from Products.XWFCore.XWFUtils import munge_date
+from Products.XWFMailingListManager.queries import MessageQuery
+from Products.GSProfile import interfaces as profileinterfaces
 
 class GSGroupMemberPostingInfo(object)
 
@@ -25,7 +30,7 @@ class GSGroupMemberPostingInfo(object)
 
         da = group.zsqlalchemy 
         assert da
-        self.messageQuery = queries.MessageQuery(group, da)
+        self.messageQuery = MessageQuery(group, da)
         
         self.__status = None
         self.__canPost == None
@@ -117,6 +122,13 @@ class GSGroupMemberPostingInfo(object)
         return retval
 
     def user_posting_limits_hit(self):
+        '''The posting limits are based on the *rate* of posting to the 
+        group. The maximum allowed rate of posting is defined by the 
+        "senderlimit" and "senderinterval" properties of the mailing list
+        for the group. If the user has exceeded his or her posting limits
+        if  more than "senderlimit" posts have been sent in
+        "senderinterval" seconds to the group.
+        '''
         if user_participation_coach_of_group(self.userInfo, self.groupInfo):
             retval = False
             self.__status = u'the participation coach of %s' %\
@@ -149,16 +161,50 @@ class GSGroupMemberPostingInfo(object)
         return retval
 
     def user_blocked_from_posting(self):
-        retval = False
-        self.__status = u'blocked from posting'
+        '''Blocking a user from posting is a powerful, but rarely used
+        tool. Rather than removing a disruptive member from the group, or
+        moderating the user, the user can be blocked from posting.
+        '''
+        blockedMemberIds = self.mailingList.getProperty('blocked_members', 
+                                                        [])
+        if (self.userInfo.id in blockedMemberIds):
+            retval = True
+            self.__status = u'blocked from posting'
+        else:
+            retval = False
+            self.__status = u'not blocked from posting'
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
 
     def user_has_required_properties(self):
+        requiredSiteProperties = self.get_required_site_properties()
+        requiredGroupProperties = self.get_required_group_properties()
+        requiredProperties = requiredSiteProperties + requiredGroupProperties
+        
         retval = False
         self.__status = u'required properties not set'
         assert type(self.__status) == unicode
         assert type(retval) == bool
+        return retval
+
+    def get_required_site_properties(self):
+        site_root = self.groupInfo.group.site_root()
+        assert hasattr(site_root, 'GlobalConfiguration')
+        config = site_root.GlobalConfiguration
+        interfaceName = config.getProperty('profileInterface',
+                                           'IGSCoreProfile')
+        assert hasattr(profileinterfaces, interfaceName), \
+            'Interface "%s" not found.' % interfaceName
+        profileInterface = getattr(profileinterfaces, interfaceName)
+        
+        retval = [n for n, a in interface.getFieldsInOrder(profileInterface)]
+
+        assert type(retval) == list
+        return retval
+
+    def get_required_group_properties(self):
+        retval = self.mailingList.getProperty('required_properties', [])
+        assert type(retval) == list
         return retval
 
