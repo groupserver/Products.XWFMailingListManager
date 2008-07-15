@@ -646,3 +646,21 @@ class MessageQuery(object):
                         'last_post_date': x['last_post_date']} for x in r ]
         return retval
 
+    def num_posts_after_date(self, site_id, group_id, user_id, date):
+        assert type(site_id)  == str
+        assert type(group_id) == str
+        assert type(user_id)  == str
+                
+        pt = self.postTable
+        cols = [sa.func.count(pt.c.post_id)]
+        statement = sa.select(cols)
+        statement.append_whereclause(pt.c.site_id  == site_id)
+        statement.append_whereclause(pt.c.group_id == group_id)
+        statement.append_whereclause(pt.c.user_id  == user_id)
+        statement.append_whereclause(pt.c.date  > date)
+
+        r = statement.execute()
+        retval = r.scalar()
+        assert type(retval) = int
+        return retval
+
