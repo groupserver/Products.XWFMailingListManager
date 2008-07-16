@@ -6,13 +6,13 @@ from zope.app.apidoc import interface
 from Products.CustomUserFolder.interfaces import ICustomUser, IGSUserInfo
 from Products.XWFChat.interfaces import IGSGroupFolder
 from Products.GSContent.interfaces import IGSGroupInfo
-from Products.GSGroupMember.groupmembership import user_member_of_group,
+from Products.GSGroupMember.groupmembership import user_member_of_group,\
   user_participation_coach_of_group, user_admin_of_group
 from Products.XWFCore.XWFUtils import munge_date
 from Products.XWFMailingListManager.queries import MessageQuery
 from Products.GSProfile import interfaces as profileinterfaces
 
-class GSGroupMemberPostingInfo(object)
+class GSGroupMemberPostingInfo(object):
 
     def __init__(self, group, user):
         assert IGSGroupFolder.providedBy(group),\
@@ -24,20 +24,24 @@ class GSGroupMemberPostingInfo(object)
         self.groupInfo = IGSGroupInfo(group)
         self.group = group
         
-        mailingListManager = self.mailingListManager = group.ListManager
+        site_root = group.aq_parent.aq_parent.aq_parent.aq_parent.aq_parent
+        self.site_root = site_root
+        mailingListManager = self.mailingListManager = site_root.ListManager
         mailingList = self.mailingList =\
           mailingListManager.get_list(group.getId())
 
-        da = group.zsqlalchemy 
+        da = site_root.zsqlalchemy 
         assert da
         self.messageQuery = MessageQuery(group, da)
         
         self.__status = None
-        self.__canPost == None
+        self.__statusNum = 0
+        self.__canPost = None
+        self.__profileInterfaces = None
     
     @property
     def whoCanPost(self):
-        retval = u'No one can post messages.'
+        retval = u'no one can post messages.'
         assert retval
         assert type(retval) == unicode
         return retval
@@ -52,10 +56,16 @@ class GSGroupMemberPostingInfo(object)
         return retval
 
     @property
+    def statusNum(self):
+        retval = self.__statusNum
+        assert type(retval) == int
+        return retval
+
+    @property
     def canPost(self):
         if self.__canPost == None:
             self.__canPost = \
-              not(self.group_is_closed()) or\
+              self.group_is_unclosed() or\
               (self.user_is_member() and\
                 self.user_is_posting_member() and\
                 not(self.user_posting_limit_hit()) and\
@@ -65,7 +75,7 @@ class GSGroupMemberPostingInfo(object)
         assert type(retval) == bool
         return retval
         
-    def group_is_closed(self):
+    def group_is_unclosed(self):
         '''A closed group is one where only members can post. It is 
           defined by the Germanic-property "unclosed", which GroupServer
           inherited from MailBoxer. (We would love to change its name, but
@@ -73,7 +83,7 @@ class GSGroupMemberPostingInfo(object)
           
           If the "unclosed" property is "True" then the group is open to 
           any poster, and we do not have to bother with any member-specific
-          checks. Support groups are like this.
+          checks. Support groups like this.
           
           If the "unclosed" property is "Fase" then we have to perform the
           member-specific checks to ensure that the posting user is allowed
@@ -81,26 +91,29 @@ class GSGroupMemberPostingInfo(object)
         '''
         retval = self.mailingList.getProperty('unclosed', False)
         if retval:
-            self.__status = u'the group %s is open to anyone posting' %\
-              self.groupInfo.name
+            self.__status = u'the group is open to anyone posting'
+            self.__statusNum = self.__statusNum + 0
         else:
-            self.__status = u'only members can post to the group %s' %\
-              self.groupInfo.name
+            self.__status = u'not a member'
+            self.__statusNum = self.__statusNum + 1
+
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
 
-    def user_is_memeber(self):
+    def user_is_member(self):
         retval = user_member_of_group(self.user, self.group)
         if retval:
-            self.__status = u'a member of %s' % self.groupInfo
+            self.__status = u'a member'
+            self.__statusNum = self.__statusNum + 0
         else:
-            self.__status = u'not a member of %s' % self.groupInfo
+            self.__status = u'not a member'
+            self.__statusNum = self.__statusNum + 2
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
 
-    def user_is_posting_memeber(self):
+    def user_is_posting_member(self):
         '''Check the "posting_members" property of the mailing list,
         which is assumed to be a lines-property containing the user-IDs of
         the people who can post. If the property does not contain any
@@ -112,16 +125,16 @@ class GSGroupMemberPostingInfo(object)
         else:
             retval = True
         if retval:
-            self.__status = u'a posting member of %s' %\
-               self.groupInfo.name
+            self.__status = u'posting member'
+            self.__statusNum = self.__statusNum + 0
         else:
-            self.__status = u'not a posting member of %s' %\
-               self.groupInfo.name
+            self.__status = u'not a posting member'
+            self.__statusNum = self.__statusNum + 4
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
 
-    def user_posting_limits_hit(self):
+    def user_posting_limit_hit(self):
         '''The posting limits are based on the *rate* of posting to the 
         group. The maximum allowed rate of posting is defined by the 
         "senderlimit" and "senderinterval" properties of the mailing list
@@ -131,12 +144,12 @@ class GSGroupMemberPostingInfo(object)
         '''
         if user_participation_coach_of_group(self.userInfo, self.groupInfo):
             retval = False
-            self.__status = u'the participation coach of %s' %\
-              self.groupInfo.name
+            self.__status = u'participation coach'
+            self.__statusNum = self.__statusNum + 0
         elif user_admin_of_group(self.userInfo, self.groupInfo):
             retval = False
-            self.__status = u'an administrator of %s' %\
-              self.groupInfo.name
+            self.__status = u'administrator of'
+            self.__statusNum = self.__statusNum + 0
         else:
             # The user is not the participation coach or the administrator
             # of the group
@@ -152,10 +165,12 @@ class GSGroupMemberPostingInfo(object)
                 # The user has made over the allowed number of posts in
                 # the interval
                 retval = True
-                self.__status = u'have exceeded the posting limit'
+                self.__status = u'the posting limit has been exceeded'
+                self.__statusNum = self.__statusNum + 8
             else:
                 retval = False
-                self.__status = u'are under the posting limit'
+                self.__status = u'under the posting limit'
+                self.__statusNum = self.__statusNum + 0
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
@@ -170,41 +185,81 @@ class GSGroupMemberPostingInfo(object)
         if (self.userInfo.id in blockedMemberIds):
             retval = True
             self.__status = u'blocked from posting'
+            self.__statusNum = self.__statusNum + 16
         else:
             retval = False
             self.__status = u'not blocked from posting'
+            self.__statusNum = self.__statusNum + 0
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
 
     def user_has_required_properties(self):
+        '''The user must have the required properties filled out before
+        he or she can post to the group — otherwise they would not be
+        required, would they! The required properties can come from one
+        of two places: the properties that are required for the site, and
+        the properties required for the group. 
+        '''
         requiredSiteProperties = self.get_required_site_properties()
         requiredGroupProperties = self.get_required_group_properties()
         requiredProperties = requiredSiteProperties + requiredGroupProperties
         
-        retval = False
-        self.__status = u'required properties not set'
+        retval = True
+        self.__status = u'required properties set'
+        for p in requiredProperties:
+            if not(self.userInfo.get_property(p, None)):
+              retval = False
+              field = [a for n, a in self.get_site_properties() if n == p]
+              self.__status = u'the required property %s is not set' %\
+                field.title
+              self.__statusNum = self.__statusNum + 32
+              break
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
 
-    def get_required_site_properties(self):
-        site_root = self.groupInfo.group.site_root()
-        assert hasattr(site_root, 'GlobalConfiguration')
-        config = site_root.GlobalConfiguration
-        interfaceName = config.getProperty('profileInterface',
-                                           'IGSCoreProfile')
-        assert hasattr(profileinterfaces, interfaceName), \
-            'Interface "%s" not found.' % interfaceName
-        profileInterface = getattr(profileinterfaces, interfaceName)
-        
-        retval = [n for n, a in interface.getFieldsInOrder(profileInterface)]
-
-        assert type(retval) == list
+    def get_site_properties(self):
+        '''Whole-heartly nicked from the GSProfile code, the site-wide
+        user properties rely on a bit of voodoo: the schemas themselves
+        are defined in the file-system, but which schema to use is stored
+        in the "GlobalConfiguration" instance.
+        '''
+        if self.__profileInterfaces == None:
+            assert hasattr(self.site_root, 'GlobalConfiguration')
+            config = self.site_root.GlobalConfiguration
+            interfaceName = config.getProperty('profileInterface',
+                                               'IGSCoreProfile')
+            assert hasattr(profileinterfaces, interfaceName), \
+                'Interface "%s" not found.' % interfaceName
+            profileInterface = getattr(profileinterfaces, interfaceName)
+            self.__profileInterfaces =\
+              interface.getFieldsInOrder(profileInterface)
+        retval = self.__profileInterfaces
         return retval
 
+    def get_required_site_properties(self):
+        '''Site-properties are properties that are required to be a member
+        of the site. It is very hard *not* to have required site-properties
+        filled out, but as subscription-by-email is possible, we have to
+        allow for the possibility.
+        '''
+        retval = [n for n, a in self.get_site_properties() if a.required]
+        assert type(retval) == list
+        return retval
+        
     def get_required_group_properties(self):
-        retval = self.mailingList.getProperty('required_properties', [])
+        '''Required group properties are stored on the mailing-list 
+        instance for the group. They are checked against the site-wide
+        user properties, to ensure that it is *possible* to have the
+        user-profile attribute filled.
+        '''
+        groupProps = self.mailingList.getProperty('required_properties', [])
+        siteProps = [n for n, a in self.get_site_properties()]
+        retval = []
+        for prop in groupProps:
+            if prop in siteProps:
+                retval.append(prop)
         assert type(retval) == list
         return retval
 
