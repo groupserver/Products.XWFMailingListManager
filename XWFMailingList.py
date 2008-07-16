@@ -919,11 +919,6 @@ class XWFMailingList(Folder):
             Returns a tuple containing:
             (isblocked (boolean), unblock time (datetime))
         """
-
-         # TODO
-         # --=mpj17=-- This needs to be converted to use the new 
-         # IGSMessagePosting adaptors.
-
         senderlimit = self.getValueFor('senderlimit')
         senderinterval = self.getValueFor('senderinterval')
         user = self.acl_users.getUserById(user_id)
@@ -932,22 +927,31 @@ class XWFMailingList(Folder):
 
         retval = (False, -1) # Uncharacteristic optimism
         if user.getId() != ptnCoachId:
-            for email in user.get_emailAddresses():
-                ntime = int(time.time())
-                count = 0
-                etime = ntime-senderinterval
-                earliest = 0
-                for atime in self.sendercache.get(email, []):
-                    if atime > etime:
-                        if not earliest or atime < earliest:
-                            earliest = atime
-                        count += 1
-                    else:
-                        break
+            retval = self.user_blocked(user)
+        return retval
 
-                if count >= senderlimit:
-                    retval = (True, DateTime(earliest+senderinterval))
+    def user_blocked(self, user):
+        assert user
+        senderlimit = self.getValueFor('senderlimit')
+        senderinterval = self.getValueFor('senderinterval')
+
+        retval = (False, -1) # Uncharacteristic optimism
+        for email in user.get_emailAddresses():
+            ntime = int(time.time())
+            count = 0
+            etime = ntime-senderinterval
+            earliest = 0
+            for atime in self.sendercache.get(email, []):
+                if atime > etime:
+                    if not earliest or atime < earliest:
+                        earliest = atime
+                    count += 1
+                else:
                     break
+
+            if count >= senderlimit:
+                retval = (True, DateTime(earliest+senderinterval))
+                break
         return retval
 
     def checkMail(self, REQUEST):

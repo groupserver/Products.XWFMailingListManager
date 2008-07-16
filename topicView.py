@@ -35,7 +35,7 @@ class GSTopicTraversal(BrowserView):
     def __call__(self):
       return getMultiAdapter((self.context, self.request), name="gstopic")()
 
-class GSTopicView(BrowserView, view.GSPostingInfo):
+class GSTopicView(BrowserView):
       """View of a single GroupServer Topic"""
       implements(IGSTopicView)
       def __init__(self, context, request):

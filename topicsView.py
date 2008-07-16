@@ -3,9 +3,9 @@ from Products.Five import BrowserView
 from zope.component import createObject
 import Products.GSContent
 from Products.GSSearch import queries
-from view import GSPostingInfo # FIX
+# from view import GSPostingInfo # FIX
 
-class GSTopicsView(BrowserView, GSPostingInfo):
+class GSTopicsView(BrowserView):
       """List of latest topics in the group."""
       def __init__(self, context, request):
           self.context = context

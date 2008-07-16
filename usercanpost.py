@@ -2,6 +2,7 @@ import time, pytz
 from datetime import datetime, timedelta
 
 from zope.app.apidoc import interface
+from zope.component import createObject
 
 from Products.CustomUserFolder.interfaces import ICustomUser, IGSUserInfo
 from Products.XWFChat.interfaces import IGSGroupFolder
@@ -17,19 +18,22 @@ class GSGroupMemberPostingInfo(object):
     def __init__(self, group, user):
         assert IGSGroupFolder.providedBy(group),\
           '%s is not a group' % group
-        assert ICustomUser.providedBy(user), '%s is not a user' % user
-        
-        self.userInfo = IGSUserInfo(user)
-        self.user = user
-        self.groupInfo = IGSGroupInfo(group)
-        self.group = group
+        #assert ICustomUser.providedBy(user), '%s is not a user' % user
         
         site_root = group.aq_parent.aq_parent.aq_parent.aq_parent.aq_parent
         self.site_root = site_root
+        
         mailingListManager = self.mailingListManager = site_root.ListManager
         mailingList = self.mailingList =\
           mailingListManager.get_list(group.getId())
 
+        self.userInfo = createObject('groupserver.UserFromId', 
+                                      site_root, user.getId())
+        self.user = self.userInfo.user
+        
+        self.groupInfo = IGSGroupInfo(group)
+        self.group = group
+        
         da = site_root.zsqlalchemy 
         assert da
         self.messageQuery = MessageQuery(group, da)
@@ -66,7 +70,9 @@ class GSGroupMemberPostingInfo(object):
         if self.__canPost == None:
             self.__canPost = \
               self.group_is_unclosed() or\
-              (self.user_is_member() and\
+               (not(self.user_anonymous()) and\
+                self.user_is_member() and\
+                self.user_has_preferred_email_addresses() and\
                 self.user_is_posting_member() and\
                 not(self.user_posting_limit_hit()) and\
                 not(self.user_blocked_from_posting()) and\
@@ -85,7 +91,7 @@ class GSGroupMemberPostingInfo(object):
           any poster, and we do not have to bother with any member-specific
           checks. Support groups like this.
           
-          If the "unclosed" property is "Fase" then we have to perform the
+          If the "unclosed" property is "False" then we have to perform the
           member-specific checks to ensure that the posting user is allowed
           to post.
         '''
@@ -101,6 +107,32 @@ class GSGroupMemberPostingInfo(object):
         assert type(retval) == bool
         return retval
 
+    def user_anonymous(self):
+        retval = self.userInfo.anonymous
+        if retval:
+            self.__status = u'not logged in'
+            self.__statusNum = self.__statusNum + 2
+        else:
+            self.__status = u'logged in'
+            self.__statusNum = self.__statusNum + 0
+            
+        assert type(self.__status) == unicode
+        assert type(retval) == bool
+        return retval
+
+    def user_has_preferred_email_addresses(self):
+        preferredEmailAddresses =\
+          self.userInfo.user.get_defaultDeliveryEmailAddresses()
+        retval = len(preferredEmailAddresses) >= 1
+        if retval:
+            self.__status = u'preferred email addresses'
+        else:
+            self.__status = u'no preferred email addresses'
+            self.__statusNum = self.__statusNum + 4
+        assert type(self.__status) == unicode
+        assert type(retval) == bool
+        return retval
+
     def user_is_member(self):
         retval = user_member_of_group(self.user, self.group)
         if retval:
@@ -108,7 +140,7 @@ class GSGroupMemberPostingInfo(object):
             self.__statusNum = self.__statusNum + 0
         else:
             self.__status = u'not a member'
-            self.__statusNum = self.__statusNum + 2
+            self.__statusNum = self.__statusNum + 8
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
@@ -129,7 +161,7 @@ class GSGroupMemberPostingInfo(object):
             self.__statusNum = self.__statusNum + 0
         else:
             self.__status = u'not a posting member'
-            self.__statusNum = self.__statusNum + 4
+            self.__statusNum = self.__statusNum + 16
         assert type(self.__status) == unicode
         assert type(retval) == bool
         return retval
@@ -166,7 +198,7 @@ class GSGroupMemberPostingInfo(object):
                 # the interval
                 retval = True
                 self.__status = u'the posting limit has been exceeded'
-                self.__statusNum = self.__statusNum + 8
+                self.__statusNum = self.__statusNum + 32
             else:
                 retval = False
                 self.__status = u'under the posting limit'
@@ -185,7 +217,7 @@ class GSGroupMemberPostingInfo(object):
         if (self.userInfo.id in blockedMemberIds):
             retval = True
             self.__status = u'blocked from posting'
-            self.__statusNum = self.__statusNum + 16
+            self.__statusNum = self.__statusNum + 64
         else:
             retval = False
             self.__status = u'not blocked from posting'
@@ -213,7 +245,7 @@ class GSGroupMemberPostingInfo(object):
               field = [a for n, a in self.get_site_properties() if n == p]
               self.__status = u'the required property %s is not set' %\
                 field.title
-              self.__statusNum = self.__statusNum + 32
+              self.__statusNum = self.__statusNum + 128
               break
         assert type(self.__status) == unicode
         assert type(retval) == bool
