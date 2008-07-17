@@ -190,7 +190,7 @@ class GSGroupMemberPostingInfo(object):
             uid = self.userInfo.id
             limit = self.mailingList.getValueFor('senderlimit')
             interval = self.mailingList.getValueFor('senderinterval')
-            earlyDate = datetime.now(pytz.utc) - timedelta(interval)
+            earlyDate = datetime.now(pytz.utc) - timedelta(seconds=interval)
             count = self.messageQuery.num_posts_after_date(sid, gid, uid, 
                                                            earlyDate)
             if count >= limit:
@@ -242,7 +242,7 @@ class GSGroupMemberPostingInfo(object):
         for p in requiredProperties:
             if not(self.userInfo.get_property(p, None)):
               retval = False
-              field = [a for n, a in self.get_site_properties() if n == p]
+              field = [a for n, a in self.get_site_properties() if n == p][0]
               self.__status = u'the required property %s is not set' %\
                 field.title
               self.__statusNum = self.__statusNum + 128
