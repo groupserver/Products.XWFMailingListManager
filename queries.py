@@ -661,6 +661,6 @@ class MessageQuery(object):
 
         r = statement.execute()
         retval = r.scalar()
-        assert type(retval) == int
+        assert type(retval) == long, 'retval is %s' % type(retval)
         return retval
 
