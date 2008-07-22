@@ -917,7 +917,17 @@ class XWFMailingList(Folder):
             return (msg.post_id, ids)
     
     def checkMail(self, REQUEST):
-        # Check for ip, loops and spam.
+        '''Check the email for the correct IP address, loops and spam.
+        
+        The work of this method is done in two places:
+            * The "chk_*" methods of the mailing list, and
+            * A Group Member Posting Info, which is instantiated here.
+        
+        RETURNS
+            Unicode if there is a problem (the message should not be 
+            posted), or None otherwise.
+        '''
+        # 
 
         if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
             message = u'%s (%s): Host %s is not allowed' %\
@@ -990,10 +1000,15 @@ class XWFMailingList(Folder):
         # custom_mailcheck should return True if the message is to be blocked
         custom_mailcheck = getattr(self, 'custom_mailcheck', None)
         if custom_mailcheck:
-            if custom_mailcheck(mailinglist=self, sender=email, header=msg, body=msg.body):
+            if custom_mailcheck(mailinglist=self, sender=email, header=msg,
+                                body=msg.body):
                 return message
+        return None
         
     def chk_request_from_allowed_mta_hosts(self, REQUEST):
+        '''Check if the request comes from one of the allowed Mail Transfer
+        Agent host-machines.
+        '''
         retval = True
         mtahosts = self.getValueFor('mtahosts')
         if mtahosts:
