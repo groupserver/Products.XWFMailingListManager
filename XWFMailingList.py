@@ -927,8 +927,6 @@ class XWFMailingList(Folder):
             Unicode if there is a problem (the message should not be 
             posted), or None otherwise.
         '''
-        # 
-
         if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
             message = u'%s (%s): Host %s is not allowed' %\
               (self.getProperty('title', ''), self.getId(), REMOTE_IP)
@@ -959,14 +957,15 @@ class XWFMailingList(Folder):
             message = u'%s (%s): automated response detected from <%s>' %\
               (groupInfo.name, groupInfo.id, msg.get('from', '<>'))
         elif self.chk_msg_tight_loop(msg):
-            message = u'%s (%s): Detected duplicate message from <%s>' % \
+            message = u'%s (%s): Detected duplicate message, using tight '\
+              u'loop, from <%s>' % \
               (groupInfo.name, groupInfo.id, msg.get('from'))
         elif self.chk_msg_disabled(msg):
             message = u'%s (%s): Email address <%s> is disabled.' %\
-              (groupInfo.name, groupInfo.id, email)
+              (groupInfo.name, groupInfo.id, msg.sender)
         elif self.chk_msg_spam(mailString): # --=mpj17=--I moved this far
             message = u'%s (%s): Spam detected' %\
-              (groupInfo.title, groupInfo.id)
+              (groupInfo.name, groupInfo.id)
         
         if message:
             assert type(message) == unicode
@@ -1039,6 +1038,7 @@ class XWFMailingList(Folder):
     def chk_msg_automatic_email(self, msg):
         '''Check for empty return-path, which implies automatic mail'''
         retval = msg.get('return-path') == '<>'
+        print msg.get('return-path')
         assert type(retval) == bool
         return retval
 
