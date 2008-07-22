@@ -69,6 +69,22 @@ def markup_splashcast(word, substituted, substituted_words):
     
     return word
 
+def markup_bold(word, substituted, substituted_words):
+    """ Markup splashcast URIs.
+    
+    """
+    if substituted:
+        return word
+
+    if word in substituted_words:
+        return word
+
+    word = re.sub('(\*.*\*)',
+                  '<strong>\g<1></strong>',
+                  word)
+    
+    return word
+
 def wrap_message(messageText, width=79):
     """Word-wrap the message
     
@@ -216,7 +232,7 @@ def split_message(messageText, max_consecutive_comment=12,
     assert len(retval) == 2
     return retval
 
-markup_functions = (obfuscate_email, markup_youtube, markup_splashcast, markup_uri)
+markup_functions = (obfuscate_email, markup_youtube, markup_splashcast, markup_uri, markup_bold)
 
 def markup_word(context, word, substituted_words):
     word = escape_word(word)
