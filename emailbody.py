@@ -70,13 +70,11 @@ def markup_splashcast(word, substituted, substituted_words):
     return word
 
 def markup_bold(word, substituted, substituted_words):
-    """ Markup splashcast URIs.
-    
+    """Markup words that should be bold, because they have astersisks 
+      around them.
     """
     if substituted:
-        return word
-
-    if word in substituted_words:
+        # Do not substitute if the word has already been marked-up
         return word
 
     word = re.sub('(\*.*\*)',
