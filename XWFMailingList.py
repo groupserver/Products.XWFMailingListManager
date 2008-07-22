@@ -14,10 +14,12 @@ from DateTime.DateTime import DateTime
 from Globals import InitializeClass
 from OFS.Folder import Folder
 from OFS.Folder import manage_addFolder
+from zope.component import createObject
 
 from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import munge_date
+from Products.GSGroupMember.usercanpost import GSGroupMemberPostingInfo
 
 import MailBoxerTools
 from emailmessage import EmailMessage
@@ -979,6 +981,7 @@ class XWFMailingList(Folder):
           (groupInfo.name, groupInfo.id, msg.sender)
         log.info(m)
                 
+        message = u''
         if self.chk_msg_xmailer_loop(msg):
             message = u'%s (%s): X-Mailer header detected, a loop is '\
               'likely' % (groupInfo.name, groupInfo.id)
@@ -991,7 +994,7 @@ class XWFMailingList(Folder):
         elif self.chk_msg_disabled(msg):
             message = u'%s (%s): Email address <%s> is disabled.' %\
               (groupInfo.name, groupInfo.id, email)
-        elif self.chk_msg_spam(msg): # --=mpj17=--I moved this far
+        elif self.chk_msg_spam(mailString): # --=mpj17=--I moved this far
             message = u'%s (%s): Spam detected' %\
               (groupInfo.title, groupInfo.id)
         
@@ -1005,7 +1008,7 @@ class XWFMailingList(Folder):
         email = msg.sender
         sender_id = msg.sender_id
         userInfo = createObject('groupserver.UserFromId', 
-                                groupInfo.groupObj, sender_id)
+                                self.site_root(), sender_id)
         user = None
 
         unsubscribe = self.getValueFor('unsubscribe')
@@ -1072,7 +1075,7 @@ class XWFMailingList(Folder):
         assert type(retval) == bool
         return retval
         
-    def chk_msg_spam(self, msg):
+    def chk_msg_spam(self, mailString):
         '''Check if the message is "spam". Actually, check if the message
         matches the list of banned regular expressions
         '''
