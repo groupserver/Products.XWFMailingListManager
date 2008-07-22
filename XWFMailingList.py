@@ -1,3 +1,4 @@
+# coding=utf-8
 # Copyright IOPEN Technologies Ltd., 2003
 # richard@iopen.net
 #
@@ -663,7 +664,7 @@ class XWFMailingList(Folder):
                 self.listMail(REQUEST)
                 
             return email
-        m = '%s (%s): Mail received from unknown sender <%s>' %\
+        m = 'processMail %s (%s): Mail received from unknown sender <%s>'%\
           (self.getProperty('title', ''), self.getId(), email)
         log.info(m)
         log.info( 'memberlist was: %s' % memberlist)
@@ -915,47 +916,6 @@ class XWFMailingList(Folder):
         else:
             return (msg.post_id, ids)
     
-    def is_senderBlocked(self, user_id):
-        """ Get the sendercache entry for a particular user.
-
-            Returns a tuple containing:
-            (isblocked (boolean), unblock time (datetime))
-        """
-        senderlimit = self.getValueFor('senderlimit')
-        senderinterval = self.getValueFor('senderinterval')
-        user = self.acl_users.getUserById(user_id)
-        
-        ptnCoachId = self.getProperty('ptn_coach_id', '')
-
-        retval = (False, -1) # Uncharacteristic optimism
-        if user.getId() != ptnCoachId:
-            retval = self.user_blocked(user)
-        return retval
-
-    def user_blocked(self, user):
-        assert user
-        senderlimit = self.getValueFor('senderlimit')
-        senderinterval = self.getValueFor('senderinterval')
-
-        retval = (False, -1) # Uncharacteristic optimism
-        for email in user.get_emailAddresses():
-            ntime = int(time.time())
-            count = 0
-            etime = ntime-senderinterval
-            earliest = 0
-            for atime in self.sendercache.get(email, []):
-                if atime > etime:
-                    if not earliest or atime < earliest:
-                        earliest = atime
-                    count += 1
-                else:
-                    break
-
-            if count >= senderlimit:
-                retval = (True, DateTime(earliest+senderinterval))
-                break
-        return retval
-
     def checkMail(self, REQUEST):
         # Check for ip, loops and spam.
 
@@ -1033,7 +993,6 @@ class XWFMailingList(Folder):
             if custom_mailcheck(mailinglist=self, sender=email, header=msg, body=msg.body):
                 return message
         
-                
     def chk_request_from_allowed_mta_hosts(self, REQUEST):
         retval = True
         mtahosts = self.getValueFor('mtahosts')
@@ -1077,7 +1036,8 @@ class XWFMailingList(Folder):
         
     def chk_msg_spam(self, mailString):
         '''Check if the message is "spam". Actually, check if the message
-        matches the list of banned regular expressions
+        matches the list of banned regular expressions. This is normally
+        used to prevent out-of-office autoreply messages hitting the list.
         '''
         retval = False # Uncharacteristic optimism
         for regexp in self.getValueFor('spamlist'):
