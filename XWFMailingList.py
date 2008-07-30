@@ -333,6 +333,7 @@ class XWFMailingList(Folder):
             membership list, assuming we can.
         
         """
+        # TODO: --=mpj17=-- Do we need this method?
         member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
         uids = []
         for gid in member_groups:

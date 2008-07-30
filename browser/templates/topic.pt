@@ -178,6 +178,8 @@
               The space to allow people to write the new post.
             </p>
           </form><!-- Posting Form -->
+          <div tal:define="statusNum python:0"
+            tal:replace="structure provider:groupserver.UserCanPost" />
         </div>
       </tal:block>
     </body>
