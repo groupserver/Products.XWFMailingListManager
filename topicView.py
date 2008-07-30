@@ -83,15 +83,16 @@ class GSTopicView(BrowserView):
           
           userInfo = createObject('groupserver.LoggedInUser', self.context)
           # TODO: --=mpj17=-- switch the call below to a multi-adapter
-          self.userCanPost = GSGroupMemberPostingInfo(
+          self.userPostingInfo = GSGroupMemberPostingInfo(
             self.groupInfo.groupObj, userInfo.user)
           b = time.time()
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
           m = '%s (%s) can%spost to %s (%s): %s' %\
             (userInfo.name, userInfo.id, 
-             (self.userCanPost.canPost and ' ') or ' not ',
+             (self.userPostingInfo.canPost and ' ') or ' not ',
              self.groupInfo.name, self.groupInfo.id,
-             (self.userCanPost.canPost and ' ') or self.userCanPost.status)
+             (self.userPostingInfo.canPost and ' ') or\
+              self.userPostingInfo.status)
           log.info(m)
 
       def do_error_redirect(self):

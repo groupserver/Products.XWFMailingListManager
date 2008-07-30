@@ -165,6 +165,7 @@
         <div id="posting" >
           <form method="post" tal:attributes="action request/URL"
             enctype="multipart/form-data"
+            tal:condition="view/userPostingInfo/canPost"
             tal:define="startNew python:False; 
             topic python:view.get_topic_name();
             replyToId python:topicList[-1]['post_id'];">
@@ -178,9 +179,11 @@
               The space to allow people to write the new post.
             </p>
           </form><!-- Posting Form -->
-          <div tal:define="statusNum python:0"
+          <div tal:condition="not:view/userPostingInfo/canPost"
+            tal:define="statusNum view/userPostingInfo/statusNum;
+              status view/userPostingInfo/status"
             tal:replace="structure provider:groupserver.UserCanPost" />
-        </div>
+        </div><!--posting-->
       </tal:block>
     </body>
   </html>
