@@ -85,6 +85,7 @@ class GSTopicView(BrowserView):
           g = self.groupInfo.groupObj
           u = userInfo.user
           self.userPostingInfo = IGSPostingUser(g, u)
+          assert IGSPostingUser.providedBy(self.userPostingInfo)
           b = time()
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
           m = '%s (%s) can%spost to %s (%s): %s' %\
