@@ -84,8 +84,11 @@ class GSTopicView(BrowserView):
           # TODO: --=mpj17=-- switch the call below to a multi-adapter
           g = self.groupInfo.groupObj
           u = userInfo.user
-          self.userPostingInfo = IGSPostingUser(g, u)
-          assert IGSPostingUser.providedBy(self.userPostingInfo)
+          # --=mpj17=-- A Pixie Caramel to anyone who can tell me why the
+          #   following line does not work in Zope 2.10. "Zope Five is 
+          #   screwed" is not sufficient.
+          #self.userPostingInfo = IGSPostingUser(g, u)
+          self.userPostingInfo = getMultiAdapter((g, u), IGSPostingUser)
           b = time()
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
           m = '%s (%s) can%spost to %s (%s): %s' %\
