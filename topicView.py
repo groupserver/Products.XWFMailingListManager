@@ -1,19 +1,18 @@
-from zope.component import getMultiAdapter
-from zope.component import createObject
+from time import time
+from zope.component import getMultiAdapter, createObject
 from zope.interface import implements
 from zope.app.traversing.interfaces import TraversalError
 from interfaces import IGSTopicView
+from Products.GSGroupMember.interfaces import IGSPostingUser
 from zope.publisher.interfaces import IPublishTraverse
 from Products.Five import BrowserView
 import Products.GSContent, queries, view, stickyTopicToggleContentProvider
-from Products.GSGroupMember.usercanpost import GSGroupMemberPostingInfo
 
-import time
 import logging
 log = logging.getLogger('topicView')
 
 class GSTopicTraversal(BrowserView):
-    implements(IPublishTraverse)
+    #implements(IPublishTraverse)
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -38,7 +37,7 @@ class GSTopicTraversal(BrowserView):
 
 class GSTopicView(BrowserView):
       """View of a single GroupServer Topic"""
-      implements(IGSTopicView)
+      #implements(IGSTopicView)
       def __init__(self, context, request):
           self.retval = {}
           self.context = context
@@ -54,7 +53,7 @@ class GSTopicView(BrowserView):
           assert self.da, 'No data-adaptor found'
           
       def update(self):
-          a = time.time()
+          a = time()
           log.info('GSTopicView, start update')
           assert hasattr(self, 'postId'), 'PostID not set'
           assert self.postId, 'self.postID set to %s' % self.postId
@@ -83,9 +82,10 @@ class GSTopicView(BrowserView):
           
           userInfo = createObject('groupserver.LoggedInUser', self.context)
           # TODO: --=mpj17=-- switch the call below to a multi-adapter
-          self.userPostingInfo = GSGroupMemberPostingInfo(
-            self.groupInfo.groupObj, userInfo.user)
-          b = time.time()
+          g = self.groupInfo.groupObj
+          u = userInfo.user
+          self.userPostingInfo = IGSPostingUser(g, u)
+          b = time()
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
           m = '%s (%s) can%spost to %s (%s): %s' %\
             (userInfo.name, userInfo.id, 
