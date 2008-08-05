@@ -9,45 +9,31 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
-
+import random, smtplib, os, re, time, transaction
+from cgi import escape
+    
 from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
 from Globals import InitializeClass
-from OFS.Folder import Folder
-from OFS.Folder import manage_addFolder
-from zope.component import createObject
+from OFS.Folder import Folder, manage_addFolder
+from zope.component import createObject, getMultiAdapter
 
 from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import munge_date
-from Products.GSGroupMember.usercanpost import GSGroupMemberPostingInfo
+from Products.GSGroupMember.interfaces import IGSPostingUser
 
 import MailBoxerTools
-from emailmessage import EmailMessage
-from emailmessage import IRDBStorageForEmailMessage
-from emailmessage import RDBFileMetadataStorage
-from emailmessage import strip_subject
+from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
+  RDBFileMetadataStorage, strip_subject
 
 from queries import MemberQuery, MessageQuery
-
 from export import export_archive_as_mbox
-from utils import check_for_commands
-from utils import pin
-from utils import getMailFromRequest
+from utils import check_for_commands, pin, getMailFromRequest
 
-# from zLOG import LOG, PROBLEM, INFO
 import logging
 log = logging.getLogger('XWFMailingList')
 
-import random
-import smtplib
-import os
-import re
-import time
-import transaction
-
-from cgi import escape
-    
 null_convert = lambda x: x
 
 try:
@@ -988,11 +974,22 @@ class XWFMailingList(Folder):
         if unsubscribe != '' and check_for_commands(msg, unsubscribe):
             pass
         else:
-            postingInfo = GSGroupMemberPostingInfo(groupInfo.groupObj,
-                                                   userInfo.user)
+            insts = (groupInfo.groupObj, userInfo.user)
+            postingInfo = getMultiAdapter(insts, IGSPostingUser)
             if not(postingInfo.canPost):
                 message = postingInfo.status
                 log.error(message)
+                
+                ndict = {
+                  'userInfo':    userInfo,
+                  'groupInfo':   groupInfo,
+                  'postingInfo': postingInfo,
+                  'origMessage': mailString,
+                  'boundry':     'blocked%s' % msg.post_id
+                }
+                userInfo.user.send_notification('cannot_post', 'default', 
+                                                ndict)
+                
                 return message
         self.last_email_checksum = msg.post_id
     

@@ -91,13 +91,6 @@ class GSTopicView(BrowserView):
           self.userPostingInfo = getMultiAdapter((g, u), IGSPostingUser)
           b = time()
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
-          m = '%s (%s) can%spost to %s (%s): %s' %\
-            (userInfo.name, userInfo.id, 
-             (self.userPostingInfo.canPost and ' ') or ' not ',
-             self.groupInfo.name, self.groupInfo.id,
-             (self.userPostingInfo.canPost and ' ') or\
-              self.userPostingInfo.status)
-          log.info(m)
 
       def do_error_redirect(self):
           # TODO Fix URLs
