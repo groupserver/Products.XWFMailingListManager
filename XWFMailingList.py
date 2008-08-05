@@ -979,13 +979,20 @@ class XWFMailingList(Folder):
             if not(postingInfo.canPost):
                 message = postingInfo.status
                 log.error(message)
-                
+                siteInfo = groupInfo.siteInfo
                 ndict = {
-                  'userInfo':    userInfo,
-                  'groupInfo':   groupInfo,
-                  'postingInfo': postingInfo,
-                  'origMessage': mailString,
-                  'boundry':     'blocked%s' % msg.post_id
+                  'userName':        userInfo.name,
+                  'userURL':         userInfo.url,
+                  'groupName':       groupInfo.name,
+                  'groupURL':        groupInfo.url,
+                  'siteName':        siteInfo.name,
+                  'siteURL':         siteInfo.url,
+                  'canPost':         postingInfo.canPost,
+                  'postStatus':      postingInfo.status,
+                  'postStatuNum':    postingInfo.statusNum,
+                  'subject':         msg.subject,
+                  'originalMessage': mailString,
+                  'boundary':       'blocked%s' % msg.post_id
                 }
                 userInfo.user.send_notification('cannot_post', 'default', 
                                                 ndict)
