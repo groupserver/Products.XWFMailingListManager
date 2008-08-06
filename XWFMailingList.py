@@ -22,6 +22,7 @@ from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import munge_date
 from Products.GSGroupMember.interfaces import IGSPostingUser
+from Products.GSSearch.topicdigestview import TopicDigestView
 
 import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
@@ -1173,9 +1174,22 @@ class XWFMailingList(Folder):
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
         
-        digest = self.xwf_email_topic_digest(REQUEST, list_object=self, 
-                                             getValueFor=self.getValueFor)
-        
+        # --=mpj17=-- Get group here
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        # -- Call topic digest view
+        topicDigestView = TopicDigestView(groupInfo.groupObj, REQUEST)
+        topicDigestText = topicDigestView()
+        emailTemplate = groupInfo.groupObj.Templates.email.list.digest
+        digest = emailTemplate(REQUEST, 
+                              mailList=self,
+                              groupInfo=groupInfo, 
+                              siteInfo=siteInfo,
+                              digestText=topicDigestText)
+        print digest
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host')
             or (SecureMailHostIsAvailable and
@@ -1204,7 +1218,8 @@ class XWFMailingList(Folder):
             else:
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                                           int(self.MailHost.smtp_port))
-                smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
+                #--mpj17-- the following should go
+                # smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
                 smtpserver.quit()
 
             # remove already bulked addresses
