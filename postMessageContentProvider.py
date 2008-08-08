@@ -80,8 +80,7 @@ class GSPostMessageContentProvider(object):
       @property
       def postingInfo(self):
           group = self.groupInfo.groupObj
-          user = self.userInfo.user
-          postingInfo = GSGroupMemberPostingInfo(group, user)
+          postingInfo = GSGroupMemberPostingInfo(group, self.userInfo)
           return postingInfo
 
 provideAdapter(GSPostMessageContentProvider, provides=IContentProvider,

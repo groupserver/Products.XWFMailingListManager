@@ -966,7 +966,6 @@ class XWFMailingList(Folder):
         sender_id = msg.sender_id
         userInfo = createObject('groupserver.UserFromId', 
                                 self.site_root(), sender_id)
-        user = None
 
         unsubscribe = self.getValueFor('unsubscribe')
         
@@ -975,7 +974,7 @@ class XWFMailingList(Folder):
         if unsubscribe != '' and check_for_commands(msg, unsubscribe):
             pass
         else:
-            insts = (groupInfo.groupObj, userInfo.user)
+            insts = (groupInfo.groupObj, userInfo)
             postingInfo = getMultiAdapter(insts, IGSPostingUser)
             if not(postingInfo.canPost):
                 message = postingInfo.status
@@ -1181,14 +1180,17 @@ class XWFMailingList(Folder):
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         # -- Call topic digest view
-        topicDigestView = TopicDigestView(groupInfo.groupObj, REQUEST)
-        topicDigestText = topicDigestView()
+
+        topicDigestView  = TopicDigestView(groupInfo.groupObj, REQUEST)
+        topicDigestText  = topicDigestView()
+        topicDigestStats = topicDigestView.post_stats()
         emailTemplate = groupInfo.groupObj.Templates.email.list.digest
         digest = emailTemplate(REQUEST, 
                               mailList=self,
                               groupInfo=groupInfo, 
                               siteInfo=siteInfo,
-                              digestText=topicDigestText)
+                              digestText=topicDigestText,
+                              digestStats=topicDigestStats)
         print digest
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host')
@@ -1219,7 +1221,7 @@ class XWFMailingList(Folder):
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                                           int(self.MailHost.smtp_port))
                 #--mpj17-- the following should go
-                # smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
+                smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
                 smtpserver.quit()
 
             # remove already bulked addresses
