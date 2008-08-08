@@ -33,7 +33,7 @@ def obfuscate_email(word, substituted, substituted_words):
     if substituted:
         return word
 
-    word = email_matcher.sub('email obscured', word)
+    word = email_matcher.sub('&lt;email obscured&gt;', word)
     
     return word
 
