@@ -915,6 +915,7 @@ class XWFMailingList(Folder):
             Unicode if there is a problem (the message should not be 
             posted), or None otherwise.
         '''
+        print 'up to here'
         if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
             message = u'%s (%s): Host %s is not allowed' %\
               (self.getProperty('title', ''), self.getId(), REMOTE_IP)
@@ -1043,7 +1044,6 @@ class XWFMailingList(Folder):
     def chk_msg_automatic_email(self, msg):
         '''Check for empty return-path, which implies automatic mail'''
         retval = msg.get('return-path') == '<>'
-        print msg.get('return-path')
         assert type(retval) == bool
         return retval
 
@@ -1179,11 +1179,25 @@ class XWFMailingList(Folder):
         site = getattr(self.site_root().Content, siteId)
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-        # -- Call topic digest view
 
+        # -- Call topic digest view
         topicDigestView  = TopicDigestView(groupInfo.groupObj, REQUEST)
         topicDigestText  = topicDigestView()
+
+        if not topicDigestText:
+            m = '%s (%s) on %s (%s): No topics for digest' % \
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
+            log.info(m)
+            return
+            
         topicDigestStats = topicDigestView.post_stats()
+        m = u'%s (%s) on %s (%s): sending out topic digest with %s new '\
+          u'topics and %s existing topics'%\
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id,
+              topicDigestStats['newTopics'], 
+              topicDigestStats['existingTopics'])
+        log.info(m)
+
         emailTemplate = groupInfo.groupObj.Templates.email.list.digest
         digest = emailTemplate(REQUEST, 
                               mailList=self,
@@ -1191,7 +1205,6 @@ class XWFMailingList(Folder):
                               siteInfo=siteInfo,
                               digestText=topicDigestText,
                               digestStats=topicDigestStats)
-        print digest
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host')
             or (SecureMailHostIsAvailable and
@@ -1202,7 +1215,7 @@ class XWFMailingList(Folder):
         else:
             TransactionalMailHost = None
             batchsize = self.getValueFor('batchsize')
-        
+        print digest
         # start batching mails
         while maillist:
             # if no batchsize is set (default)
@@ -1221,7 +1234,7 @@ class XWFMailingList(Folder):
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                                           int(self.MailHost.smtp_port))
                 #--mpj17-- the following should go
-                smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
+                #smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
                 smtpserver.quit()
 
             # remove already bulked addresses
