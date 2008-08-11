@@ -1154,6 +1154,58 @@ class XWFMailingList(Folder):
             return email
     
     def manage_digestBoxer(self, REQUEST):
+        '''Generate a topic digest for the group
+        
+        Generate a topic digest for the group, if necessary, and send
+        it out to all users that wish to recieve a topic digest. Normally
+        this method is called by "process_all_digests" scripts
+        
+        ARGUMENTS
+            REQUEST:  The HTTP request.
+            
+        RETURNS
+            None.
+            
+        SIDE EFFECTS
+            Sends an email message containing the topic digest to all 
+            users that wish to recieve it. 
+            
+        SEE ALSO
+            "self.send_digest"
+        '''
+        # --=mpj17=-- Get group here
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        # -- Call topic digest view
+        topicDigestView = TopicDigestView(groupInfo.groupObj, REQUEST)
+        if topicDigestView.showDigest:
+            topicDigestStats = topicDigestView.post_stats()
+            m = u'%s (%s) on %s (%s): sending out topic digest with %s '\
+              u'new topics and %s existing topics'%\
+                  (groupInfo.name, groupInfo.id, siteInfo.name, 
+                   siteInfo.id,
+                   topicDigestStats['newTopics'], 
+                   topicDigestStats['existingTopics'])
+            log.info(m)
+
+            emailTemplate = groupInfo.groupObj.Templates.email.list.digest
+            digest = emailTemplate(REQUEST, 
+                                    mailList=self,
+                                    groupInfo=groupInfo, 
+                                    siteInfo=siteInfo,
+                                    digestText=topicDigestView(),
+                                    digestStats=topicDigestStats)
+            self.send_digest(digest)
+        else:
+            m = u'%s (%s) on %s (%s): No topics for digest' % \
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
+            log.info(m)
+
+    def send_digest(self, digest):
         """ Send out a digest of topics to users who have
 	    requested it.
         
@@ -1172,39 +1224,7 @@ class XWFMailingList(Folder):
         returnpath = self.getValueFor('digestreturnpath') or self.getValueFor('moderator')[0]
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
-        
-        # --=mpj17=-- Get group here
-        siteId = self.getProperty('siteId', '')
-        groupId = self.getId()
-        site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
-        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
-        # -- Call topic digest view
-        topicDigestView  = TopicDigestView(groupInfo.groupObj, REQUEST)
-        topicDigestText  = topicDigestView()
-
-        if not topicDigestText:
-            m = '%s (%s) on %s (%s): No topics for digest' % \
-              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
-            log.info(m)
-            return
-            
-        topicDigestStats = topicDigestView.post_stats()
-        m = u'%s (%s) on %s (%s): sending out topic digest with %s new '\
-          u'topics and %s existing topics'%\
-              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id,
-              topicDigestStats['newTopics'], 
-              topicDigestStats['existingTopics'])
-        log.info(m)
-
-        emailTemplate = groupInfo.groupObj.Templates.email.list.digest
-        digest = emailTemplate(REQUEST, 
-                              mailList=self,
-                              groupInfo=groupInfo, 
-                              siteInfo=siteInfo,
-                              digestText=topicDigestText,
-                              digestStats=topicDigestStats)
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host')
             or (SecureMailHostIsAvailable and
