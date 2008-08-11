@@ -1,3 +1,4 @@
+# coding=utf-8
 # Copyright IOPEN Technologies Ltd., 2003
 # richard@iopen.net
 #
@@ -8,43 +9,32 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
-
+import random, smtplib, os, re, time, transaction
+from cgi import escape
+    
 from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
 from Globals import InitializeClass
-from OFS.Folder import Folder
-from OFS.Folder import manage_addFolder
+from OFS.Folder import Folder, manage_addFolder
+from zope.component import createObject, getMultiAdapter
 
 from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import munge_date
+from Products.GSGroupMember.interfaces import IGSPostingUser
+from Products.GSSearch.topicdigestview import TopicDigestView
 
 import MailBoxerTools
-from emailmessage import EmailMessage
-from emailmessage import IRDBStorageForEmailMessage
-from emailmessage import RDBFileMetadataStorage
-from emailmessage import strip_subject
+from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
+  RDBFileMetadataStorage, strip_subject
 
 from queries import MemberQuery, MessageQuery
-
 from export import export_archive_as_mbox
-from utils import check_for_commands
-from utils import pin
-from utils import getMailFromRequest
+from utils import check_for_commands, pin, getMailFromRequest
 
-# from zLOG import LOG, PROBLEM, INFO
 import logging
 log = logging.getLogger('XWFMailingList')
 
-import random
-import smtplib
-import os
-import re
-import time
-import transaction
-
-from cgi import escape
-    
 null_convert = lambda x: x
 
 try:
@@ -330,6 +320,7 @@ class XWFMailingList(Folder):
             membership list, assuming we can.
         
         """
+        # TODO: --=mpj17=-- Do we need this method?
         member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
         uids = []
         for gid in member_groups:
@@ -661,7 +652,7 @@ class XWFMailingList(Folder):
                 self.listMail(REQUEST)
                 
             return email
-        m = '%s (%s): Mail received from unknown sender <%s>' %\
+        m = 'processMail %s (%s): Mail received from unknown sender <%s>'%\
           (self.getProperty('title', ''), self.getId(), email)
         log.info(m)
         log.info( 'memberlist was: %s' % memberlist)
@@ -1210,6 +1201,58 @@ class XWFMailingList(Folder):
             return email
     
     def manage_digestBoxer(self, REQUEST):
+        '''Generate a topic digest for the group
+        
+        Generate a topic digest for the group, if necessary, and send
+        it out to all users that wish to recieve a topic digest. Normally
+        this method is called by "process_all_digests" scripts
+        
+        ARGUMENTS
+            REQUEST:  The HTTP request.
+            
+        RETURNS
+            None.
+            
+        SIDE EFFECTS
+            Sends an email message containing the topic digest to all 
+            users that wish to recieve it. 
+            
+        SEE ALSO
+            "self.send_digest"
+        '''
+        # --=mpj17=-- Get group here
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        # -- Call topic digest view
+        topicDigestView = TopicDigestView(groupInfo.groupObj, REQUEST)
+        if topicDigestView.showDigest:
+            topicDigestStats = topicDigestView.post_stats()
+            m = u'%s (%s) on %s (%s): sending out topic digest with %s '\
+              u'new topics and %s existing topics'%\
+                  (groupInfo.name, groupInfo.id, siteInfo.name, 
+                   siteInfo.id,
+                   topicDigestStats['newTopics'], 
+                   topicDigestStats['existingTopics'])
+            log.info(m)
+
+            emailTemplate = groupInfo.groupObj.Templates.email.list.digest
+            digest = emailTemplate(REQUEST, 
+                                    mailList=self,
+                                    groupInfo=groupInfo, 
+                                    siteInfo=siteInfo,
+                                    digestText=topicDigestView(),
+                                    digestStats=topicDigestStats)
+            self.send_digest(digest)
+        else:
+            m = u'%s (%s) on %s (%s): No topics for digest' % \
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
+            log.info(m)
+
+    def send_digest(self, digest):
         """ Send out a digest of topics to users who have
 	    requested it.
         
@@ -1228,10 +1271,7 @@ class XWFMailingList(Folder):
         returnpath = self.getValueFor('digestreturnpath') or self.getValueFor('moderator')[0]
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
-        
-        digest = self.xwf_email_topic_digest(REQUEST, list_object=self, 
-                                             getValueFor=self.getValueFor)
-        
+
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host')
             or (SecureMailHostIsAvailable and
@@ -1242,7 +1282,6 @@ class XWFMailingList(Folder):
         else:
             TransactionalMailHost = None
             batchsize = self.getValueFor('batchsize')
-        
         # start batching mails
         while maillist:
             # if no batchsize is set (default)
@@ -1272,6 +1311,7 @@ class XWFMailingList(Folder):
 
         user = self.acl_users.get_userByEmail(email)
         if user:
+            # TODO: use the join group code.
             user.add_groupWithNotification('%s_member' % self.getId())
         
         return 1
@@ -1733,4 +1773,4 @@ def initialize(context):
         constructors=(manage_addXWFMailingListForm, 
                       manage_addXWFMailingList), 
         )
-        
+
