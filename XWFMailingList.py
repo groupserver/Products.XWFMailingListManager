@@ -21,7 +21,6 @@ from zope.component import createObject, getMultiAdapter
 from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import munge_date
-from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSSearch.topicdigestview import TopicDigestView
 
 import MailBoxerTools
