@@ -1192,13 +1192,23 @@ class XWFMailingList(Folder):
                    topicDigestStats['existingTopics'])
             log.info(m)
 
+            # --=mpj17=-- For some broken reason, best known to the crack
+            #   head who wrote Zope 2, calling "get_property" causes a
+            #   permission-failure with the page template, even though
+            #   everything is either on the file-system or got the 
+            #   Manager proxy. So I get the short-name of the group here,
+            #   even though the group-info instance is passed into the page
+            #   template.
+            shortName = groupInfo.get_property('short_name', groupInfo.name)
+
             emailTemplate = groupInfo.groupObj.Templates.email.list.digest
             digest = emailTemplate(REQUEST, 
                                     mailList=self,
-                                    groupInfo=groupInfo, 
+                                    groupInfo=groupInfo,
                                     siteInfo=siteInfo,
                                     digestText=topicDigestView(),
-                                    digestStats=topicDigestStats)
+                                    digestStats=topicDigestStats,
+                                    shortGroupName=shortName)
             self.send_digest(digest)
         else:
             m = u'%s (%s) on %s (%s): No topics for digest' % \
