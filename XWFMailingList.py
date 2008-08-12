@@ -1245,7 +1245,7 @@ class XWFMailingList(Folder):
         else:
             TransactionalMailHost = None
             batchsize = self.getValueFor('batchsize')
-        print digest
+
         # start batching mails
         while maillist:
             # if no batchsize is set (default)
@@ -1263,8 +1263,7 @@ class XWFMailingList(Folder):
             else:
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                                           int(self.MailHost.smtp_port))
-                #--mpj17-- the following should go
-                #smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
+                smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
                 smtpserver.quit()
 
             # remove already bulked addresses
