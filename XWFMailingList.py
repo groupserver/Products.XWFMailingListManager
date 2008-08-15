@@ -907,13 +907,39 @@ class XWFMailingList(Folder):
     def checkMail(self, REQUEST):
         '''Check the email for the correct IP address, loops and spam.
         
-        The work of this method is done in two places:
-            * The "chk_*" methods of the mailing list, and
-            * A Group Member Posting Info, which is instantiated here.
+        The work of this method is done in three places:
+            1. The "chk_*" methods of the mailing list.
+            2. The "check_for_commands" method of the mailing list.
+            3. A Group Member Posting Info, which is instantiated here.
+
+        The "chk_*" methods check for fundemental issues with the message:
+          * Mail loops,
+          * Automatic responces,
+          * Verboten text in the message, and
+          * Banned email addresses.
+        If one of these checks fails then the poster is not notified.
+        
+        If the message is recognised as a command then this method will
+        return "None" (which is a good thing, see RETURNS below) so the
+        message can be processed by the command-handling subsystem.
+        
+        The group member posting info class checks for more user-specific
+        problems, such as exceeding the posting limit and being a banned 
+        member of a group. If these checks fail the user is sent a 
+        notification.
         
         RETURNS
-            Unicode if there is a problem (the message should not be 
-            posted), or None otherwise.
+            * Unicode if the message should *not* be processed, or 
+            * None if the message *should* be processed.
+        
+        SIDE EFFECTS
+            If the user can post, "self.last_email_checksum" is set to the 
+            ID of the message, which is calculated by 
+            "emailmessage.EmailMessage".
+            
+            If the user cannot post, and the user exists in the system,
+            then he or she is sent a notification, stating why the post
+            was not processed.
         '''
         print 'up to here'
         if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
@@ -967,14 +993,20 @@ class XWFMailingList(Folder):
         sender_id = msg.sender_id
         userInfo = createObject('groupserver.UserFromId', 
                                 self.site_root(), sender_id)
-
-        unsubscribe = self.getValueFor('unsubscribe')
-        
-        # if the person is unsubscribing, we can't handle it with the loop
-        # stuff, because they might easily exceed it if it is a tight setting
-        if unsubscribe != '' and check_for_commands(msg, unsubscribe):
-            pass
+        commands = [
+          self.getValueFor('unsubscribe'),
+          self.getValueFor('subscribe'), 
+          'digest on',
+          'digest off']
+        if check_for_commands(msg, commands):
+            # If the message is a command, we have to let the 
+            #   command-handling subsystem deal with it.
+            m = u'%s (%s) email-command from <%s>: "%s"' % \
+              (groupInfo.name, groupInfo.id, msg.sender, msg.subject)
+            log.info(m)
+            return None
         else:
+            # Not a command
             insts = (groupInfo.groupObj, userInfo)
             postingInfo = getMultiAdapter(insts, IGSPostingUser)
             if not(postingInfo.canPost):

@@ -17,8 +17,6 @@ class IGSTopicView(zope.interface.Interface):
 class IGSPostView(zope.interface.Interface):
     pass
 
-# <zope-3 weirdness="high">
-
 class IGSPostContentProvider(zope.interface.Interface):
       """The Groupserver Post Content Provider Interface
       
@@ -147,5 +145,4 @@ class IGSStickyTopicToggleContentProvider(zope.interface.Interface):
                                 that is used to render the form.""",
                                 required=False,
                                 default=u"browser/templates/toggleStickyTopicForm.pt")
-# </zope-3>
 
