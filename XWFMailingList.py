@@ -22,7 +22,10 @@ from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import munge_date
 from Products.GSGroupMember.interfaces import IGSPostingUser
+from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
+from Products.GSProfile.utils import create_user_from_email, \
+  send_verification_message
 
 import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
@@ -1126,15 +1129,10 @@ class XWFMailingList(Folder):
         if email in memberlist and msg.sender_id:
             user = self.acl_users.getUser(msg.sender_id)
             if check_for_commands(msg, 'digest on'):
-                user.set_enableDigestByKey(self.getId())
-                self.mail_digest_on(self, REQUEST, mail=header, body=body)
-                
+                self.digest_on(REQUEST, user, header, body)
                 return email
-            
             elif check_for_commands(msg, 'digest off'):
-                user.set_disableDigestByKey(self.getId())
-                self.mail_digest_off(self, REQUEST, mail=header, body=body)
-                
+                self.digest_off(REQUEST, user, header, body)
                 return email 
         
         # subscription? only subscribe if subscription is enabled.
@@ -1148,25 +1146,7 @@ class XWFMailingList(Folder):
                     if user: # if the user exists, send out a subscription email
                         self.mail_subscribe_key(self, REQUEST, msg )
                     else: # otherwise handle subscription as part of registration
-                        # --=mpj17=-- TODO: Update this to the new system.
-                        user_id, password, verification_code = \
-                                 self.acl_users.register_user(email=email, 
-                                                              preferred_name=msg.name)
-                        user = self.acl_users.getUser(user_id)
-                        group_object = self.Scripts.get.group_by_id(self.getId())
-                        
-                        division = group_object.Scripts.get.division_object()
-                        div_groups = division.groups_with_local_role('DivisionMember')
-                        div_mem = None
-                        if len(div_groups) == 1:
-                            div_mem = div_groups[0]
-                        if div_mem:
-                            v_groups = ['%s_member' % self.getId(), div_mem]
-                        else:
-                            v_groups = ['%s_member' % self.getId()]
-                            
-                        user.set_verificationGroups(v_groups)
-                        user.send_userVerification()
+                        self.register_newUser(REQUEST, msg)
             else:
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
@@ -1184,7 +1164,66 @@ class XWFMailingList(Folder):
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
             return email
-    
+
+    def register_newUser(self, REQUEST, msg):
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        m = u'Registering <%s> with %s (%s) on %s (%s)' %\
+          (msg.sender, groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id)
+        log.info(m)
+        email = str(msg.sender)
+        user = create_user_from_email(groupInfo.groupObj, email)
+        send_verification_message(groupInfo.groupObj, user, email)
+        join_group(user, groupInfo)
+        
+        assert user
+
+    def digest_on(self, REQUEST, user, header, body):
+        '''Turn on digest mode for a user
+        '''
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), user.getId())
+
+        m = u'%s (%s) on %s (%s) turning on digest for %s (%s)' %\
+          (groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id,
+           userInfo.name, userInfo.id)
+        log.info(m)
+        
+        user.set_enableDigestByKey(groupInfo.id)
+        self.mail_digest_on(self, REQUEST, mail=header, body=body)
+                
+
+    def digest_off(self, REQUEST, user, header, body):
+        '''Turn off digest mode (and turn on one email per post) for a user
+        '''
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), user.getId())
+
+        m = u'%s (%s) on %s (%s) turning off digest for %s (%s)' %\
+          (groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id,
+           userInfo.name, userInfo.id)
+        log.info(m)
+        
+        user.set_disableDigestByKey(groupInfo.id)
+        self.mail_digest_off(self, REQUEST, mail=header, body=body)
+
     def manage_digestBoxer(self, REQUEST):
         '''Generate a topic digest for the group
         
@@ -1304,23 +1343,50 @@ class XWFMailingList(Folder):
     security.declareProtected('Manage properties', 'manage_addMember')
     def manage_addMember(self, email):
         """ Add member to group. """
-
+        retval = 0
         user = self.acl_users.get_userByEmail(email)
         if user:
-            # TODO: use the join group code.
-            user.add_groupWithNotification('%s_member' % self.getId())
-        
-        return 1
+            userInfo = createObject('groupserver.UserFromId', 
+                                self.site_root(), user.getId())
+            siteId = self.getProperty('siteId', '')
+            groupId = self.getId()
+            site = getattr(self.site_root().Content, siteId)
+            siteInfo  = createObject('groupserver.SiteInfo', site)
+            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+            m = u'%s (%s) on %s (%s) subscribing %s (%s) <%s>'%\
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+               userInfo.name, userInfo.id, email)
+            log.info(m)
+
+            join_group(user, groupInfo)
+            
+            retval = 1
+            
+        return retval
 
     security.declareProtected('Manage properties', 'manage_delMember')
     def manage_delMember(self, email):
         """ Remove member from group. """
-        
+        retval = 0    
         user = self.acl_users.get_userByEmail(email)
         if user:
+            userInfo = createObject('groupserver.UserFromId', 
+                                self.site_root(), user.getId())
+            siteId = self.getProperty('siteId', '')
+            groupId = self.getId()
+            site = getattr(self.site_root().Content, siteId)
+            siteInfo  = createObject('groupserver.SiteInfo', site)
+            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+            m = u'%s (%s) on %s (%s) unsubscribing %s (%s) <%s>'%\
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+               userInfo.name, userInfo.id, email)
+            log.info(m)
+
             user.del_groupWithNotification('%s_member' % self.getId())
-        
-        return 1
+            retval = 1
+        return retval
     
     def get_mailUserId(self, addr):
         """ From the email address, get the user's ID.
@@ -1396,7 +1462,27 @@ class XWFMailingList(Folder):
     def mail_subscribe_key(self, context, REQUEST, msg):
         """ Email out a subscription authentication notification.
         
+        This is only called when an existing user tries to subscribe by
+        email.
         """
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), msg.sender_id)
+        assert not userInfo.anonymous, \
+          'User (%s) does not exist' % msg.sender_id
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        
+        thepin = pin( msg.sender, self.getValueFor('hashkey') )
+
+        m = u'%s (%s) on %s (%s) sending subscribe key (%s) to '\
+          u'existing user %s (%s)' %\
+          (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+           thepin, userInfo.name, userInfo.id)
+        log.info(m)
+
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1405,29 +1491,38 @@ class XWFMailingList(Folder):
             returnpath = self.getValueFor('moderator')[0]
             
         reply = getattr(self, 'email_subscribe_key', None)
-        
-        thepin = pin( msg.sender, self.getValueFor('hashkey') )
 
-        member = self.acl_users.getUser(msg.sender_id)
-        memberName = member.getProperty('preferredName','')
-        
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
                                    getValueFor=self.getValueFor, 
                                    pin=thepin,
                                    email=msg.sender,
                                    sender_id=msg.sender_id,
-                                   member_name=memberName)
+                                   member_name=userInfo.name)
             
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         smtpserver.quit()
-
-
+    
     security.declarePrivate('mail_unsubscribe_key')
     def mail_unsubscribe_key(self, context, REQUEST, msg):
         """ Email out an unsubscription authentication notification.
         
         """
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), msg.sender_id)
+        
+        thepin = pin( msg.sender, self.getValueFor('hashkey') )
+
+        m = u'%s (%s) on %s (%s) sending unsubscribe key (%s) to %s (%s)'%\
+          (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+           thepin, userInfo.name, userInfo.id)
+        log.info(m)
+
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1436,11 +1531,6 @@ class XWFMailingList(Folder):
             returnpath = self.getValueFor('moderator')[0]
 
         reply = getattr(self, 'email_unsubscribe_key', None)
-        
-        thepin = pin( msg.sender, self.getValueFor('hashkey') )
-        
-        member = self.acl_users.getUser(msg.sender_id)
-        memberName = member.getProperty('preferredName','')
 
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
@@ -1448,7 +1538,7 @@ class XWFMailingList(Folder):
                                    pin=thepin,
                                    email=msg.sender,
                                    sender_id=msg.sender_id,
-                                   member_name=memberName)
+                                   member_name=userInfo.name)
             
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         else:
