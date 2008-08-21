@@ -73,6 +73,10 @@ if not sys.modules.has_key('Testing'):
 import Testing, unittest
 #execfile(os.path.join(os.path.dirname(Testing.__file__), 'common.py'))
 
+from Zope2.Startup.run import configure
+
+configure(__INSTANCE_HOME+'/etc/zope.conf')
+
 # Debug
 #
 print 'SOFTWARE_HOME: %s' % os.environ.get('SOFTWARE_HOME', 'Not set')
