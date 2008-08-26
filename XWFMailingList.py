@@ -1443,6 +1443,8 @@ class XWFMailingList(Folder):
         a clean default.
         
         """
+        #TODO: Use a standard notification for this (cannot_post)
+        # even if we do not use a user.send_notificaion to send it.
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
