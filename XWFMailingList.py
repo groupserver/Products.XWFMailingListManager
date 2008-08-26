@@ -26,6 +26,7 @@ from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
 from Products.GSProfile.utils import create_user_from_email, \
   send_verification_message
+from Products.GSGroup.joining import GSGroupJoining
 
 import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
@@ -944,7 +945,6 @@ class XWFMailingList(Folder):
             then he or she is sent a notification, stating why the post
             was not processed.
         '''
-        print 'up to here'
         if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
             message = u'%s (%s): Host %s is not allowed' %\
               (self.getProperty('title', ''), self.getId(), REMOTE_IP)
@@ -1012,15 +1012,17 @@ class XWFMailingList(Folder):
             # Not a command
             insts = (groupInfo.groupObj, userInfo)
             postingInfo = getMultiAdapter(insts, IGSPostingUser)
-            if not(postingInfo.canPost):
+            if not(postingInfo.canPost) and not(userInfo.anonymous):
                 message = postingInfo.status
                 log.error(message)
                 siteInfo = groupInfo.siteInfo
+                joiningInfo = GSGroupJoining(groupInfo.groupObj).joinability
                 ndict = {
                   'userName':        userInfo.name,
                   'userURL':         userInfo.url,
                   'groupName':       groupInfo.name,
                   'groupURL':        groupInfo.url,
+                  'joiningInfo':     joiningInfo,
                   'siteName':        siteInfo.name,
                   'siteURL':         siteInfo.url,
                   'canPost':         postingInfo.canPost,

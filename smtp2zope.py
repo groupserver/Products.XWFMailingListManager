@@ -52,7 +52,7 @@ DEFAULT_MAX_SIZE = 200000000
 # Note that this is not necessary in the default MailBoxer configuration, but
 # may be used to add some extra security.
 # Format: username:password
-AUTHORIZATION='username:password'
+AUTHORIZATION='admin:foobar'
 
 # If you want to strip out all attachments, leaving only plain text, set this.
 # If you have a email size limit set, it will apply on what is left _after_
@@ -386,7 +386,9 @@ def eventNotification(url, event_codes, mailString):
     
 def getListInfo(url, mailto):
     url = getAuthorizedURL(url, AUTHORIZATION)
+    print url
     server = xmlrpclib.ServerProxy(url)
+    print server
     try:
         properties = server.get_listPropertiesFromMailto(mailto)
     except Exception, e:
@@ -410,20 +412,12 @@ def handleBounce(url, group_id, email):
 # Main part of submitting an email to a http-server.
 # All requests will be serialized with locks.
 
-try:
-    import syslog
-    syslog.openlog('mailboxer')
-    log_critical = lambda msg: syslog.syslog(syslog.LOG_CRIT|syslog.LOG_MAIL, msg)
-    log_error = lambda msg: syslog.syslog(syslog.LOG_ERR|syslog.LOG_MAIL, msg)
-    log_warning = lambda msg: syslog.syslog(syslog.LOG_WARNING|syslog.LOG_MAIL, msg)
-    log_info = lambda msg: syslog.syslog(syslog.LOG_INFO|syslog.LOG_MAIL, msg)
-except:
-    # if we can't open syslog, just fake it
-    fake_logger = lambda msg: sys.stderr.write(msg+"\n")
-    log_critical = fake_logger
-    log_error = fake_logger
-    log_warning = fake_logger
-    log_info = fake_logger
+# if we can't open syslog, just fake it
+fake_logger = lambda msg: sys.stderr.write(msg+"\n")
+log_critical = fake_logger
+log_error = fake_logger
+log_warning = fake_logger
+log_info = fake_logger
 
 # Check if we have at least one parameter
 if len(sys.argv) == 1:

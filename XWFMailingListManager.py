@@ -214,7 +214,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
 
         bottom = time.time()
         log.info("Took %.2f ms to find list ID" % ((bottom-top)*1000.0))
-             
+          
         return self.get_list(listId)
 
     security.declareProtected('View','get_listPropertiesFromMailto')
