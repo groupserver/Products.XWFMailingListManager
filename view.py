@@ -10,13 +10,13 @@ import zope.viewlet.interfaces, zope.contentprovider.interfaces
 import Products.PythonScripts.standard
 import transaction
 
-from zope.component import createObject
+from zope.component import createObject, getMultiAdapter
 
 import DocumentTemplate
 import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
 
-import Products.GSContent
+from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.XWFCore.XWFUtils import munge_date
 import addapost
 
@@ -123,82 +123,12 @@ def process_form( context, request ):
     result['form'] = form
     return result
 
-class GSPostingInfo:
-      def get_user_can_post(self, reasonNeeded=False):
-        # Assume the user can post
-        retval = (('', 1), True)
-
-        user = self.request.AUTHENTICATED_USER
-        groupList = getattr(self.context.ListManager.aq_explicit, 
-                            self.groupInfo.get_id())
-        assert user
-        userRoles = user.getRolesInContext(self.groupInfo.groupObj)
-        if user.getId() == None:
-            m = '''Only members who are logged in can post, and you
-            are not logged in.'''
-            retval = ((m, 2), False)
-        elif 'GroupMember' not in userRoles:
-            # Not a group member
-            m = '''Only members of this group can post, and you are not 
-            a member.'''
-            retval = ((m, 3), False)
-        elif groupList.is_senderBlocked(user.getId())[0]:
-            senderLimit = groupList.getValueFor('senderlimit')
-            senderInterval = groupList.getValueFor('senderinterval')
-
-            secInDay = 86400
-            secInHour = 3600
-            day = not(senderInterval % secInDay)
-            duration = senderInterval/(day and secInDay or secInHour)
-            plural = duration > 1
-            dayOrHour = day and 'day' or 'hour'
-            dayOrHour = dayOrHour + ((plural and 's') or '')
-            interval = '%d %s' % (duration, dayOrHour)
-            
-            t = DateTime.DateTime(int(groupList.is_senderBlocked(user.getId())[1]))
-            postingDate = munge_date(self.groupInfo.groupObj, t)
-                                                               
-            m = """You have reached the posting limit of %d messages 
-            every %s; you may post again  at %s."""  % (senderLimit, 
-              interval, postingDate)
-            retval = ((m, 4), False)
-        else:            
-            # ...there is a local reason that allows the user to post
-            retval = self.get_user_can_post_local(True)
-
-        if not reasonNeeded:
-            retval = retval[1]
-        return retval
-
-      def get_user_can_post_local(self, reasonNeeded=False):
-        assert self.context
-
-        # Assume the user can post
-        retval = (('', 1), True)
-        
-        try:
-            localScripts = self.context.LocalScripts
-        except:
-            localScripts = None
-            
-        if (localScripts
-            and hasattr(localScripts, 'get')
-            and hasattr(localScripts.get, 'userCanPostToGroup')):
-            retval = localScripts.get.userCanPostToGroup(reasonNeeded=True,
-                                               siteId=self.siteInfo.get_id(),
-                                               groupId=self.groupInfo.get_id(),
-                              	                     )
-
-        if not reasonNeeded:
-            retval = retval[1]
-        return retval
-        
-class GSNewTopicView(Products.Five.BrowserView, GSPostingInfo):
+class GSNewTopicView(Products.Five.BrowserView):
       def __init__(self, context, request):
           self.context = context
           self.request = request
           
-          self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+          self.siteInfo = createObject('groupserver.SiteInfo', context)
           self.groupInfo = createObject('groupserver.GroupInfo', context)
           
           self.retval = {}
@@ -207,4 +137,9 @@ class GSNewTopicView(Products.Five.BrowserView, GSPostingInfo):
           result = process_post( self.context, self.request )
           if result:
               self.retval.update(result.items())
+
+          userInfo = createObject('groupserver.LoggedInUser', self.context)
+          g = self.groupInfo.groupObj
+          self.userPostingInfo = getMultiAdapter((g, userInfo), 
+                                                 IGSPostingUser)
 

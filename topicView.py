@@ -1,13 +1,13 @@
-from zope.component import getMultiAdapter
-from zope.component import createObject
+from time import time
+from zope.component import getMultiAdapter, createObject
 from zope.interface import implements
-from zope.app.traversing.interfaces import TraversalError
+from zope.traversing.interfaces import TraversalError
 from interfaces import IGSTopicView
+from Products.GSGroupMember.interfaces import IGSPostingUser
 from zope.publisher.interfaces import IPublishTraverse
 from Products.Five import BrowserView
 import Products.GSContent, queries, view, stickyTopicToggleContentProvider
 
-import time
 import logging
 log = logging.getLogger('topicView')
 
@@ -53,7 +53,7 @@ class GSTopicView(BrowserView):
           assert self.da, 'No data-adaptor found'
           
       def update(self):
-          a = time.time()
+          a = time()
           log.info('GSTopicView, start update')
           assert hasattr(self, 'postId'), 'PostID not set'
           assert self.postId, 'self.postID set to %s' % self.postId
@@ -79,7 +79,16 @@ class GSTopicView(BrowserView):
           else:
               self.topic = []
               self.lastPostId = ''
-          b = time.time()
+          
+          userInfo = createObject('groupserver.LoggedInUser', self.context)
+          g = self.groupInfo.groupObj
+          # --=mpj17=-- A Pixie Caramel to anyone who can tell me why the
+          #   following line does not work in Zope 2.10. "Zope Five is 
+          #   screwed" is not sufficient.
+          #self.userPostingInfo = IGSPostingUser((g, userInfo))
+          self.userPostingInfo = getMultiAdapter((g, userInfo), 
+                                                 IGSPostingUser)
+          b = time()
           log.info('GSTopicView, end update, %.2f ms' % ((b-a)*1000.0))
 
       def do_error_redirect(self):

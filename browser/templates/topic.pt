@@ -162,9 +162,16 @@
           </tal:block>
         </div><!--postList-->
         
-        <div id="posting" >
+        <div id="posting">
+          <h2>Add to the topic
+            <cite class="topic" 
+              tal:content="view/get_topic_name">topicName</cite>
+            <a title="Help with posting a message" 
+              href="/help/manual/#groupserver-posting-a-message-using-the-web"
+              class="helpLink">[?]</a></h2>
           <form method="post" tal:attributes="action request/URL"
             enctype="multipart/form-data"
+            tal:condition="view/userPostingInfo/canPost"
             tal:define="startNew python:False; 
             topic python:view.get_topic_name();
             replyToId python:topicList[-1]['post_id'];">
@@ -178,7 +185,12 @@
               The space to allow people to write the new post.
             </p>
           </form><!-- Posting Form -->
-        </div>
+          <p class="message-result"
+            tal:condition="not:view/userPostingInfo/canPost"
+            tal:define="statusNum view/userPostingInfo/statusNum;
+              status view/userPostingInfo/status;"
+            tal:content="structure provider:groupserver.UserCanPost" />
+        </div><!--posting-->
       </tal:block>
     </body>
   </html>

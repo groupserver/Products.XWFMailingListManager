@@ -1,11 +1,6 @@
 <div id="post-message" tal:define="startNew options/startNew">
   <!--Post a Message Content Provider-->
   
-  <h2 tal:condition="not:startNew">Add to the topic
-    <cite class="topic" tal:content="options/topic">topicName</cite>
-    <a class="helpLink" title="Help with posting a message" 
-      href="/help/manual/#groupserver-posting-a-message-using-the-web">[?]</a></h2>
-  
   <div id="post-topic-field" class="formelementtext"
     tal:condition="startNew">
     <label class="text" for="topic">Topic</label>

@@ -16,14 +16,14 @@
 # CHANGE THESE
 DBHOSTNAME='localhost'
 DBPORT=5432
-DBUSERNAME='onlinegroups.net'
+DBUSERNAME='testbed'
 DBPASSWORD=''
-DBNAME='onlinegroups.net'
+DBNAME='testbed'
 
 # You shouldn't need to change below here
 import os, sys
 if __name__ == '__main__':
-    execfile(os.path.join(sys.path[0], 'framework.py'))
+    execfile('framework.py')
 
 from Products.Five import zcml
 from Products.XWFMailingListManager import emailmessage
@@ -55,14 +55,15 @@ alchemy_adaptor.manage_changeProperties( hostname=DBHOSTNAME,
                                          database=DBNAME)
 
 
-importDir = sys.argv[1]
+importDir = '/home/mpj17/Desktop/exported_mda_posts/mda_mdir'
+fileName = 'somelogfile.txt'
 count = 0
 top = time.time()
 session = alchemy_adaptor.getSession()
 metadata = session.getMetaData()
 and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
 postTable = sqlalchemy.Table('post', metadata, autoload=True)
-log = file(sys.argv[2], 'a+')
+log = file(fileName, 'a+')
 try:
     position = int(sys.argv[3])
 except:

@@ -1,8 +1,9 @@
 # coding=utf-8
 from Products.Five import BrowserView
-from zope.component import createObject
+from zope.component import getMultiAdapter, createObject
 import Products.GSContent
 from Products.GSSearch import queries
+from Products.GSGroupMember.interfaces import IGSPostingUser
 # from view import GSPostingInfo # FIX
 
 class GSTopicsView(BrowserView):
@@ -52,6 +53,24 @@ class GSTopicsView(BrowserView):
 
           tIds = [t['topic_id'] for t in self.topics]
           self.topicFiles = self.messageQuery.files_metadata_topic(tIds)
+          self.__userPostingInfo = None
+          
+      @property
+      def userPostingInfo(self):
+          '''Get the User Posting Info
+          
+          The reason that I do not assign to a self.userPostingInfo 
+          variable is that self.context is a bit weird until *after* 
+          "__init__" has run. Ask me not questions I tell you no lies.
+          '''
+          if self.__userPostingInfo == None:
+              g = self.groupInfo.groupObj
+              ui = createObject('groupserver.LoggedInUser', self.context)
+              upi = getMultiAdapter((g, ui), IGSPostingUser)
+              self.__userPostingInfo = upi
+          retval = self.__userPostingInfo
+          assert IGSPostingUser.providedBy(retval)
+          return retval
 
       def get_later_url(self):
           newStart = self.start - self.get_summary_length()
