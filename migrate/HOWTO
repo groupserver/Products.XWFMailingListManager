@@ -29,8 +29,12 @@ A (very) rough guide to migration of messages from ZODB to RDB
     $ export PYTHONPATH=.
     $ export SOFTWARE_HOME=/path/to/zope-install/lib/python
     $ export INSTANCE_HOME=/path/to/zope-instance
-    $ ZOPE_PYTHON_INSTALL/bin/python -u import_emailmessages.py \
-        /path/to/maildir/cur somelogfile.txt
+    $ DRY_RUN=0 \
+      IMPORT_DIR=/path/to/maildir/cur \
+      LOG_FILE=somelogfile.log
+      START_POS=0
+      PYTHONUNBUFFERED=1
+      BUILDOUT/bin/python import_emailmessages.py
 
 8) have many, many coffees (if you have a lot of messages). It will take a while. You may want to 
    temporarily turn off fsync in postgresql, this will make the initial import a lot faster (at

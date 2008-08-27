@@ -19,7 +19,7 @@ $Id: test_size.py 61072 2005-10-31 17:43:51Z philikon $
 import os, sys
 
 if __name__ == '__main__':
-    execfile(os.path.join(sys.path[0], 'framework.py'))
+    execfile('framework.py')
 
 from Products.XWFMailingListManager import emailmessage 
 
