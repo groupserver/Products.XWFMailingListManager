@@ -23,9 +23,10 @@ if __name__ == '__main__':
 
 from Products.XWFMailingListManager import emailmessage 
 
-importDir = sys.argv[1]
+importDir = os.environ.get('IMPORT_DIR', '')
+
 try:
-    onlyIds = bool(int(sys.argv[2]))
+    onlyIds = bool(int(os.environ.get('ONLY_IDS', '0')))
 except:
     onlyIds = False
 
