@@ -72,7 +72,10 @@ def lowerList(stringlist):
 def getPlainBodyFromMail(mailString):
     """ get content-type and body from mail given as string
     """    
-    (textBody, contentType, htmlBody, attachments) = unpackMail(mailString)
+    (textBody,
+     contentType,
+     htmlBody,
+     attachments) = unpackMail(mailString) #@UnusedVariable
     if contentType:
         return (contentType, textBody)
     else:
@@ -186,8 +189,6 @@ def convertHTML2Text(html):
     class HTMLStripper(SGMLParser):
         """ Remove tags and translate entities. 
         """    
-        from htmlentitydefs import entitydefs
-    
         text = ''
     
         def handle_data(self, data):

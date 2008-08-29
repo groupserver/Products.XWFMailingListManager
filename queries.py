@@ -326,12 +326,12 @@ class MessageQuery(object):
         
         r = q.execute().fetchone()
         if r:
-             return {'post_id': r['post_id'], 
-                     'topic_id': r['topic_id'], 
-                     'subject': unicode(r['subject'], 'utf-8'), 
-                     'date': r['date'], 
-                     'author_id': r['user_id'], 
-                     'has_attachments': r['has_attachments']}
+            return {'post_id': r['post_id'], 
+                    'topic_id': r['topic_id'], 
+                    'subject': unicode(r['subject'], 'utf-8'), 
+                    'date': r['date'], 
+                    'author_id': r['user_id'], 
+                    'has_attachments': r['has_attachments']}
         return None
 
     def previous_post(self, curr_post_id):
@@ -380,10 +380,10 @@ class MessageQuery(object):
         
         r = q.execute().fetchone()
         if r:
-             return {'topic_id': r['topic_id'], 
-                     'last_post_id': r['last_post_id'], 
-                     'subject': unicode(r['subject'], 'utf-8'), 
-                     'date': r['date']}
+            return {'topic_id': r['topic_id'], 
+                    'last_post_id': r['last_post_id'], 
+                    'subject': unicode(r['subject'], 'utf-8'), 
+                    'date': r['date']}
         return None
 
     def later_topic(self, curr_topic_id):
@@ -422,14 +422,12 @@ class MessageQuery(object):
             ID may be None.
              
         """
-        topic_id = None
         first_post_id = None
         last_post_id = None
         next_post_id = None
         previous_post_id = None
         
         tt = self.topicTable
-        pt = self.postTable
         
         topic_id = self.topic_id_from_post_id(curr_post_id)
 

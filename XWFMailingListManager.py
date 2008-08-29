@@ -18,7 +18,6 @@ from Products.XWFCore.cache import SimpleCache
 
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
-import DateTime
 
 import os, time, logging
 from Products.CustomUserFolder.queries import UserQuery
@@ -223,7 +222,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         """
         list_props = {}
-       	try:
+        try:
             listobj = self.get_listFromMailto(mailto)
         except AttributeError:
             log.info("Could not find list for mailto (%s)" % mailto)

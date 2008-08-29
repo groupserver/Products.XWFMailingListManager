@@ -1,5 +1,4 @@
-from Products.PythonScripts.standard import html_quote
-from zLOG import LOG, WARNING, PROBLEM, INFO
+from zLOG import LOG, PROBLEM, INFO
 from zExceptions import BadRequest
 from sqlalchemy.exceptions import SQLError
 import queries
@@ -44,7 +43,7 @@ def tagProcess(tagsString):
 def add_a_post(groupId, siteId, replyToId, topic, message,
                tags, email, uploadedFile, context, request):
     
-    result = {'error': False, 'message': 'No errror'}
+    result = {'error': False, 'message': 'No errror'} #@UnusedVariable
 
     tagsList = tagProcess(tags)
     tagsString = ', '.join(tagsList)
@@ -60,8 +59,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     ptnCoachId = groupObj.getProperty('ptn_coach_id', '')
     canonicalHost = context.Scripts.get.option('canonicalHost',
                                                  'onlinegroups.net')
-
-    host = context.Scripts.get.option('canonicalHost', 'onlinegroups.net')
+    
     messages = getattr(groupObj, 'messages')
     assert messages
     
@@ -166,22 +164,22 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                 listManager.MailHost._send(mfrom=email,
                                            mto=mailto,
                                            messageText=m)
-            except BadRequest, e:
+            except BadRequest, e: #@UnusedVariable
                 result['error'] = True
                 result['message'] = errorM
                 break
-            except SQLError, e:
+            except SQLError, e: #@UnusedVariable
                 result['error'] = True
                 result['message'] = errorM
                 break
         else:
             try:
-                # TODO: Complelely rewrite message handling so we actually
+                # TODO: Completely rewrite message handling so we actually
                 #       have a vague idea what is going on.
                 r = (groupList.manage_listboxer({'Mail': m}) != 'FALSE')
                 # --=mpj17=-- I kid you not, the above code is legit.
                 #   Too legit. Too legit to quit.
-            except BadRequest, e:
+            except BadRequest, e: #@UnusedVariable
                 result['error'] = True
                 result['message'] = errorM
                 break

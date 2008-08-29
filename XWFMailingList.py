@@ -747,7 +747,7 @@ class XWFMailingList(Folder):
 
             moderators = self.get_moderatorUserObjects()
             for moderator in moderators:
-                  nDict = {'mailingList': self,
+                nDict = {'mailingList': self,
                     'pin': pin(self.getValueFor('mailto'),
                                self.getValueFor('hashkey')),
                     'moderatedUserAddress': msg.sender,
@@ -758,7 +758,7 @@ class XWFMailingList(Folder):
                     'body': msg.body,
                     'absolute_url': self.absolute_url(),
                     'moderatedUserName': moderatedUser.getProperty('preferredName','')}
-                  moderator.send_notification('mail_moderator', 'default',
+                moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
             nDict = {'mailingList': self,
@@ -916,7 +916,7 @@ class XWFMailingList(Folder):
             2. The "check_for_commands" method of the mailing list.
             3. A Group Member Posting Info, which is instantiated here.
 
-        The "chk_*" methods check for fundemental issues with the message:
+        The "chk_*" methods check for fundamental issues with the message:
           * Mail loops,
           * Automatic responces,
           * Verboten text in the message, and
@@ -1094,10 +1094,10 @@ class XWFMailingList(Folder):
         return retval
 
     def chk_msg_tight_loop(self, msg):
-        assert hasattr(self, 'last_email_checksum')
+        assert hasattr(self, 'last_email_checksum'), "no last_email_checksum"
         retval = self.last_email_checksum and \
           (self.last_email_checksum == msg.post_id)
-        assert type(retval) == bool
+        assert type(retval) == bool, "type was %s, not bool" % type(retval)
         return retval
         
     def chk_msg_spam(self, mailString):
@@ -1350,7 +1350,7 @@ class XWFMailingList(Folder):
 
             # remove already bulked addresses
             maillist = maillist[batch:]
-            	
+            
     security.declareProtected('Manage properties', 'manage_addMember')
     def manage_addMember(self, email):
         """ Add member to group. """
@@ -1767,7 +1767,7 @@ class XWFMailingList(Folder):
                 continue # not for us
                      
             mailString = spoolfile.read()
-            (header, body) = self.splitMail(mailString)
+            (header, body) = self.splitMail(mailString) #@UnusedVariable
             
             # a robustness check -- if we an archive ID, and we aren't in
             # the archive, what are we doing here?
@@ -1833,7 +1833,7 @@ class XWFMailingList(Folder):
                 batch = batchsize
 
             if TransactionalMailHost:
-                 TransactionalMailHost._send(returnpath, maillist[0:batch], mailString)
+                TransactionalMailHost._send(returnpath, maillist[0:batch], mailString)
             else:
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
                                           int(self.MailHost.smtp_port))

@@ -124,22 +124,22 @@ def process_form( context, request ):
     return result
 
 class GSNewTopicView(Products.Five.BrowserView):
-      def __init__(self, context, request):
-          self.context = context
-          self.request = request
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
           
-          self.siteInfo = createObject('groupserver.SiteInfo', context)
-          self.groupInfo = createObject('groupserver.GroupInfo', context)
+        self.siteInfo = createObject('groupserver.SiteInfo', context)
+        self.groupInfo = createObject('groupserver.GroupInfo', context)
           
-          self.retval = {}
+        self.retval = {}
           
-      def update(self):
-          result = process_post( self.context, self.request )
-          if result:
-              self.retval.update(result.items())
+    def update(self):
+        result = process_post( self.context, self.request )
+        if result:
+            self.retval.update(result.items())
 
-          userInfo = createObject('groupserver.LoggedInUser', self.context)
-          g = self.groupInfo.groupObj
-          self.userPostingInfo = getMultiAdapter((g, userInfo), 
-                                                 IGSPostingUser)
+        userInfo = createObject('groupserver.LoggedInUser', self.context)
+        g = self.groupInfo.groupObj
+        self.userPostingInfo = getMultiAdapter((g, userInfo), 
+                                               IGSPostingUser)
 
