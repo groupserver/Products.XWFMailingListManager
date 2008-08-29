@@ -946,8 +946,8 @@ class XWFMailingList(Folder):
             was not processed.
         '''
         if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
-            message = u'%s (%s): Host %s is not allowed' %\
-              (self.getProperty('title', ''), self.getId(), REMOTE_IP)
+            message = u'%s (%s): Host is not allowed' %\
+              (self.getProperty('title', ''), self.getId())
             log.error(message)
             return message
 
@@ -1045,6 +1045,10 @@ class XWFMailingList(Folder):
             if custom_mailcheck(mailinglist=self, sender=email, header=msg,
                                 body=msg.body):
                 return message
+                
+        m  = u'checkMail: %s (%s) message from <%s> checks ok' %\
+          (groupInfo.name, groupInfo.id, msg.sender)
+        log.info(m)
         return None
         
     def chk_request_from_allowed_mta_hosts(self, REQUEST):
@@ -1060,6 +1064,11 @@ class XWFMailingList(Folder):
                 REMOTE_IP = self.REQUEST.environ['REMOTE_ADDR']
 
             retval = REMOTE_IP in mtahosts
+
+        if not retval:
+            message = u'%s (%s): Host %s is not allowed' %\
+              (self.getProperty('title', ''), self.getId(), REMOTE_IP)
+            log.info(message)
             
         assert type(retval) == bool
         return retval
