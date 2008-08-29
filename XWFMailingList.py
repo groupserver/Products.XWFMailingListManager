@@ -1096,7 +1096,7 @@ class XWFMailingList(Folder):
     def chk_msg_tight_loop(self, msg):
         assert hasattr(self, 'last_email_checksum'), "no last_email_checksum"
         retval = self.last_email_checksum and \
-          (self.last_email_checksum == msg.post_id)
+          (self.last_email_checksum == msg.post_id) or False
         assert type(retval) == bool, "type was %s, not bool" % type(retval)
         return retval
         
