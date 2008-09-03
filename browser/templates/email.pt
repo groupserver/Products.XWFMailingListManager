@@ -66,6 +66,13 @@
       <div class="fileMetadata"
         tal:repeat="fm filesMetadata">
           <p>The following file was added to this topic.</p>
+          <div class="figure"
+            tal:condition="python:'image' in fm['mime_type']">
+            <a href="#" tal:attributes="href string:/r/img/${fm/file_id}">
+              <img src="#"
+                tal:attributes="src string:/r/file/${fm/file_id}/resize/72/72/${fm/file_name}"/>
+            </a>
+          </div><!--figure-->
           <ul>
             <li 
               tal:define="t fm/mime_type;
@@ -73,7 +80,8 @@
               Name: 
               <a class="file" href="/favicon.ico" 
                 type="application/octet-stream"
-                tal:attributes="href string:/r/file/${fm/file_id}/${fm/file_name};
+                tal:define="img python:(('image' in fm['mime_type']) and 'img') or 'file'"
+                tal:attributes="href string:/r/${img}/${fm/file_id}/${fm/file_name};
                   type fm/mime_type;
                   class string:fileName ${iconName};"
                   tal:content="fm/file_name">Filename</a>
