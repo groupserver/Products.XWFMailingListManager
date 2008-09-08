@@ -22,7 +22,7 @@
           tal:attributes="title title;
             href string:${options/siteURL}/r/img/${fm/file_id}/;"/>
         <link rel="enclosure"
-          tal:attributes="title title; length fm/file_size
+          tal:attributes="title title; length fm/file_size;
             href string:${options/siteURL}/r/file/${fm/file_id}/${fm/file_name};
             type type;"/>
       </tal:block>
