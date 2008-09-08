@@ -26,6 +26,7 @@
             href string:${options/siteURL}/r/file/${fm/file_id}/${fm/file_name};
             type type;"/>
       </tal:block>
+    </tal:block>
   </tal:block>
   <id tal:content="string:${options/siteURL}/r/post/${postId}">abc123</id>
   <author>
