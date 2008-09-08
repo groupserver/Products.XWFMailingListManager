@@ -15,11 +15,16 @@
     tal:define="groupObj python:options['context'].Scripts.get.group_object();">
     <tal:block
       tal:repeat="fm filesMetadata">
-      <link rel="enclosure" 
-        tal:attributes="type fm/mime_type;
-        title fm/file_name;
-        href string:${options/siteURL}/groups/${options/groupId}/files/f/${fm/file_id}/${fm/file_name};
-        length fm/file_size" />
+      <tal:block define="type fm/mime_type; title fm/file_name;
+        img python:('image' in type);">
+        <link rel="enclosure" tal:condition="img"
+          type="text/html"
+          tal:attributes="title title;
+            href string:${options/siteURL}/r/img/${fm/file_id}/;"/>
+        <link rel="enclosure"
+          tal:attributes="title title; length fm/file_size
+            href string:${options/siteURL}/r/file/${fm/file_id}/${fm/file_name};
+            type type;"/>
       </tal:block>
   </tal:block>
   <id tal:content="string:${options/siteURL}/r/post/${postId}">abc123</id>
