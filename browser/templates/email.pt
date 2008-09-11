@@ -63,9 +63,10 @@
     </div><!--email-remainder-->	
     <div class="fileNotification" 
       tal:condition="filesMetadata">
+      <p tal:condition="python:len(filesMetadata) == 1">The following file was added to this topic:</p>
+      <p tal:condition="python:len(filesMetadata) > 1">The following files were added to this topic:</p>
       <div class="fileMetadata"
         tal:repeat="fm filesMetadata">
-          <p>The following file was added to this topic.</p>
           <div class="figure"
             tal:condition="python:'image' in fm['mime_type']">
             <a href="#" tal:attributes="href string:/r/img/${fm/file_id}">
