@@ -71,32 +71,22 @@
             tal:condition="python:'image' in fm['mime_type']">
             <a href="#" tal:attributes="href string:/r/img/${fm/file_id}">
               <img src="#"
-                tal:attributes="src string:/r/file/${fm/file_id}/resize/72/72/${fm/file_name}"/>
+                tal:attributes="src string:/r/file/${fm/file_id}/resize/198/198/${fm/file_name}"/>
             </a>
           </div><!--figure-->
-          <ul>
-            <li 
-              tal:define="t fm/mime_type;
-                iconName python:t.replace('/','-').replace('.','-').strip()">
-              Name: 
-              <a class="file" href="/favicon.ico" 
+          <div class="info">
+            <a class="file" href="/favicon.ico" 
                 type="application/octet-stream"
-                tal:define="img python:(('image' in fm['mime_type']) and 'img') or 'file'"
+                tal:define="t fm/mime_type; iconName python:t.replace('/','-').replace('.','-').strip(); img python:(('image' in fm['mime_type']) and 'img') or 'file'"
                 tal:attributes="href string:/r/${img}/${fm/file_id}/${fm/file_name};
                   type fm/mime_type;
                   class string:fileName ${iconName};"
                   tal:content="fm/file_name">Filename</a>
-            </li>
-            <li>Type: 
-              <span class="mime"
-                tal:content="fm/mime_type">application/octet-stream</span>
-            </li>
-            <li>
-              Size:
-              <span class="size"
-                tal:content="python:u'%1.2fKB' % (fm['file_size']/1024.0)">-1B</span>
-            </li>
-          </ul>
+              (<span class="mime"
+                tal:content="fm/mime_type">application/octet-stream</span>,
+               <span class="size"
+                tal:content="python:u'%.0fKB' % (fm['file_size']/1024.0)">-1B</span>)
+          </div>
       </div><!--fileMetadata-->
     </div><!--fileNotification-->
   </div><!--email-details-->
