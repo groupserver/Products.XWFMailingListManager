@@ -42,7 +42,7 @@ def obfuscate_email(word, substituted, substituted_words):
 def markup_email_address(word, substituted, substituted_words):
     retval = word
     if not(substituted) and email_matcher.match(word):
-        retval = '<a href="mailto:%s">%s</a>' % (word, word)
+        retval = '<a class="email" href="mailto:%s">%s</a>' % (word, word)
     assert retval, 'Email address <%s> not marked up' % word
     return retval
 
