@@ -1,7 +1,8 @@
 import re, cgi, textwrap, logging
 
-from zope.component import getUtility
+from zope.component import getUtility, createObject
 from interfaces import IMarkupEmail, IWrapEmail
+from Products.GSGroup.utils import *
 
 log = logging.getLogger('emailbody')
 
@@ -31,11 +32,19 @@ def obfuscate_email(word, substituted, substituted_words):
 
     """
     if substituted:
-        return word
+        # Do not substitute if the word has already been marked-up
+       retval = word
+    else:
+        retval = email_matcher.sub('&lt;email obscured&gt;', word)
+    assert retval, 'Email address <%s> not obfuscated' % word
+    return retval
 
-    word = email_matcher.sub('&lt;email obscured&gt;', word)
-    
-    return word
+def markup_email_address(word, substituted, substituted_words):
+    retval = word
+    if not(substituted) and email_matcher.match(word):
+        retval = '<a href="mailto:%s">%s</a>' % (word, word)
+    assert retval, 'Email address <%s> not marked up' % word
+    return retval
 
 def markup_youtube(word, substituted, substituted_words):
     """ Markup youtube URIs.
@@ -230,11 +239,23 @@ def split_message(messageText, max_consecutive_comment=12,
     assert len(retval) == 2
     return retval
 
-markup_functions = (obfuscate_email, markup_youtube, markup_splashcast, markup_uri, markup_bold)
+standard_markup_functions = (markup_youtube, markup_splashcast, markup_uri,
+                             markup_bold)
 
 def markup_word(context, word, substituted_words):
     word = escape_word(word)
     substituted = False
+    
+    groupInfo = createObject('groupserver.GroupInfo', context)
+    if get_visibility(groupInfo.groupObj) == PERM_ANN:
+        # The messages in the group are visibile to the anonymous user,
+        #   so obfuscate (redact) any email addresses in the post.
+        email_address_markup = obfuscate_email
+    else:
+        # The messages in the group are visibile to group members only
+        #   so show email addresses in the post, and make them useful.
+        email_address_markup = markup_email_address
+    markup_functions = (email_address_markup,) + standard_markup_functions
     
     for function in markup_functions:
         nword = function(word, substituted, substituted_words)
@@ -256,7 +277,7 @@ def markup_email(context, text):
         for char in text:
             if char.isspace():
                 if curr_word:
-                    markedUpWord = markup_word(None, curr_word, substituted_words)
+                    markedUpWord = markup_word(context, curr_word, substituted_words)
                     curr_word = ''
                     out_text += markedUpWord
                 out_text += char
@@ -264,7 +285,7 @@ def markup_email(context, text):
                 curr_word += char
  
         if curr_word:
-            markedUpWord = markup_word(None, curr_word, substituted_words)
+            markedUpWord = markup_word(context, curr_word, substituted_words)
             out_text += markedUpWord
 
         retval = out_text.strip()
@@ -272,7 +293,7 @@ def markup_email(context, text):
     return retval    
 
               
-def get_mail_body(text):
+def get_mail_body(context, text):
     """Get the body of the mail message, formatted for the Web.
     
     The "self.post" instance contains the plain-text version
@@ -284,7 +305,8 @@ def get_mail_body(text):
     does these things.  
     
     ARGUMENTS
-        None.
+        context:  The context of the message.
+        text:     The text to extract a body from
     
     RETURNS
         A string representing the formatted body of the email 
@@ -299,17 +321,18 @@ def get_mail_body(text):
         text = wrapEmail(text)
         
         markupEmail = getUtility(IMarkupEmail)
-        text = markupEmail(None, text)
+        text = markupEmail(context, text)
         
         retval = text
 
     return retval
 
-def get_email_intro_and_remainder(text):
+def get_email_intro_and_remainder(context, text):
     """Get the intoduction and remainder text of the formatted post
     
     ARGUMENTS
-        None.
+        context:  The context of the post.
+        text:     The text to split into an introduction and remainder
         
     RETURNS
         A 2-tuple of the strings that represent the email intro
@@ -317,7 +340,8 @@ def get_email_intro_and_remainder(text):
         
     SIDE EFFECTS
         None.
-    """
-    retval = split_message(get_mail_body(text))
+    """             
+    mailBody = get_mail_body(context, text)
+    retval = split_message(mailBody)
     return retval
 

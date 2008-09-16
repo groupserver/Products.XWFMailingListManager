@@ -98,8 +98,8 @@ class GSPostContentProvider(object):
               
               self.authored = self.user_authored()
               self.authorInfo = self.get_author()
-             
-              ir = get_email_intro_and_remainder(self.post['body'])
+              ir = get_email_intro_and_remainder(self.context,
+                                                 self.post['body'])
               self.postIntro, self.postRemainder = ir
               
               self.cssClass = self.get_cssClass()

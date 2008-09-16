@@ -19,7 +19,7 @@
         img python:('image' in type);">
         <link rel="enclosure" tal:condition="img"
           type="text/html"
-          tal:attributes="title title;
+          tal:attributes="title string:${fm/file_name} by ${authorInfo/name};
             href string:${options/siteURL}/r/img/${fm/file_id}/;"/>
         <link rel="enclosure"
           tal:attributes="title title; length fm/file_size;
