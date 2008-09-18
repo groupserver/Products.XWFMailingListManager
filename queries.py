@@ -2,7 +2,14 @@ from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
 
 import logging
-log = logging.getLogger("XMLMailingListManager.queries")
+log = logging.getLogger("XMLMailingListManager.queries") #@UndefinedVariable
+
+def to_unicode(s):
+    retval = s
+    if not isinstance(s, unicode):
+        retval = unicode(s, 'utf-8')
+
+    return retval    
 
 class MemberQuery(object):
     # how many user ID's should we attempt to pass to the database before
@@ -239,7 +246,7 @@ class MessageQuery(object):
         if r.rowcount:
             retval = [ {'post_id': x['post_id'], 
                         'topic_id': x['topic_id'], 
-                        'subject': unicode(x['subject'], 'utf-8'), 
+                        'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'], 
                         'body': x['body'], 
@@ -250,7 +257,7 @@ class MessageQuery(object):
         return retval
     
     def post_count(self, site_id, group_ids=[]):
-        statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)])
+        statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)]) #@UndefinedVariable
         self.__add_std_where_clauses(statement, self.topicTable, 
                                            site_id, group_ids)
         r = statement.execute()
@@ -296,11 +303,12 @@ class MessageQuery(object):
             retval = [ {'topic_id': x['topic_id'], 
                         'site_id': x['site_id'], 
                         'group_id': x['group_id'], 
-                        'subject': unicode(x['original_subject'], 'utf-8'), 
+                        'subject': to_unicode(x['original_subject']),
                         'first_post_id': x['first_post_id'], 
                         'last_post_id': x['last_post_id'], 
                         'count': x['num_posts'], 
                         'last_post_date': x['last_post_date']} for x in r ]
+                        
         return retval
 
     def _nav_post(self, curr_post_id, direction, topic_id=None):
@@ -328,7 +336,7 @@ class MessageQuery(object):
         if r:
             return {'post_id': r['post_id'], 
                     'topic_id': r['topic_id'], 
-                    'subject': unicode(r['subject'], 'utf-8'), 
+                    'subject': to_unicode(r['subject']), 
                     'date': r['date'], 
                     'author_id': r['user_id'], 
                     'has_attachments': r['has_attachments']}
@@ -382,7 +390,7 @@ class MessageQuery(object):
         if r:
             return {'topic_id': r['topic_id'], 
                     'last_post_id': r['last_post_id'], 
-                    'subject': unicode(r['subject'], 'utf-8'), 
+                    'subject': to_unicode(r['subject']), 
                     'date': r['date']}
         return None
 
@@ -478,12 +486,12 @@ class MessageQuery(object):
         retval = []
         if r.rowcount:
             retval = [ {'post_id': x['post_id'], 
-                        'subject': unicode(x['subject'], 'utf-8'), 
+                        'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'],
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
-                        'body': unicode(x['body'], 'utf-8')} for x in r ]
+                        'body': to_unicode(x['body'])} for x in r ]
         return retval
 
     def post(self, post_id):
@@ -510,12 +518,12 @@ class MessageQuery(object):
             
             return {'post_id': row['post_id'],
                     'group_id': row['group_id'],
-                    'subject': unicode(row['subject'], 'utf-8'),
+                    'subject': to_unicode(row['subject']),
                     'date': row['date'],
                     'author_id': row['user_id'],
                     'files_metadata': row['has_attachments'] and 
                                       self.files_metadata(row['post_id']) or [],
-                    'body': unicode(row['body'], 'utf-8')}
+                    'body': to_unicode(row['body'])}
         
         return None
 
@@ -538,7 +546,7 @@ class MessageQuery(object):
             retval = {'topic_id': row['topic_id'], 
                       'site_id': row['site_id'],
                       'group_id': row['group_id'],
-                      'subject': unicode(row['original_subject'], 'utf-8'), 
+                      'subject': to_unicode(row['original_subject']), 
                       'first_post_id': row['first_post_id'],
                       'last_post_id': row['last_post_id'],
                       'last_post_date': row['last_post_date'],
@@ -565,9 +573,9 @@ class MessageQuery(object):
             out = []
             for row in r:
                 out.append({'file_id': row['file_id'],
-                            'file_name': unicode(row['file_name'], 'utf-8'),
+                            'file_name': to_unicode(row['file_name']),
                             'date': row['date'],
-                            'mime_type': unicode(row['mime_type'], 'utf-8'),
+                            'mime_type': to_unicode(row['mime_type']),
                             'file_size': row['file_size']})
                 
         return out
@@ -637,7 +645,7 @@ class MessageQuery(object):
             retval = [ {'topic_id': x['topic_id'], 
                         'site_id': x['site_id'], 
                         'group_id': x['group_id'], 
-                        'subject': unicode(x['original_subject'], 'utf-8'), 
+                        'subject': to_unicode(x['original_subject']),
                         'first_post_id': x['first_post_id'], 
                         'last_post_id': x['last_post_id'], 
                         'count': x['num_posts'], 
@@ -656,9 +664,9 @@ class MessageQuery(object):
         statement.append_whereclause(pt.c.group_id == group_id)
         statement.append_whereclause(pt.c.user_id  == user_id)
         statement.append_whereclause(pt.c.date  > date)
-
+        
         r = statement.execute()
         retval = r.scalar()
         assert type(retval) == long, 'retval is %s' % type(retval)
         return retval
-
+        
