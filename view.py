@@ -10,6 +10,7 @@ import zope.viewlet.interfaces, zope.contentprovider.interfaces
 import Products.PythonScripts.standard
 import transaction
 
+from sqlalchemy.exceptions import SQLError
 from zope.component import createObject, getMultiAdapter
 
 import DocumentTemplate
@@ -19,6 +20,9 @@ import queries
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.XWFCore.XWFUtils import munge_date
 import addapost
+
+import logging
+log = logging.getLogger('XWFMailingListManager.view')
 
 def process_post( context, request ):
     form = request.form
@@ -53,10 +57,18 @@ def process_post( context, request ):
             tags = form.get('tags', '')
             email = form.get('email', '')
             uploadedFile = form.get('file', '')
-            result = addapost.add_a_post(groupId, siteId, replyToId,
-                                         topic, message, tags, email,
-                                         uploadedFile, 
-                                         context, request)
+            
+            try:
+                result = addapost.add_a_post(groupId, siteId, replyToId,
+                                             topic, message, tags, email,
+                                             uploadedFile, 
+                                             context, request)
+            except SQLError, e:
+                log.error(e.messge)
+                result['error'] = True
+                # --=mpj17=-- Let us hope the following is the case.
+                result['message'] = 'The topic already contains the post'
+                
         else: # Not posting
             model = form['model']
             instance = form['instance']
