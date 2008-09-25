@@ -105,14 +105,14 @@ class RDBFileMetadataStorage(object):
     def insert(self):
         # FIXME: references like this should *NOT* be hardcoded!
         storage = self.context.FileLibrary2.get_fileStorage()
-        for id in self.file_ids:
+        for fid in self.file_ids:
             # for each file, get the metadata and insert it into our RDB table
-            file = storage.get_file(id)
+            attachedFile = storage.get_file(fid)
             i = self.fileTable.insert()
-            i.execute(file_id=id,
-                      mime_type=file.getProperty('content_type',''),
-                      file_name=file.getProperty('title',''),
-                      file_size=getattr(file, 'size', 0),
+            i.execute(file_id=fid,
+                      mime_type=attachedFile.getProperty('content_type',''),
+                      file_name=attachedFile.getProperty('title',''),
+                      file_size=getattr(attachedFile, 'size', 0),
                       date=self.email_message.date,
                       post_id=self.email_message.post_id,
                       topic_id=self.email_message.topic_id)

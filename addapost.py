@@ -124,7 +124,16 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
 
     # Step 3, Create the file object, if necessary
     fileObj = None
+    if (not(uploadedFile) or not(uploadedFile.readlines())):
+        uploadedFile = None
+    
     if uploadedFile:
+        print '-----------'
+        print uploadedFile
+        print dir(uploadedFile)
+        print uploadedFile.readlines()
+        print '-----------'
+        
         fileProperties = {'topic': topic,
                           'tags': tagsString,
                           'dc_creator': user.getId(),
