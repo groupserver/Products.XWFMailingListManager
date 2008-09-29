@@ -91,7 +91,7 @@
   
   <!--Resources-->
   <browser:resourceDirectory name="postImages"
-    directory="browser/images/green/" permission="zope2.View" />
+    directory="browser/images/green/" permission="zope2.Public" />
 
   <browser:resource name="post.js"
     file="browser/javascript/showHideInlineElements.js" 
