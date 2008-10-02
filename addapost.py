@@ -8,6 +8,8 @@ import time
 import logging
 log = logging.getLogger('addapost')
 
+from XWFCore.XWFUtils import getOption
+
 def tagProcess(tagsString):
     # --=mpj17=-- Not the most elegant function, but I did not want to
     #   use the regular-expression library.
@@ -57,8 +59,8 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     siteObj = getattr(site_root.Content, siteId)
     groupObj = getattr(siteObj.groups, groupId)
     ptnCoachId = groupObj.getProperty('ptn_coach_id', '')
-    canonicalHost = context.Scripts.get.option('canonicalHost',
-                                                 'onlinegroups.net')
+    # FIXME: why is onlinegroups.net hardcoded here?
+    canonicalHost = getOption('canonicalHost', 'onlinegroups.net')
     
     messages = getattr(groupObj, 'messages')
     assert messages
