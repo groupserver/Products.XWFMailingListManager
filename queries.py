@@ -18,13 +18,10 @@ class MemberQuery(object):
 
     def __init__(self, context, da):
         self.context = context
-
-        engine = da.engine
-#       sa.create_session(bind_to=engine)
-        metadata = sa.BoundMetaData(engine)
-        self.emailSettingTable = sa.Table('email_setting', metadata, autoload=True)
-        self.userEmailTable = sa.Table('user_email', metadata, autoload=True)
-        self.groupUserEmailTable = sa.Table('group_user_email', metadata, autoload=True)
+        
+        self.emailSettingTable = da.createTable('email_setting')
+        self.userEmailTable = da.createTable('user_email')
+        self.groupUserEmailTable = da.createTable('group_user_email')
 
     def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True, verified_only=True):
         # TODO: We currently can't use site_id
@@ -150,17 +147,14 @@ class MemberQuery(object):
 class MessageQuery(object):
     def __init__(self, context, da):
         self.context = context
-
-        engine = da.engine
-#       sa.create_session(bind_to=engine)
-        metadata = sa.BoundMetaData(engine)
-        self.topicTable = sa.Table('topic', metadata, autoload=True)
-        self.topic_word_countTable = sa.Table('topic_word_count', metadata, autoload=True)
-        self.postTable = sa.Table('post', metadata, autoload=True)
-        self.fileTable = sa.Table('file', metadata, autoload=True)
+        
+        self.topicTable = da.createTable('topic')
+        self.topic_word_countTable = da.createTable('topic_word_count')
+        self.postTable = da.createTable('post')
+        self.fileTable = da.createTable('file')
         
         try:
-            self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
+            self.post_id_mapTable = da.createTable('post_id_map')
         except NoSuchTableError:
             self.post_id_mapTable = None
 

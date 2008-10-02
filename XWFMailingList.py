@@ -18,9 +18,7 @@ from Globals import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
 from zope.component import createObject, getMultiAdapter
 
-from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.XWFCore.XWFUtils import munge_date
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
@@ -42,13 +40,13 @@ log = logging.getLogger('XWFMailingList')
 null_convert = lambda x: x
 
 try:
-    import Products.MaildropHost
+    from Products import MaildropHost #@UnresolvedImport @UnusedImport
     MaildropHostIsAvailable = 1
 except:
     MaildropHostIsAvailable = 0
 
 try:
-    import Products.SecureMailHost
+    from Products import SecureMailHost #@UnresolvedImport @UnusedImport
     SecureMailHostIsAvailable = 1
 except:
     SecureMailHostIsAvailable = 0

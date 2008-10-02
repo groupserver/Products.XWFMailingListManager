@@ -377,7 +377,7 @@ def eventNotification(url, event_codes, mailString):
     if EVENT_NOTIFICATION and event_codes:
         url = getAuthorizedURL(url, AUTHORIZATION)
         server = xmlrpclib.ServerProxy(url)
-        headers, body = MailBoxerTools.splitMail(mailString)
+        headers, _body = MailBoxerTools.splitMail(mailString)
         try:
             server.manage_event(event_codes, headers)
         except Exception, e:

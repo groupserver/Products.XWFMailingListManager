@@ -12,7 +12,7 @@ from rfc822 import AddressList
 
 from zope.interface import Interface, Attribute, implements
 
-from zope.app.datetimeutils import parseDatetimetz
+from zope.app.datetimeutils import parseDatetimetz #@UnresolvedImport
 
 from addapost import tagProcess
 from crop_email import crop_email
@@ -96,11 +96,8 @@ class RDBFileMetadataStorage(object):
         self.file_ids = file_ids
     
     def set_zalchemy_adaptor(self, da):
-        engine = da.engine
-        metadata = sa.BoundMetaData(engine)
-
-        self.fileTable = sa.Table('file', metadata, autoload=True)
-        self.postTable = sa.Table('post', metadata, autoload=True)
+        self.fileTable = da.createTable('file')
+        self.postTable = da.createTable('post')
         
     def insert(self):
         # FIXME: references like this should *NOT* be hardcoded!
@@ -128,14 +125,11 @@ class RDBEmailMessageStorage(object):
         self.email_message = email_message
 
     def set_zalchemy_adaptor(self, da):
-        engine = da.engine
-        metadata = sa.BoundMetaData(engine)
-
-        self.postTable = sa.Table('post', metadata, autoload=True)
-        self.topicTable = sa.Table('topic', metadata, autoload=True)
-        self.topic_word_countTable = sa.Table('topic_word_count', metadata, autoload=True)
-        self.post_tagTable = sa.Table('post_tag', metadata, autoload=True)
-        self.post_id_mapTable = sa.Table('post_id_map', metadata, autoload=True)
+        self.postTable = da.createTable('post')
+        self.topicTable = da.createTable('topic')
+        self.topic_word_countTable = da.createTable('topic_word_count')
+        self.post_tagTable = da.createTable('post_tag')
+        self.post_id_mapTable = da.createTable('post_id_map')
 
     def _get_topic(self):
         and_ = sa.and_
@@ -417,14 +411,14 @@ class EmailMessage(object):
 
     @property
     def language(self):
-       # one day we might want to detect languages, primarily this
-       # will be used for stemming, stopwords and search
-       return 'en'
+        # one day we might want to detect languages, primarily this
+        # will be used for stemming, stopwords and search
+        return 'en'
     
     @property
     def word_count(self):
         wc = {}
-        cropped_body, rest = crop_email(self.body)
+        cropped_body, rest = crop_email(self.body) #@UnusedVariable
         process_body = ''
         for line in cropped_body.split('\n'):
             if line and line[0] != '>':
@@ -489,7 +483,7 @@ class EmailMessage(object):
         sender = self.get('from')
         
         if sender:
-            name, sender = AddressList(sender)[0]
+            name, sender = AddressList(sender)[0] #@UnusedVariable
             sender = sender.lower()
         
         return sender
@@ -509,7 +503,7 @@ class EmailMessage(object):
         to = self.get('to')
         
         if to:
-            name, to = AddressList(to)[0]
+            name, to = AddressList(to)[0] #@UnusedVariable
             to = to.lower()
         
         return to

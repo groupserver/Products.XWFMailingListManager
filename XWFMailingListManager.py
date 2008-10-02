@@ -24,7 +24,7 @@ from Products.CustomUserFolder.queries import UserQuery
 import sqlalchemy as sa
 import datetime
 
-log = logging.getLogger('XWFMailingListManager.XWFMailingListManager')
+log = logging.getLogger('XWFMailingListManager.XWFMailingListManager') #@UndefinedVariable
 
 MAILDROP_SPOOL = '/tmp/mailboxer_spool2'
 
@@ -282,9 +282,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         """
         da = self.site_root().zsqlalchemy
-        engine = da.engine
-        metadata = sa.BoundMetaData(engine)
-        bounceTable = sa.Table('bounce', metadata, autoload=True)
+        bounceTable = da.createTable('bounce')
         bt_insert = bounceTable.insert()
         bt_select = bounceTable.select()
         

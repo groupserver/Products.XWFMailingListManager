@@ -1,10 +1,13 @@
-from zope.component import getMultiAdapter
 from interfaces import IGSPostView
 from zope.interface import implements
 from zope.component import createObject
 from Products.Five import BrowserView
-import Products.GSContent, queries, view
+import Products.GSContent
+
 from zope.publisher.interfaces import IPublishTraverse
+from zope.component import getMultiAdapter
+
+import queries
 
 class GSPostTraversal(BrowserView):
     implements(IPublishTraverse)

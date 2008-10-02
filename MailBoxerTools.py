@@ -56,7 +56,6 @@ def parseaddr(header):
     """
     return rfc822.parseaddr(header)
 
-
 def parseaddrList(header):
     """ wrapper for rfc822.AddressList, returns list of (name, addr)
     """

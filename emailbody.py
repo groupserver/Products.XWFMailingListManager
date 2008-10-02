@@ -229,8 +229,8 @@ def split_message(messageText, max_consecutive_comment=12,
     # Do not snip, if we will only snip a single line of 
     #  actual content          
     if(len(body)==1):
-      rintro = rintro + body
-      body = []
+        rintro = rintro + body
+        body = []
 
     intro = '\n'.join(rintro)
     body = '\n'.join(body)
