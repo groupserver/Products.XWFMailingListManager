@@ -184,36 +184,58 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         """
         mailto = mailto.lower()
-        top = time.time()
 
         site = self.site_root()
         siteId = site.getId()
+
         thisCacheKey = '%s:%s' % (siteId, mailto)
+
         listId = ''
+        found = False
+        
+        # first, look in the cache
         if not self.ListMailtoCache.has_key(thisCacheKey):
-            log.info("list ID was not cached")
-            # we always try to cache everything first up -- otherwise the
-            # worst case time is triggered for just about every cache miss
-            #
-            # This has the side-effect that we occasionally update the whole
-            # cache as well ... not a bad thing
+            listId = self.ListMailtoCache.get(thisCacheKey)
+            found = True
+            log.info("found list from mailto using cache")
+
+        # then try to find it fast, using the LHS of the email address
+        else:
+            listIds = self.objectIds('XWF Mailing List')
+            
+            assert mailto.find('@'), "No LHS/RHS with @ in mailto"
+
+            possibleId = mailto.split('@')[0]
+            possListIds = filter(None,
+                                 [x.find(possibleId) >= 0 and x for x in a])
+            for listId in possListIds:
+                listObj = getattr(self, listId)
+                list_mailto = getattr(listObj, 'mailto', '').lower()
+                if list_mailto:
+                    cacheKey = '%s:%s' % (siteId, list_mailto)
+                    self.ListMailtoCache.add(cacheKey, listId)
+                    if list_mailto == mailto:
+                        log.info("found list from mailto by fast lookup")
+                        found = True
+                        break
+        
+        # if we still haven't found it, wade through everything, might as
+        # well cache as we go
+        if not found:
             for listobj in self.objectValues('XWF Mailing List'):
                 list_mailto = getattr(listobj, 'mailto', '').lower()
                 listId = listobj.getId()
                 cacheKey = '%s:%s' % (siteId, list_mailto)
-
+                
                 if list_mailto:
                     self.ListMailtoCache.add(cacheKey, listId)
-                
-                listobj._p_deactivate()
-        else:
-            log.info("list ID was cached")
-            
-        listId = self.ListMailtoCache.get(thisCacheKey) or ''
-
-        bottom = time.time()
-        log.info("Took %.2f ms to find list ID" % ((bottom-top)*1000.0))
-          
+                    if list_mailto == mailto:
+                        log.info("found list from mailto by slow lookup")
+                        found = True
+                        break
+        if not found:
+            log.warn("did not find list from mailto")
+                        
         return self.get_list(listId)
 
     security.declareProtected('View','get_listPropertiesFromMailto')
@@ -241,7 +263,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         """
         list = self.get_list(list_id)
-                
+            
         return list.getProperty(property, default)
 
     def processSpool(self):
