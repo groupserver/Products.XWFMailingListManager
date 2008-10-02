@@ -194,7 +194,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         found = False
         
         # first, look in the cache
-        if not self.ListMailtoCache.has_key(thisCacheKey):
+        if self.ListMailtoCache.has_key(thisCacheKey):
             listId = self.ListMailtoCache.get(thisCacheKey)
             found = True
             log.info("found list from mailto using cache")
