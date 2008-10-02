@@ -207,7 +207,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
 
             possibleId = mailto.split('@')[0]
             possListIds = filter(None,
-                                 [x.find(possibleId) >= 0 and x for x in a])
+                          [x.find(possibleId) >= 0 and x for x in listIds])
             for listId in possListIds:
                 listObj = getattr(self, listId)
                 list_mailto = getattr(listObj, 'mailto', '').lower()
