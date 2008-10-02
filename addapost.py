@@ -8,7 +8,7 @@ import time
 import logging
 log = logging.getLogger('addapost')
 
-from XWFCore.XWFUtils import getOption
+from Products.XWFCore.XWFUtils import getOption
 
 def tagProcess(tagsString):
     # --=mpj17=-- Not the most elegant function, but I did not want to
