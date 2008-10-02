@@ -1,4 +1,4 @@
-import Products.Five, Products.GSContent, DateTime, Globals
+import Products.Five, Products.GSContent, Globals
 import zope.schema
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces

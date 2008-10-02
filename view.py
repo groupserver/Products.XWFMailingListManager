@@ -1,8 +1,7 @@
 '''GroupServer-Content View Class
 '''
 import sys, re, datetime, time, types, string
-import Products.Five, DateTime, Globals
-#import Products.Five.browser.pagetemplatefile
+import Products.Five, Globals
 import zope.schema
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
