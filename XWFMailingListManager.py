@@ -190,7 +190,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
 
         thisCacheKey = '%s:%s' % (siteId, mailto)
 
-        listId = ''
         found = False
         
         # first, look in the cache
@@ -233,7 +232,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                         log.info("found list from mailto by slow lookup")
                         found = True
                         break
+        
         if not found:
+            listId = ''
             log.warn("did not find list from mailto")
                         
         return self.get_list(listId)
