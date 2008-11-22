@@ -954,7 +954,7 @@ class XWFMailingList(Folder):
         site = getattr(self.site_root().Content, siteId)
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-
+        
         mailString = getMailFromRequest(REQUEST)
         msg = EmailMessage(mailString, 
                            list_title   =  self.getProperty('title', ''), 

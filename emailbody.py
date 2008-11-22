@@ -14,7 +14,7 @@ def escape_word(word):
     
     return word
 
-def markup_uri(word, substituted, substituted_words):
+def markup_uri(context, word, substituted, substituted_words):
     """ Markup URI in word.
     
     """
@@ -27,26 +27,24 @@ def markup_uri(word, substituted, substituted_words):
 
     return word    
 
-def obfuscate_email(word, substituted, substituted_words):
-    """ Obfuscate email addresses in word.
-
-    """
-    if substituted:
-        # Do not substitute if the word has already been marked-up
-       retval = word
-    else:
-        retval = email_matcher.sub('&lt;email obscured&gt;', word)
-    assert retval, 'Email address <%s> not obfuscated' % word
-    return retval
-
-def markup_email_address(word, substituted, substituted_words):
+def markup_email_address(context, word, substituted, substituted_words):
     retval = word
     if not(substituted) and email_matcher.match(word):
-        retval = '<a class="email" href="mailto:%s">%s</a>' % (word, word)
+        groupInfo = createObject('groupserver.GroupInfo', context)
+        if get_visibility(groupInfo.groupObj) == PERM_ANN:
+            # The messages in the group are visibile to the anonymous user,
+            #   so obfuscate (redact) any email addresses in the post.
+            retval = email_matcher.sub('&lt;email obscured&gt;', word)
+        else:
+            # The messages in the group are visibile to group members only
+            # so show email addresses in the post, and make them useful.
+            retval = '<a class="email" href="mailto:%s">%s</a>' % (word, word)
+
     assert retval, 'Email address <%s> not marked up' % word
+    
     return retval
 
-def markup_youtube(word, substituted, substituted_words):
+def markup_youtube(context, word, substituted, substituted_words):
     """ Markup youtube URIs.
     
     """
@@ -64,7 +62,7 @@ def markup_youtube(word, substituted, substituted_words):
     
     return word
 
-def markup_splashcast(word, substituted, substituted_words):
+def markup_splashcast(context, word, substituted, substituted_words):
     """ Markup splashcast URIs.
     
     """
@@ -80,7 +78,7 @@ def markup_splashcast(word, substituted, substituted_words):
     
     return word
 
-def markup_bold(word, substituted, substituted_words):
+def markup_bold(context, word, substituted, substituted_words):
     """Markup words that should be bold, because they have astersisks 
       around them.
     """
@@ -241,26 +239,15 @@ def split_message(messageText, max_consecutive_comment=12,
     assert len(retval) == 2
     return retval
 
-standard_markup_functions = (markup_youtube, markup_splashcast, markup_uri,
-                             markup_bold)
+standard_markup_functions = (markup_email_address, markup_youtube,
+                             markup_splashcast, markup_uri, markup_bold)
 
 def markup_word(context, word, substituted_words):
     word = escape_word(word)
     substituted = False
-    
-    groupInfo = createObject('groupserver.GroupInfo', context)
-    if get_visibility(groupInfo.groupObj) == PERM_ANN:
-        # The messages in the group are visibile to the anonymous user,
-        #   so obfuscate (redact) any email addresses in the post.
-        email_address_markup = obfuscate_email
-    else:
-        # The messages in the group are visibile to group members only
-        #   so show email addresses in the post, and make them useful.
-        email_address_markup = markup_email_address
-    markup_functions = (email_address_markup,) + standard_markup_functions
-    
-    for function in markup_functions:
-        nword = function(word, substituted, substituted_words)
+
+    for function in standard_markup_functions:
+        nword = function(context, word, substituted, substituted_words)
         if nword != word:
             substituted = True
             if word not in substituted_words:
@@ -294,7 +281,6 @@ def markup_email(context, text):
 
     return retval    
 
-              
 def get_mail_body(context, text):
     """Get the body of the mail message, formatted for the Web.
     
