@@ -1,3 +1,5 @@
+# coding=utf-8
+
 from sqlalchemy.exceptions import SQLError
 import re
 import md5

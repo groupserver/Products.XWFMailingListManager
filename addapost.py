@@ -1,10 +1,12 @@
+# coding=utf-8
+
 from zLOG import LOG, PROBLEM, INFO
 from zExceptions import BadRequest
 from sqlalchemy.exceptions import SQLError
 import queries
 import random
 import time
-
+from MailBoxerTools import lowerList
 import logging
 log = logging.getLogger('addapost')
 
@@ -105,21 +107,20 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
         raise 'Forbidden', m
 
     # Step 2, check the moderation
-    moderatedlist = groupList.getValueFor('moderatedlist')
+    moderatedlist = groupList.get_moderatedUserObjects(ids_only=True)
+    print moderatedlist
     moderated = groupList.getValueFor('moderated')
+    print moderated
     via_mailserver = False
     # --=rrw=--if we are moderated _and_ we have a moderatedlist, only
     # users in the moderated list are moderated
-    if moderated and moderatedlist:
-        for address in user.get_emailAddresses():
-            if address in moderatedlist:
-                LOG('XWFVirtualMailingListArchive', INFO,
-                    'User "%s" posted from web while moderated' % 
-                     user.getId())
-                via_mailserver = True
-                break
+    if moderated and moderatedlist and (user.getId() in moderatedlist):
+        LOG('XWFVirtualMailingListArchive', INFO,
+            'User "%s" posted from web while moderated' % 
+              user.getId())
+        via_mailserver = True
     # --=rrw=-- otherwise if we are moderated, everyone is moderated
-    elif moderated:
+    elif moderated and not(moderatedlist):
         LOG('XWFVirtualMailingListArchive', INFO,
             'User "%s" posted from web while moderated' % user.getId())
         via_mailserver = True
