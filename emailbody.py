@@ -31,7 +31,8 @@ def markup_email_address(context, word, substituted, substituted_words):
     retval = word
     if not(substituted) and email_matcher.match(word):
         groupInfo = createObject('groupserver.GroupInfo', context)
-        if get_visibility(groupInfo.groupObj) == PERM_ANN:
+        if ((not groupInfo.groupObj) or \
+            (get_visibility(groupInfo.groupObj) == PERM_ANN)):
             # The messages in the group are visibile to the anonymous user,
             #   so obfuscate (redact) any email addresses in the post.
             retval = email_matcher.sub('&lt;email obscured&gt;', word)
