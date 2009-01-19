@@ -158,7 +158,7 @@ class RDBEmailMessageStorage(object):
                    subject=self.email_message.subject, 
                    date=self.email_message.date, 
                    body=self.email_message.body, 
-                   html_body=self.email_message.html_body, 
+                   htmlbody=self.email_message.html_body, 
                    header=self.email_message.headers, 
                    has_attachments=bool(self.email_message.attachment_count))
         #
@@ -314,6 +314,7 @@ class EmailMessage(object):
         self.sender_id_cb = sender_id_cb
         self.replace_mail_date = replace_mail_date
         self._date = datetime.datetime.now()
+        self.html_body = ''
         
     def get(self, name, default=''):
         value = self.message.get(name, default)
@@ -463,13 +464,6 @@ class EmailMessage(object):
             plain_body = convertHTML2Text(str(html_body))
             return unicode(plain_body, self.encoding, 'ignore')
         
-        return ''
-
-    @property
-    def html_body(self):
-        for item in self.attachments:
-            if item['filename'] == '' and item['subtype'] == 'html':
-                return unicode(item['payload'], self.encoding, 'ignore')
         return ''
 
     @property

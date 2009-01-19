@@ -814,7 +814,20 @@ class XWFMailingList(Folder):
         mailObject.manage_addProperty('mailUserId', msg.sender_id, 'ustring')
 
         return mailObject
+        
+    def attachment_is_html_body(self, attachment):
+        assert hasattr(attachment, 'keys')
+        assert 'filename' in attachment
+        assert 'subtype' in attachment
+        assert 'contentid' in attachment
+        
+        retval = ((attachment['filename'] == '')
+                   and
+                  (attachment['subtype'] == 'html'))#XML and XHTML?
 
+        assert type(retval) == bool
+        return retval
+        
     security.declareProtected('Add Folders', 'manage_addMail')
     def manage_addMail(self, msg):
         """ Store mail & attachments in a folder and return it.
@@ -828,18 +841,26 @@ class XWFMailingList(Folder):
             
         ids = []
         for attachment in msg.attachments:
-            if attachment['filename'] == '' and attachment['subtype'] == 'plain':
-                # We definately don't want to save the plain text body again!
+            if ((attachment['filename'] == '') 
+                and (attachment['subtype'] == 'plain')):
+                # We definately don't want to save the plain text 
+                # body again!
                 pass
-            elif attachment['filename'] == '' and attachment['subtype'] == 'html':
-                # We might want to do something with the HTML body some day
-                m = '%s (%s): stripped, but not archiving %s attachment '\
-                  '%s; it appears to be part of an HTML message.' % \
+            elif self.attachment_is_html_body(attachment):
+                cs = attachment['charset']
+                htmlBody = attachment['payload']
+                if cs:
+                    htmlBody = htmlBody.decode(cs)
+                msg.html_body = htmlBody
+                m = u'%s (%s): archiving %s/%s attachment as the '\
+                    u'HTML version of the message body.' % \
                   (self.getProperty('title'), self.getId(),
-                   attachment['maintype'], attachment['filename'])
+                   attachment['maintype'], attachment['subtype'])
                 log.info(m)
             elif attachment['contentid']:
-                # --=mpj17=-- ?
+                # --=mpj17=-- I *think* this is for attachments that
+                #   are not HTML, but are referred to from the
+                #   HTML body.
                 m = '%s (%s): stripped, but not archiving %s attachment '\
                   '%s; it appears to be part of an HTML message.' % \
                   (self.getProperty('title'), self.getId(),
