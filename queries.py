@@ -1,5 +1,6 @@
 from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
+import datetime
 
 import logging
 log = logging.getLogger("XMLMailingListManager.queries") #@UndefinedVariable
@@ -10,6 +11,44 @@ def to_unicode(s):
         retval = unicode(s, 'utf-8')
 
     return retval    
+
+class DigestQuery(object):
+    def __init__(self, context, da):
+        self.context = context
+        
+        self.digestTable = da.createTable('group_digest')
+        self.now = datetime.datetime.now()
+
+    def has_digest_since(self, site_id, group_id, interval=datetime.timedelta(0.9)):
+        """ Have there been any digests sent in the last 'interval' time period?
+        
+        """
+        sincetime = self.now-interval
+        dt = self.digestTable
+        
+        statement = dt.select()
+
+        statement.append_whereclause(dt.c.site_id==site_id)
+        statement.append_whereclause(dt.c.group_id==group_id)
+        statement.append_whereclause(dt.c.sent_date > sincetime)
+
+        r = statement.execute()
+        
+        result = False
+        if r.rowcount:
+            result = True
+            
+        return result
+
+    def update_group_digest(self, site_id, group_id):
+        """ Update the group_digest table when we send out a new digest.
+        
+        """
+        dt = self.digestTable
+        
+        statement = dt.insert()
+
+        statement.execute(site_id=site_id,group_id=group_id,sent_date=self.now)
 
 class MemberQuery(object):
     # how many user ID's should we attempt to pass to the database before

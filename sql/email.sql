@@ -61,6 +61,12 @@ CREATE TABLE word_count (
 
 CREATE UNIQUE INDEX WORD_COUNT_PKEY ON WORD_COUNT USING BTREE (word);
 
+CREATE TABLE group_digest (
+    site_id text not null,
+    group_id text not null,
+    sent_date timestamp with time zone not null
+);
+
 CREATE TABLE FILE (
     FILE_ID           TEXT                     NOT NULL,
     MIME_TYPE         TEXT                     NOT NULL,

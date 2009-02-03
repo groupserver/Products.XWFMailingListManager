@@ -30,7 +30,7 @@ import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
   RDBFileMetadataStorage, strip_subject
 
-from queries import MemberQuery, MessageQuery
+from queries import MemberQuery, MessageQuery, DigestQuery
 from export import export_archive_as_mbox
 from utils import check_for_commands, pin, getMailFromRequest
 
@@ -1258,6 +1258,16 @@ class XWFMailingList(Folder):
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
+        da = self.zsqlalchemy 
+        assert da
+        digestQuery = DigestQuery(self, da)
+        # check to see if we have a digest in the last day, and if so, shortcut
+        if digestQuery.has_digest_since(siteId, groupId):
+            m = u'%s (%s) on %s (%s): Have already issued digest in last day' % \
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
+            log.info(m)
+            return
+        
         # -- Call topic digest view
         topicDigestView = TopicDigestView(groupInfo.groupObj, REQUEST)
         if topicDigestView.showDigest:
@@ -1287,6 +1297,11 @@ class XWFMailingList(Folder):
                                     digestText=topicDigestView(),
                                     digestStats=topicDigestStats,
                                     shortGroupName=shortName)
+            
+            # even if we screw up, mark in the database that we've sent the digest,
+            # because we don't want repeat screwups to lead to repeat digests
+            digestQuery.update_group_digest(siteId, groupId)
+            
             self.send_digest(digest)
         else:
             m = u'%s (%s) on %s (%s): No topics for digest' % \
