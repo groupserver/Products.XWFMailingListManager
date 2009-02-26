@@ -55,7 +55,7 @@ def markup_youtube(context, word, substituted, substituted_words):
     if word in substituted_words:
         return word
 
-    word = re.sub('(?i)(http://)(.+?)(youtube.com/watch\?v\=)(.*)($|\s)',
+    word = re.sub('(?i)(http://)(.*)(youtube.com/watch\?v\=)(.*)($|\s)',
                   '<div class="markup-youtube"><object width="425" height="344"><param name="movie" value="http://\g<2>youtube.com/v/\g<4>'
                   '&amp;hl=en&amp;fs=1"></param><param name="allowFullScreen" value="true"></param><embed src="http://\g<2>youtube.com/v/\g<4>&amp;hl=en&amp;fs=1"'
                   ' type="application/x-shockwave-flash" allowfullscreen="true" width="425" height="344"></embed></object></div>\g<5>',
