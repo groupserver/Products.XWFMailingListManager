@@ -1,0 +1,16 @@
+<tal:block>
+  
+    <div class="formelementbutton">
+    <div class="hint" tal:condition="options/add">
+      Add this topic to the list of sticky topics
+    </div>
+    <div class="hint" tal:condition="not:options/add">
+      Remove this topic from the list of sticky topics
+    </div>
+    <input class="button" type="submit" value="Add"
+      id="toggleStickyToggle" name="toggle" 
+      tal:attributes="value python:options['add'] and 'Add to Sticky' or 'Remove from sticky';
+      title python:options['add']  and 'Make this topic sticky' or 'Make this topic not sticky'"/>
+  </div>
+  
+</tal:block>

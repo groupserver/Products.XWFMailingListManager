@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<tal:block 
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  tal:condition="view/post">
+<html xmlns="http://www.w3.org/1999/xhtml"
+  metal:use-macro="context/@@groupserver_layout/page">
+  <head>
+
+    <!--Todo: add the division name.-->
+  	<title metal:fill-slot="title">
+      Post in
+      <span tal:define="global topicName python:view.get_topic_title();"
+        tal:replace="topicName">
+        Standard Template for a Single Post
+      </span>:
+      <span tal:replace="python:view.groupInfo.get_name()"/>:
+      <span tal:replace="python:view.siteInfo.get_name()"/>
+    </title>
+    
+    <meta name="title" content="Standard Template for a Single Post"/>
+    <meta name="author" content="Michael JasonSmith" />
+    <meta name="description" 
+      content="This template is used to render a single post to GroupServer" />
+    <meta name="date" content="2006-10-25"/>
+    
+    <tal:block metal:fill-slot="metadata">
+      <!-- The documents related to this post -->
+      <link rel="next" 
+        tal:define="global next python:view.get_next_post();"
+        tal:condition="next"
+        tal:attributes="title python:u'Next post in &#8220;%s&#8221;' % topicName;
+        href string:${next};" />
+      <link rel="prev" 
+        tal:define="global prev python:view.get_previous_post();"
+        tal:condition="prev"
+        tal:attributes="title python:u'Previous post in &#8220;%s&#8221;' % topicName;
+        href string:${prev};" />
+      <link rel="first"
+        tal:condition="prev"
+        tal:define="global first python:view.get_first_post()"
+        tal:attributes="title python:u'First post in &#8220;%s&#8221;' % topicName;
+        href string:${first};" />
+      <link rel="last"
+        tal:condition="next"
+        tal:define="global last python:view.get_last_post()"
+        tal:attributes="title python:u'Latest post in &#8220;%s&#8221;' % topicName;
+        href string:${last}" />
+      <tal:block 
+        tal:define="title python:u'All posts in &#8220;%s&#8221;' % topicName;">
+        <link rel="up" href="#" 
+          tal:attributes="title title; href python:u'../topic/%s' % last" />
+      <link rel="home" 
+        tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
+        href python:view.siteInfo.get_url()" />
+      <link rel="help" 
+        tal:attributes="title python:u'%s Help' % view.siteInfo.get_name();
+        href python:u'%s/help' % view.siteInfo.get_url()" />
+      </tal:block>
+      
+      <link rel="bookmark" title="Group Homepage" href="#"
+        tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
+        href python:view.groupInfo.get_url()" />
+      <link rel="bookmark" title="Division Homepage" href="/"
+        tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
+        href python:view.siteInfo.get_url();" />
+    </tal:block>
+  </head>
+  
+  <body>
+    <!-- 
+      - The body of the document. Most of the body-content is created 
+      - from the message, grabbed from the XWFVirtualMailingList
+      - instance.
+    -->
+    <tal:block metal:fill-slot="body">
+      <h1>Post in
+        <cite tal:content="topicName">Topic</cite></h1>
+    
+      <div class="messages-nl" id="singlePostTopicNavigation">
+        <p class="label">Topic Navigation</p>
+        <ul>
+          <li class="first">
+            <a tal:condition="prev"
+              tal:attributes="href string:${first};
+              title string:First post in ${topicName};">First post</a>
+            <span tal:condition="not:prev">First post</span>
+          </li>
+          <li class="prev">
+            <a tal:condition="prev"
+              tal:attributes="href string:${prev};
+              title string:Previous post in ${topicName};">Previous post</a>
+            <span tal:condition="not:prev">Previous post</span>
+          </li>
+          <li class="next">
+            <a tal:condition="next"
+              tal:attributes="href string:${next};
+              title string:Next post in ${topicName};">Next post</a>
+            <span tal:condition="not:next">Next post</span>
+          </li>
+          <li class="last">
+            <a tal:condition="next"
+              tal:attributes="href string:${last};
+              title string:Most recent post in ${topicName};">Last post</a>
+            <span tal:condition="not:next">Last post</span>                
+          </li>
+        </ul>
+      </div>
+      <div class="messages-nl" id="usefulLinks">
+        <p class="label">Useful Links</p>
+        <ul>
+          <li class="topicLink">
+            <a href="#" 
+              tal:attributes="href string:../topic/${last}">
+              All posts in
+            <cite class="topic" 
+                tal:content="topicName">topic name</cite></a>
+          </li>
+        </ul>
+      </div>
+      
+      <p tal:define="post python:view.get_post()"
+        tal:replace="structure provider:groupserver.Post">
+        The email message is rendered by the Post content provider,
+        not by this page.
+      </p>
+    </tal:block>
+  </body>
+</html>
+</tal:block>
