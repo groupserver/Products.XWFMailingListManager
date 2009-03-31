@@ -45,7 +45,7 @@ def tagProcess(tagsString):
     return map(lambda t: t.strip(), filter(lambda t: t!='', retval))
 
 def add_a_post(groupId, siteId, replyToId, topic, message,
-               tags, email, uploadedFile, context, request):
+               tags, email, uploadedFiles, context, request):
     
     result = {'error': False, 'message': 'No errror'} #@UnusedVariable
 
@@ -61,8 +61,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     siteObj = getattr(site_root.Content, siteId)
     groupObj = getattr(siteObj.groups, groupId)
     ptnCoachId = groupObj.getProperty('ptn_coach_id', '')
-    # FIXME: why is onlinegroups.net hardcoded here?
-    canonicalHost = getOption('canonicalHost', 'onlinegroups.net')
+    canonicalHost = getOption('canonicalHost', '')
     
     messages = getattr(groupObj, 'messages')
     assert messages
@@ -84,12 +83,14 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
         subject = 'Re: %s'  % topic
         emailMessageReplyToId = replyToId
         emailMessageId = ''
-        # --=mpj17=-- I should really handle the References header here.
+        # TODO: handle the References header here.
     else:
         subject = topic
         emailMessageReplyToId = ''
         emailMessageId = '%s.%2.0f.%s.%s' % (time.time(), (random.random()*10000), groupId, siteId)
 
+
+    # TODO: Audit
     m = 'Adding post from %s (%s) via the Web, to the topic "%s" in %s '\
       '(%s) on %s (%s)'%\
       (user.getProperty('fn', ''), user.getId(), 
@@ -126,18 +127,23 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
         via_mailserver = True
 
     # Step 3, Create the file object, if necessary
-    fileObj = None
-    if (not(uploadedFile) or not(uploadedFile.readlines())):
-        # --=mpj17-- Bless WebKit. It adds a file, even when no file has
-        #   been specified; if the file is empty, do not add the file.
-        uploadedFile = None
     
-    if uploadedFile:
+    # --=mpj17=-- multiple files.
+    fileObjs = []
+    fileObj = None
+    # --=mpj17-- Bless WebKit. It adds a file, even when no file has
+    #   been specified; if the files are empty, do not add the files.
+    filesPresent = uploadedFiles and \
+      [f for f in uploadedFiles if f and f.readlines()]
+    if filesPresent:
         fileProperties = {'topic': topic,
                           'tags': tagsString,
                           'dc_creator': user.getId(),
                           'description': message[:200]}
         fileObj = files.add_file(uploadedFile, fileProperties)
+        fileObjs.append(fileObj)
+    else:
+        uploadedFiles = []
 
     # Step 3, Get the templates
     templateDir = site_root.Templates.email.notifications.new_file
@@ -147,21 +153,24 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
 
     result = {}
     result['error'] = False
-    result['message'] = "Message posted."
+    result['message'] = u"Message posted."
+    result['id'] = u''
     errorM = u'The post was not added to the topic '\
       u'<code class="topic">%s</code> because a post already exists in '\
       u'the topic with the same body.' % subject
     for list_id in messages.getProperty('xwf_mailing_list_ids', []):
         curr_list = listManager.get_list(list_id)
+        # --=mpj17=-- multiple files.
         m = messageTemplate(request, list_object=curr_list,
                             user=user, from_addr=email,
                             subject=subject, tags=tagsString,
                             canonicalHost=canonicalHost,
                             group=groupObj, ptn_coach_id=ptnCoachId,
                             message=message,
-                            reply_to_id=emailMessageReplyToId, message_id=emailMessageId,
+                            reply_to_id=emailMessageReplyToId,
+                            message_id=emailMessageId,
                             n_type='new_file', n_id=groupObj.getId(),
-                            file=fileObj)
+                            files=fileObjs)
 
         if via_mailserver:
             # If the message is being moderated, we have to emulate
@@ -184,7 +193,10 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             try:
                 # TODO: Completely rewrite message handling so we actually
                 #       have a vague idea what is going on.
-                r = (groupList.manage_listboxer({'Mail': m}) != 'FALSE')
+                r = groupList.manage_listboxer({'Mail': m})
+                result['message'] = \
+                  u'<a href="/r/topic/%s#post-%s">Message posted.</a>' % (r, r)
+                result['id'] = r
                 # --=mpj17=-- I kid you not, the above code is legit.
                 #   Too legit. Too legit to quit.
             except BadRequest, e: #@UnusedVariable

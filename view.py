@@ -29,14 +29,11 @@ def process_post( context, request ):
     if form.has_key('submitted'):
         if ((form['model'] == 'post') 
             and (form['instance'] == 'addPost_pragmatic')):
-            assert form.has_key('groupId')
-            assert form.has_key('siteId')
-            assert form.has_key('replyToId')
-            assert form.has_key('topic')
-            assert form.has_key('message')
-            assert form.has_key('tags')
-            assert form.has_key('email')
-            assert form.has_key('file')
+            # --=mpj17=-- multiple files.
+            keys = ('groupId', 'siteId', 'replyToId', 'topic', \
+              'message', 'tags', 'email', 'files')
+            for key in keys:
+                assert form.has_key(key), '%s not in form' % key
 
             # --=mpj17=-- Do not, under *A*N*Y* circumstances, 
             #  strip the file.
@@ -55,12 +52,14 @@ def process_post( context, request ):
             message = form.get('message', '')
             tags = form.get('tags', '')
             email = form.get('email', '')
-            uploadedFile = form.get('file', '')
-            
+            # --=mpj17=-- multiple files.
+            uploadedFiles = form.get('files', [])
+            if type(uploadedFiles) != list:
+                uploadedFiles = [uploadedFiles]
             try:
                 result = addapost.add_a_post(groupId, siteId, replyToId,
                                              topic, message, tags, email,
-                                             uploadedFile, 
+                                             uploadedFiles, 
                                              context, request)
             except SQLError, e:
                 log.error(e.message)
@@ -98,7 +97,7 @@ def process_post( context, request ):
 
         assert result.has_key('error')
         assert result.has_key('message')
-        assert result['message'].split
+        assert type(result['message']) in (unicode, str)
             
         result['form'] = form
 

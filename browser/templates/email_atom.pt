@@ -38,7 +38,18 @@
     tal:content="python:(d-d.utcoffset()).strftime('%Y-%m-%dT%H:%M:%SZ')">
     2003-12-13T18:30:02Z
   </updated>
-  <content type="xhtml">
+  <summary type="xhtml" 
+    tal:define="pi options/postIntro;words python:pi.split()">
+    <tal:block
+      replace="structure python:' '.join(words[:12])">
+      Words
+    </tal:block>
+    <tal:block 
+      condition="python:len(words)&gt;12">
+      &#8230;
+    </tal:block>
+  </summary>
+  <content type="xhtml" xml:space="preserve">
     <div xmlns="http://www.w3.org/1999/xhtml">
       <pre tal:content="structure options/postIntro">
         This is the body of the message.

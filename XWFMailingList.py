@@ -193,10 +193,10 @@ class XWFMailingList(Folder):
         """
 
         if self.checkMail(REQUEST):
-            return FALSE
-
-        self.listMail(REQUEST)
-        return TRUE
+            retval = False
+        else:
+            retval = self.listMail(REQUEST)
+        return retval
     
     security.declareProtected('View', 'manage_inboxer')
     def manage_inboxer(self, REQUEST):
@@ -489,12 +489,16 @@ class XWFMailingList(Folder):
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
                                        sender_id_cb=self.get_mailUserId)
+        # TODO: Audit                                       
         m = 'listMail: Processing message in group "%s", post id "%s" from <%s>' % \
                 (self.getId(), msg.post_id, msg.sender)
         log.info(m)
 
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
+        # --=mpj17=-- Does the following condition  *ever* return 
+        #   false? If it did "file_ids" would not be set and the 
+        #   call to self.mail_header would fail.
         if self.getValueFor('archived') != self.archive_options[0]:
             (post_id, file_ids) = self.manage_addMail(msg)
         
@@ -513,7 +517,8 @@ class XWFMailingList(Folder):
                                        file_ids=file_ids, 
                                        post_id=post_id)
 
-        # the mail header needs to be committed to a bytestream, not just a unicode object
+        # The mail header needs to be committed to a  bytestream, 
+        # not just a unicode object.
         mail_header = mail_header.encode('utf-8', 'ignore').strip()
 
         customHeader = EmailMessage(mail_header)
@@ -575,26 +580,27 @@ class XWFMailingList(Folder):
                                       customFooter)
         
         if not DEFER_EMAIL:
-            return self.sendMail(newMail)
+            self.sendMail(newMail)
+        else:
+            # otherwise, we save the email into a spool file for 
+            # sending later. This should provide a _much_ faster 
+            # response time for listMail we write the email to the 
+            # spool file after we put the groupname at the top.
+            spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
 
-        # otherwise, we save the email into a spool file for sending later.
-        # this should provide a _much_ faster response time for listMail
-        # we write the email to the spool file after we put the groupname
-        # at the top
-        spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
+            objpath = os.path.join(*self.aq_parent.getPhysicalPath())
+            tempfilepath = makeTempPath(objpath)
+            lockfilepath = '%s.lck' % tempfilepath
 
-        objpath = os.path.join(*self.aq_parent.getPhysicalPath())
-        tempfilepath = makeTempPath(objpath)
-        lockfilepath = '%s.lck' % tempfilepath
+            lockfile = file(lockfilepath, 'a+')
+            lockfile.write('locked')
+            lockfile.close()
 
-        lockfile = file(lockfilepath, 'a+')
-        lockfile.write('locked')
-        lockfile.close()
+            spoolfile = file(tempfilepath, 'ab+')
+            spoolfile.write(spoolMail)
 
-        spoolfile = file(tempfilepath, 'ab+')
-        spoolfile.write(spoolMail)
-
-        os.remove(lockfilepath)
+            os.remove(lockfilepath)
+        return msg.post_id
         
     def processMail(self, REQUEST):
         # Zeroth sanity check ... herein lies only madness.

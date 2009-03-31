@@ -52,12 +52,12 @@
     </div-->
     <input id="tags" name="tags" class="hidden" type="hidden" value=""/>
     <div class="formelementtext" id="post-file-fields">
-      <label class="text" for="file">File (optional)
+      <label class="text">Files (optional)
         <a href="/help/manual/#groupserver-posting-files-using-the-web"
           title="Help with posting files"
           class="helpLink">[?]</a></label>
       <div class="hint">The file you wish to post.</div>
-      <input id="file" name="file" class="text" type="file" value="" 
+      <input name="files" class="multi" type="file" value="" 
         title="The file you wish to post." /> 
     </div>
   </fieldset>
