@@ -877,6 +877,8 @@ class XWFMailingList(Folder):
 
         # if this is a post from the web, we may have also been passed the
         # file ID in the header
+        # TODO: Screw this, the Web should bolt the attachments on,
+        #   like Voltron. Simplify the code. --=mpj17=--
 
         file_ids = msg.get('x-xwfnotification-file-id')
         if file_ids:
