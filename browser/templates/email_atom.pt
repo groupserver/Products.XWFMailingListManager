@@ -12,7 +12,7 @@
     href string:${options/siteURL}/r/post/${postId}"/>
   <tal:block
     tal:condition="filesMetadata"
-    tal:define="groupObj python:options['context'].Scripts.get.group_object();">
+    tal:define="groupObj view/groupInfo/group;">
     <tal:block
       tal:repeat="fm filesMetadata">
       <tal:block define="type fm/mime_type; title fm/file_name;

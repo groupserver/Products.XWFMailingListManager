@@ -121,7 +121,7 @@ class PostEvent(BasicAuditEvent):
         BasicAuditEvent.__init__(self, context, id, POST, d, 
           userInfo, None,  siteInfo, groupInfo, instanceDatum, 
           None, SUBSYSTEM)
-            
+        
     def __str__(self):
         """Display the event as a string, in such a way that it
         will be useful for the standard Python log.

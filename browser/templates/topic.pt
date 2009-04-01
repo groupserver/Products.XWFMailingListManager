@@ -11,11 +11,11 @@
       <!--Todo: add the division name.-->
       <title metal:fill-slot="title">
         All posts in
-        <span tal:replace="python:view.get_topic_name()">
+        <span tal:replace="view/get_topic_name">
           Standard Template for a Single Post
         </span>:
-        <span tal:replace="python:view.groupInfo.get_name()"/>:
-        <span tal:replace="python:view.siteInfo.get_name()"/>
+        <span tal:replace="view/groupInfo/name"/>:
+        <span tal:replace="view/siteInfo/name"/>
       </title>
       
       <meta name="title" content="Standard Template for a Single Topic"/>
@@ -28,30 +28,30 @@
         tal:define="topicName view/get_topic_name">
         <!-- The documents related to this post -->
         
-        <link tal:define="global later python:view.get_previous_topic()" 
+        <link tal:define="global later view/get_previous_topic" 
           tal:condition="python:later and later[0]" 
           rel="prev" title="Previous topic" href="wibble"
           tal:attributes="href python:later[0]; 
           title python:u'Later topic: %s' % later[1];" />
         
-        <link tal:define="global earlier python:view.get_next_topic()" 
+        <link tal:define="global earlier view/get_next_topic" 
           tal:condition="python:earlier and earlier[0]" 
           rel="next" title="earlier topic" href="wibble"
           tal:attributes="href python:earlier[0]; 
           title python:u'Earlier topic: %s' % earlier[1];" />
         
         <link rel="up" title="All topics" href="../topics.html"
-          tal:attributes="title string:Topics in ${view/groupInfo/get_name};"/>
+          tal:attributes="title string:Topics in ${view/groupInfo/name};"/>
         
         <link rel="bookmark" title="Group Homepage" href="#"
-          tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
-          href python:view.groupInfo.get_url()" />
+          tal:attributes="title string:${view/groupInfo/name} Homepage;
+          href view/groupInfo/url" />
         <link rel="home" 
-          tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
-          href python:view.siteInfo.get_url()" />
+          tal:attributes="title string:${view/siteInfo/name} Homepage;
+          href view/siteInfo/url" />
         <link rel="help" 
-          tal:attributes="title python:u'%s Help' % view.siteInfo.get_name();
-          href python:u'%s/help' % view.siteInfo.get_url()" />
+          tal:attributes="title string:${view/siteInfo/name} Help;
+          href string:${view/siteInfo/url}/help" />
       </tal:block>
     </head>
     
@@ -73,15 +73,15 @@
         - instance.
         -->
       <tal:block metal:fill-slot="body"
-        define="topicList python:view.get_topic()"
+        define="topicList view/get_topic"
         condition="topicList">
         <h1>All posts in the topic
-          <cite tal:content="python:view.get_topic_name()">This Topic</cite>
-          <a href="#" title="A short link to this topic" class="shortLink"
-            tal:define="siteUrl python:view.siteInfo.get_url();
-            topicName python:view.get_topic_name();
+          <cite tal:content="view/get_topic_name">This Topic</cite>
+          <a href="#" title="A short link to this topic" 
+            class="shortLink"
+            tal:define="topicName view/get_topic_name;
             lastPostId python:topicList[-1]['post_id']"
-            tal:attributes="href string:${siteUrl}/r/topic/${lastPostId};
+            tal:attributes="href string:/r/topic/${lastPostId};
             title string:A short link to all posts in ${topicName}">(Short 
             link)</a>
         </h1>
@@ -89,11 +89,10 @@
         <form method="post" enctype="multipart/form-data"
           class="adminTasks" id="toggleStickyTopic"
           tal:attributes="action request/URL"
-          tal:define="topic python:view.get_topic_name();
-          groupInfo python:view.groupInfo;
-          siteInfo python:view.siteInfo;
-          group_object context/Scripts/get/group_object;
-          roles python:user.getRolesInContext(group_object);
+          tal:define="topic view/get_topic_name;
+          groupInfo view/groupInfo;
+          siteInfo view/siteInfo;
+          roles python:user.getRolesInContext(groupInfo.groupObj);
           isGroupAdmin python:'GroupAdmin' in roles;
           isDivisionAdmin python:'DivisionAdmin' in roles;
           topicId python:view.topicId;"
@@ -139,7 +138,7 @@
         <ul>
           <li class="topics">
             <a href="../topics.html">Topics in 
-              <span tal:replace="python:view.groupInfo.get_name()"/></a> 
+              <span tal:replace="view/groupInfo/name"/></a> 
             </li>
           </ul>
         </div>
@@ -173,7 +172,7 @@
             enctype="multipart/form-data"
             tal:condition="view/userPostingInfo/canPost"
             tal:define="startNew python:False; 
-            topic python:view.get_topic_name();
+            topic view/get_topic_name;
             replyToId python:topicList[-1]['post_id'];">
           
             <p style="display: none;" 

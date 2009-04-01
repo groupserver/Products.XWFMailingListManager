@@ -54,13 +54,9 @@ class GSTopicView(BrowserView):
           
       def update(self):
           a = time()
-          log.info('GSTopicView, start update')
           assert hasattr(self, 'postId'), 'PostID not set'
           assert self.postId, 'self.postID set to %s' % self.postId
           
-          result = view.process_form( self.context, self.request )
-          if result:
-              self.retval.update(result.items())
           result = view.process_post( self.context, self.request )
           if result:
               self.retval.update(result.items())
