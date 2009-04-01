@@ -875,22 +875,6 @@ class XWFMailingList(Folder):
             mailObject.manage_addProperty('x-xwfnotification-message-length', 
                                           len(msg.body.replace('\r', '')), 'ustring')
 
-        # if this is a post from the web, we may have also been passed the
-        # file ID in the header
-        # TODO: Screw this, the Web should bolt the attachments on,
-        #   like Voltron. Simplify the code. --=mpj17=--
-
-        file_ids = msg.get('x-xwfnotification-file-id')
-        if file_ids:
-            ids = ids+filter(None, file_ids.strip().split())
-            file_notification_message_length = msg.get('x-xwfnotification-message-length')
-            # if we are archiving to ZODB, update now
-            if archive and file_ids and file_notification_message_length:
-                mailObject.manage_addProperty('x-xwfnotification-file-id', 
-                                              file_ids, 'ustring')
-                mailObject.manage_addProperty('x-xwfnotification-message-length', 
-                                              file_notification_message_length, 'ustring')
-
         if archive:
             self.catalogMailBoxerMail(mailObject)
 
