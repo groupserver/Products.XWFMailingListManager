@@ -521,6 +521,7 @@ class XWFMailingList(Folder):
         # not just a unicode object.
         mail_header = mail_header.encode('utf-8', 'ignore').strip()
 
+
         customHeader = EmailMessage(mail_header)
         
         # If customBody is not empty, use it as new mailBody, and we need to
@@ -539,7 +540,7 @@ class XWFMailingList(Folder):
                                               body=msg.body, 
                                               file_ids=file_ids, 
                                               post_id=post_id).strip()
-        
+
         for hdr in customHeader.message.keys():
             if customHeader.message[hdr].strip():
                 if msg.message.has_key(hdr):
@@ -597,10 +598,11 @@ class XWFMailingList(Folder):
             lockfile.close()
 
             spoolfile = file(tempfilepath, 'ab+')
-            spoolfile.write(spoolMail)
+            spoolfile.write(spoolMail.encode('utf-8'))
 
             os.remove(lockfilepath)
-        return msg.post_id
+            
+        return post_id
         
     def processMail(self, REQUEST):
         # Zeroth sanity check ... herein lies only madness.

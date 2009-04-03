@@ -96,3 +96,11 @@ class GSPostsView(Products.Five.BrowserView):
           
       def process_form(self):
           pass
+
+      @property
+      def web_feed_uri(self):
+          retval = '/s/search.atom?g=%s&p=1&t=0&l=%d' %\
+            (self.groupInfo.id, self.get_chunk_length())
+          assert type(retval) == str
+          return retval
+

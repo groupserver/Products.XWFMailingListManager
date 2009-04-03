@@ -98,7 +98,6 @@ class GSPostContentProvider(object):
             ir = get_email_intro_and_remainder(self.context,
                                                self.post['body'])
             self.postIntro, self.postRemainder = ir
-              
             self.cssClass = self.get_cssClass()              
             self.filesMetadata = self.post['files_metadata']
               
@@ -143,7 +142,7 @@ class GSPostContentProvider(object):
                              authorInfo=self.authorInfo,
                              authored=self.authored, 
                              showPhoto=self.showPhoto, 
-                             postIntro=self.postIntro, 
+                             postIntro=self.postIntro,
                              postRemainder=self.postRemainder, 
                              cssClass=self.cssClass, 
                              topicName=self.topicName, 

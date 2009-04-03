@@ -151,7 +151,7 @@
           tal:replace="structure provider:groupserver.TopicIndex"/>
         
         <div class="postList">
-          <tal:block tal:repeat="post topicList">
+          <tal:block repeat="post topicList">
             <p tal:define="position repeat/post/number;
               showPhoto python:(position==1) or (topicList[position-1]['author_id'] != topicList[position-2]['author_id'])"
               tal:replace="structure provider:groupserver.Post">

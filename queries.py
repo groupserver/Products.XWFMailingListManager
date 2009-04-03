@@ -282,7 +282,7 @@ class MessageQuery(object):
                         'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'], 
-                        'body': x['body'], 
+                        'body': to_unicode(x['body']), 
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
                         'has_attachments': x['has_attachments']} for x in r ]

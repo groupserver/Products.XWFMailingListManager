@@ -62,7 +62,7 @@ def process_post( context, request ):
                                              uploadedFiles, 
                                              context, request)
             except SQLError, e:
-                log.error(e.message)
+                log.error(e)
                 result['error'] = True
                 # --=mpj17=-- Let us hope the following is the case.
                 result['message'] = 'The topic already contains the post'

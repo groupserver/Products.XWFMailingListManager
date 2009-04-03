@@ -1,22 +1,22 @@
 <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
-  post python:options['post'];
-  postId python:post['post_id'];
-  authorInfo python:options['authorInfo']; 
+  post options/post;
+  authorInfo options/authorInfo;
   authored python:options['authored'];
   showPhoto options/showPhoto;
   postIntro options/postIntro;
   postRemainder options/postRemainder;
   filesMetadata options/filesMetadata">
-  <div tal:attributes="class options/cssClass; id string:post-${postId};">
+  <div tal:attributes="class options/cssClass; 
+    id string:post-${post/post_id};">
     <p class="email-metadata">
       <a class="topic" tal:condition="options/topicName"
-        tal:attributes="href string:/r/topic/${postId};"
+        tal:attributes="href string:/r/topic/${post/post_id};"
         tal:content="options/topicName">A Topic</a>
       <span class="author vcard">
         <strong>From:</strong>
-        <a class="fn url" tal:omit-tag="python:authorInfo.anonymous"
-          tal:attributes="href python:authorInfo.url;
-            title python:u'Profile of %s' % authorInfo.name;"
+        <a class="fn url" tal:omit-tag="authorInfo/anonymous"
+          tal:attributes="href authorInfo/url;
+            title string:Profile of ${authorInfo/name};"
           tal:content="python:authorInfo.name">Me!</a>
         </span>
       <span class="posted">
@@ -30,19 +30,19 @@
         </span>
       </span>
       <a class="email-link"
-        tal:attributes="href string:/r/post/${postId};"
+        tal:attributes="href string:/r/post/${post/post_id};"
         title="A short link to this post">Short link</a>
       </p><!--email-metadata-->
     <div tal:condition="showPhoto"
-      tal:define="user python:authorInfo.user"
+      tal:define="user authorInfo/user"
       tal:replace="structure provider:groupserver.UserImage"/>
     <pre class="email-body"><p tal:replace="structure options/postIntro">
         This is the body of the document.
       </p>
     </pre><!--email-body-->
     <div class="email-remainder"
-      tal:define="remId string:emailRemainder${postId}; 
-      discloseId string:emailDiscloseButton${postId}">
+      tal:define="remId string:emailRemainder${post/post_id};
+      discloseId string:emailDiscloseButton${post/post_id}">
         <div class="disclosureWidget" tal:condition="options/postRemainder"
           tal:attributes="id remId">
           <p>

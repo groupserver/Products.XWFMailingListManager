@@ -82,9 +82,20 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     if not userPostingInfo.canPost:
         raise 'Forbidden', userPostingInfo.status
 
+    # --=mpj17-- Bless WebKit. It adds a file, even when no file has
+    #   been specified; if the files are empty, do not add the files.
+    uploadedFiles = [f for f in uploadedFiles if f]
+    
     # Step 2, Create the message
-    msg = MIMEMultipart()
-    # Step 2.1 Headers
+    # Step 2.1 Body
+    if uploadedFiles:
+        msg = MIMEMultipart()
+        msgBody = MIMEText(message, 'plain', 'utf-8') # As God intended.
+        msg.attach(msgBody)
+    else:
+        message = message.decode('utf-8').encode('utf-8')
+        msg = MIMEText(message, 'plain', 'utf-8')
+    # Step 2.2 Headers
     # msg['To'] set below
     msg['From'] = email
     msg['Subject'] = topic
@@ -95,15 +106,9 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     if replyToId:
         msg['In-Reply-To'] = replyToId
     # msg['Reply-To'] set by the list
-    
-    # Step 2.2 Body
-    msgBody = MIMEText(message.encode('utf-8')) # As God intended.
-    msg.attach(msgBody)
-    
+            
     # Step 2.3 Attachments
-    # --=mpj17-- Bless WebKit. It adds a file, even when no file has
-    #   been specified; if the files are empty, do not add the files.
-    for f in [f for f in uploadedFiles if f]:
+    for f in uploadedFiles:
         data = f.read()
         if data:
             t = f.headers.getheader('Content-Type', 
