@@ -314,6 +314,9 @@ class EmailMessage(object):
         self.sender_id_cb = sender_id_cb
         self.replace_mail_date = replace_mail_date
         self._date = datetime.datetime.now()
+
+        self.__body = None
+        self.__attachments = None
         
     def get(self, name, default=''):
         value = self.message.get(name, default)
@@ -333,7 +336,7 @@ class EmailMessage(object):
     
     @property
     def encoding(self):
-        encoding = check_encoding(self.message.get_param('charset', 'ascii'))
+        encoding = check_encoding(self.message.get_param('charset', 'utf-8'))
         
         return encoding
 
@@ -348,49 +351,55 @@ class EmailMessage(object):
             
             return pl           
 
-        payload = self.message.get_payload()
-        if isinstance(payload, list):
-            outmessages = []
-            out = []
-            for i in payload:
-                outmessages = split_multipart(i, outmessages)
-                    
-            for msg in outmessages:
-                actual_payload = msg.get_payload(decode=True)
-                encoding = msg.get_param('charset', self.encoding)
-                filename = unicode(parse_disposition(msg.get('content-disposition', '')), 
-                                   encoding, 'ignore')
-                fileid, length, md5_sum = calculate_file_id(actual_payload, msg.get_content_type())
-                out.append({'payload': actual_payload, 
-                             'fileid': fileid, 
-                             'filename': filename, 
-                             'length': length, 
-                             'md5': md5_sum, 
-                             'charset': msg.get_charset(), 
-                             'maintype': msg.get_content_maintype(), 
-                             'subtype': msg.get_content_subtype(), 
-                             'mimetype': msg.get_content_type(), 
-                             'contentid': msg.get('content-id', '')})
-            return out
-        else:
-            # since we aren't a bunch of attachments, actually decode the body
-            payload = self.message.get_payload(decode=True)
-            
-        filename = unicode(parse_disposition(self.message.get('content-disposition', '')), 
-                            self.encoding, 'ignore')
-        
-        fileid, length, md5_sum = calculate_file_id(payload, self.message.get_content_type())
-        return [ {'payload': payload, 
-                  'md5': md5_sum, 
-                  'fileid': fileid, 
-                  'filename': filename, 
-                  'length': length, 
-                  'charset': self.message.get_charset(), 
-                  'maintype': self.message.get_content_maintype(), 
-                  'subtype': self.message.get_content_subtype(), 
-                  'mimetype': self.message.get_content_type(), 
-                  'contentid': self.message.get('content-id', '')}
-               ]
+        if self.__attachments == None:
+            payload = self.message.get_payload()
+            if isinstance(payload, list):
+                outmessages = []
+                self.__attachments = []
+                for i in payload:
+                    outmessages = split_multipart(i, outmessages)
+                        
+                for msg in outmessages:
+                    actual_payload = msg.get_payload(decode=True)
+                    encoding = msg.get_param('charset', self.encoding)
+                    filename = unicode(parse_disposition(msg.get('content-disposition', '')), 
+                                       encoding, 'ignore')
+                    fileid, length, md5_sum = calculate_file_id(actual_payload, msg.get_content_type())
+                    self.__attachments.append({
+                          'payload': actual_payload, 
+                          'fileid': fileid, 
+                          'filename': filename, 
+                          'length': length, 
+                          'md5': md5_sum, 
+                          'charset': encoding, # --=mpj17=-- Issues?
+                          'maintype': msg.get_content_maintype(), 
+                          'subtype': msg.get_content_subtype(), 
+                          'mimetype': msg.get_content_type(), 
+                          'contentid': msg.get('content-id', '')})
+                
+            else:
+                # since we aren't a bunch of attachments, actually decode the body
+                payload = self.message.get_payload(decode=True)
+                
+                filename = unicode(parse_disposition(self.message.get('content-disposition', '')), 
+                                    self.encoding, 'ignore')
+                
+                fileid, length, md5_sum = calculate_file_id(payload, self.message.get_content_type())
+                self.__attachments = [ {
+                          'payload': payload, 
+                          'md5': md5_sum, 
+                          'fileid': fileid, 
+                          'filename': filename, 
+                          'length': length, 
+                          'charset': self.message.get_charset(), 
+                          'maintype': self.message.get_content_maintype(), 
+                          'subtype': self.message.get_content_subtype(), 
+                          'mimetype': self.message.get_content_type(), 
+                          'contentid': self.message.get('content-id', '')}
+                       ]
+        assert self.__attachments != None
+        assert type(self.__attachments) == list
+        return self.__attachments
 
     @property
     def headers(self):
@@ -454,16 +463,21 @@ class EmailMessage(object):
 
     @property
     def body(self):
-        for item in self.attachments:
-            if item['filename'] == '' and item['subtype'] != 'html':
-                return unicode(item['payload'], self.encoding, 'ignore')
-        
-        html_body = self.html_body
-        if html_body:
-            plain_body = convertHTML2Text(str(html_body))
-            return unicode(plain_body, self.encoding, 'ignore')
-        
-        return ''
+        if self.__body == None:
+            self.__body = u''
+            for item in self.attachments:
+                if item['filename'] == '' and item['subtype'] != 'html':
+                    retval = item
+                    self.__body = unicode(item['payload'], self.encoding, 'ignore')
+                    break
+            html_body = self.html_body
+            if html_body and (not self.__body):
+                plain_body = convertHTML2Text(str(html_body))
+                self.__body = unicode(plain_body, self.encoding, 'ignore')
+
+        assert self.__body != None
+        assert type(self.__body) == unicode
+        return self.__body
 
     @property
     def html_body(self):
