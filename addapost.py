@@ -17,8 +17,8 @@ from logging import getLogger
 log = getLogger('addapost')
 from webpostaudit import WebPostAuditor, POST
 
-from Products.XWFCore.XWFUtils import getOption
-
+from Products.XWFCore.XWFUtils import getOption, \
+  removePathsFromFilenames
 def tagProcess(tagsString):
     # --=mpj17=-- Not the most elegant function, but I did not want to
     #   use the regular-expression library.
@@ -116,7 +116,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             mimePart = MIMENonMultipart(*t.split('/'))
             mimePart.set_payload(data)
             mimePart['Content-Disposition'] = 'attachment'
-            filename = f.filename
+            filename = removePathsFromFilenames(f.filename)
             mimePart.set_param('filename', filename, 
                                'Content-Disposition')              
             encode_base64(mimePart) # Solves a lot of problems.
