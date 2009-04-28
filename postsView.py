@@ -104,3 +104,10 @@ class GSPostsView(Products.Five.BrowserView):
           assert type(retval) == str
           return retval
 
+class GSPostsViewWebFeed(GSPostsView):
+      def __init__(self, context, request):
+          GSPostsView.__init__(self, context, request)
+
+      def __call__(self):
+          self.request.response.redirect(self.web_feed_uri)
+
