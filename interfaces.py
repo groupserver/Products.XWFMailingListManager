@@ -1,5 +1,5 @@
 from zope.interface import Interface
-from zope.schema import Field, Int, Text, Bool
+from zope.schema import *
 
 class IMarkupEmail(Interface):
     pass
@@ -145,4 +145,32 @@ class IGSStickyTopicToggleContentProvider(Interface):
                                 that is used to render the form.""",
                                 required=False,
                                 default=u"browser/templates/toggleStickyTopicForm.pt")
+
+class IGSPostMessage(Interface):
+    fromAddress = Choice(title=u'Email From',
+      description=u'The email address that you want in the "From" '\
+        u'line in the email you send.',
+      vocabulary = 'EmailAddressesForLoggedInUser',
+      required=True)
+
+    message = Text(title=u'Message',
+      description=u'The message to post to this topic.',
+      required=True)
+        
+
+class IGSStickyTopic(Interface):
+    sticky = Bool(title=u'Sticky',
+      description=u'Display this topic before all other topics on '\
+        u'the Latest Topics page.',
+      required=False)
+
+class IGSAddToTopicFields(IGSPostMessage, IGSStickyTopic):
+    u'''Fields used on the topic page.'''
+
+class IGSPostMessageNewTopic(IGSPostMessage):
+    topic = TextLine(title=u'Topic',
+        description=u'The title of the topic. This appears as the '\
+          u'subject of the email messages that are sent out.',
+        required=True)
+    
 

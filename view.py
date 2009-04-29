@@ -26,6 +26,8 @@ log = logging.getLogger('XWFMailingListManager.view')
 def process_post( context, request ):
     form = request.form
     result = {}
+    for k in form.keys():
+        print k
     if form.has_key('submitted'):
         if ((form['model'] == 'post') 
             and (form['instance'] == 'addPost_pragmatic')):
@@ -68,7 +70,7 @@ def process_post( context, request ):
                 result['message'] = 'The topic already contains the post'
                 
         else:
-            m = "<p>Could not find the model <code>%s</code>.</p>" % model
+            m = "<p>Could not find the model <code>%s</code>.</p>" % form['model']
             result['error'] = True
             result['message'] = m
 

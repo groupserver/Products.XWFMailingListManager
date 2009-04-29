@@ -44,9 +44,11 @@
   <class class=".topicView.GSTopicView">
     <implements interface=".interfaces.IGSTopicView"/>
   </class>
-  <browser:page for=".interfaces.IGSMessagesFolder" name="gstopic"
+  <browser:page 
+    for=".interfaces.IGSMessagesFolder" 
+    name="gstopic"
     class=".topicView.GSTopicView"
-    template="browser/templates/topic.pt" permission="zope2.Public" />
+    permission="zope2.Public" />
   
   <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"
     class=".topicsView.GSTopicsView"
