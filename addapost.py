@@ -88,12 +88,12 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     
     # Step 2, Create the message
     # Step 2.1 Body
+    message = message.encode('utf-8')
     if uploadedFiles:
         msg = MIMEMultipart()
         msgBody = MIMEText(message, 'plain', 'utf-8') # As God intended.
         msg.attach(msgBody)
     else:
-        message = message.decode('utf-8').encode('utf-8')
         msg = MIMEText(message, 'plain', 'utf-8')
     # Step 2.2 Headers
     # msg['To'] set below
