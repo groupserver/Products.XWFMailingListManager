@@ -55,6 +55,7 @@ class GSTopicView(PageForm):
         
         self.__siteInfo = None
         self.groupInfo = createObject('groupserver.GroupInfo', context)
+        self.__userInfo = None
         self.__userPostingInfo = None
         self.__messageQuery = None
         self.__topicId = None
@@ -63,20 +64,66 @@ class GSTopicView(PageForm):
         self.__topicName = None
         self.__nextTopic = None
         self.__previousTopic = None
+        self.__stickyTopics = None
+
+    def setUpWidgets(self, ignore_request=False):
+        self.adapters = {}
+        fromAddr = self.userInfo.user.get_verifiedEmailAddresses()[0]
+        data = {
+          'fromAddress': fromAddr,
+          'message':     u'',
+          'sticky':      self.topicSticky,
+        }
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, self.context,
+            self.request, form=self, data=data,
+            ignore_request=ignore_request)
+        assert self.widgets
         
     @form.action(label=u'Add', failure='handle_action_failure')
-    def handle_add(self, data):
+    def handle_add(self, action, data):
       self.status = u'Should have added a post'
       assert self.status
       assert type(self.status) == unicode
 
-    @form.action(label=u'Add to Sticky', failure='handle_action_failure')
-    def handle_add_to_sticky(self, data):
-      self.status = u'Should have added the topic to the list '\
-        u'of sticky topics'
-      assert self.status
-      assert type(self.status) == unicode
+    @form.action(label=u'Change', failure='handle_action_failure')
+    def handle_add_to_sticky(self,action, data):
+        if data['sticky']:
+            self.add_topic_to_sticky()
+            self.status = u'<cite>%s</cite> has been '\
+              u'<strong>added</strong> to the list of sticky '\
+              u'topics in %s' % (self.topicName, self.groupInfo.name)
+        else:
+            self.remove_topic_from_sticky()
+            self.status = u'<cite>%s</cite> has been '\
+              u'<strong>removed</strong> from the list of sticky '\
+              u'topics in %s' % (self.topicName, self.groupInfo.name)
+        assert self.status
+        assert type(self.status) == unicode
 
+    def add_topic_to_sticky(self):
+        group = self.groupInfo.groupObj
+        if group.hasProperty('sticky_topics'):
+            topics = self.get_sticky_topics()
+            if self.topicId not in topics:
+                topics.append(self.topicId)
+            group.manage_changeProperties(sticky_topics=topics)
+        else:
+            group.manage_addProperty('sticky_topics', [self.topicId],
+                'lines')
+        assert group.hasProperty('sticky_topics')
+
+    def remove_topic_from_sticky(self):
+        group = self.groupInfo.groupObj
+        if group.hasProperty('sticky_topics'):
+            topics = list(group.getProperty('sticky_topics'))
+            if self.topicId in topics:
+                topics.remove(self.topicId)
+            group.manage_changeProperties(sticky_topics=topics)
+        else:
+            group.manage_addProperty('sticky_topics', [], 'lines')
+        assert group.hasProperty('sticky_topics')
+        
     def handle_action_failure(self, action, data, errors):
       if len(errors) == 1:
           self.status = u'<p>There is an error:</p>'
@@ -90,19 +137,23 @@ class GSTopicView(PageForm):
               createObject('groupserver.SiteInfo', self.context )
         assert self.__siteInfo != None
         return self.__siteInfo
+    @property
+    def userInfo(self):
+        if self.__userInfo == None:
+            self.__userInfo = createObject('groupserver.LoggedInUser', 
+              self.context)
+        return self.__userInfo
         
     @property
     def userPostingInfo(self):
         if self.__userPostingInfo == None:
-            userInfo = createObject('groupserver.LoggedInUser', 
-              self.context)
             g = self.groupInfo.groupObj
             assert g
             # --=mpj17=-- A Pixie Caramel to anyone who can tell me
             #    why the following line does not work in Zope 2.10.
             #   "Zope Five is screwed" is not sufficient.
             #self.userPostingInfo = IGSPostingUser((g, userInfo))
-            self.__userPostingInfo = getMultiAdapter((g, userInfo), 
+            self.__userPostingInfo = getMultiAdapter((g, self.userInfo), 
                                                       IGSPostingUser)
         assert self.__userPostingInfo
         return self.__userPostingInfo
@@ -179,18 +230,25 @@ class GSTopicView(PageForm):
         assert self.__previousTopic
         return self.__previousTopic
 
-    def get_sticky_topics(self):
-        assert hasattr(self, 'messageQuery'), 'No message query'
-        assert hasattr(self, 'groupInfo'), 'No group info'
-        if not hasattr(self, 'stickyTopics'):
-            stickyTopicsIds = self.groupInfo.get_property('sticky_topics', [])
-            topics = filter(lambda t: t!=None, [self.messageQuery.topic(topicId) 
-                                                for topicId in stickyTopicsIds])
-            self.stickyTopics = topics
-            
-        retval =  self.stickyTopics
-        assert hasattr(self, 'stickyTopics'), 'Sticky topics not cached'
+    @property
+    def topicSticky(self):
+        retval = self.topicId in self.groupInfo.get_property('sticky_topics', [])
+        assert type(retval) == bool
         return retval
+
+    def get_sticky_topics(self):
+        if self.__stickyTopics == None:
+            stickyTopicsIds = self.groupInfo.get_property('sticky_topics', [])
+            if type(stickyTopicsIds) != list:
+                stickyTopicIdIds = [stickyTopicsIds]
+            topics = [t for t in [self.messageQuery.topic(topicId) 
+                                  for topicId in stickyTopicsIds] if t]
+            assert type(topics) == list
+            for t in topics:
+                assert type(t) == dict
+            self.__stickyTopics = topics
+        assert self.__stickyTopics != None
+        return self.__stickyTopics
 
 class TopicInfo(object):
     def __init__(self, topicId, subject):

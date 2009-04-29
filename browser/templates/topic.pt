@@ -85,6 +85,21 @@
         </p>
       </form-->
       
+      <form tal:condition="view/userPostingInfo/canPost" 
+        class="adminTasks" id="toggleStickyTopic"
+        enctype="multipart/form-data"  method="post" action="."
+        tal:attributes="action request/URL">
+        <tal:block define="widgets python:[view.widgets['sticky']]">
+          <tal:block replace="structure provider:groupserver.FormWidgets"/>
+        </tal:block>
+        <div class="buttons" tal:condition="view/availableActions">
+          <div class="formelementbutton">
+            <span 
+              tal:replace="structure python:view.availableActions()[1].render()">Button</span>
+          </div>
+        </div><!--buttons-->
+      </form><!--sticky-->
+
       <div class="messages-nl" id="topicNavigation">
         <p class="label">Topic Navigation</p>
         <ul>
@@ -135,8 +150,8 @@
           </p>
         </tal:block>
       </div><!--postList-->
-      
-      <form enctype="multipart/form-data"  method="post" action="."
+      <form tal:condition="view/userPostingInfo/canPost" 
+        enctype="multipart/form-data"  method="post" action="."
         id="add-to-topic" tal:attributes="action request/URL">
         <h2>Add to the topic
           <cite class="topic" 
@@ -150,37 +165,12 @@
               tal:replace="structure python:view.availableActions()[0].render()">Button</span>
           </div>
         </div><!--buttons-->
-      </form><!--posting-->
-      
-      <!--div id="posting">
-        <h2>Add to the topic
-          <cite class="topic" 
-            tal:content="view/get_topic_name">topicName</cite>
-          <a title="Help with posting a message" 
-            href="/help/manual/#groupserver-posting-a-message-using-the-web"
-            class="helpLink">[?]</a></h2>
-        <form method="post" tal:attributes="action request/URL"
-          enctype="multipart/form-data"
-          tal:condition="view/userPostingInfo/canPost"
-          tal:define="startNew python:False; 
-          topic view/get_topic_name;
-          replyToId python:topicList[-1]['post_id'];">
-        
-          <p style="display: none;" 
-            tal:define="pageTemplateFileName string:browser/templates/postMessageData.pt"
-            tal:replace="structure provider:groupserver.PostMessage">
-            The space for the hidden metadata associated with the new post.
-          </p>
-          <p tal:replace="structure provider:groupserver.PostMessage">
-            The space to allow people to write the new post.
-          </p>
-        </form--><!-- Posting Form -->
-        <p class="message-result"
-          tal:condition="not:view/userPostingInfo/canPost"
-          tal:define="statusNum view/userPostingInfo/statusNum;
-            status view/userPostingInfo/status;"
-          tal:content="structure provider:groupserver.UserCanPost" />
-      <!--/div--><!--posting-->
+      </form><!--add-to-topic-->
+      <p class="message-result"
+        tal:condition="not:view/userPostingInfo/canPost"
+        tal:define="statusNum view/userPostingInfo/statusNum;
+          status view/userPostingInfo/status;"
+        tal:content="structure provider:groupserver.UserCanPost" />
     </tal:block>
     <tal:block metal:fill-slot="javascript">
       <script type="text/javascript"
