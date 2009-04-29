@@ -133,6 +133,9 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     if moderated and moderatedlist and (userInfo.id in moderatedlist):
         log.warn('User "%s" posted from web while moderated' % 
               userInfo.id)
+        
+        # TODO TELL THE FUCKING USER --=mpj17=--      
+        
         via_mailserver = True
     # --=rrw=-- otherwise if we are moderated, everyone is moderated
     elif moderated and not(moderatedlist):
