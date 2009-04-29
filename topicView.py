@@ -10,6 +10,8 @@ import Products.GSContent, queries, view, stickyTopicToggleContentProvider
 from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
 from zope.formlib import form
 from Products.Five.formlib.formbase import PageForm
+from addapost import add_a_post
+
 
 import logging
 log = logging.getLogger('topicView')
@@ -53,7 +55,7 @@ class GSTopicView(PageForm):
         self.postId = self.context.postId
         assert self.postId, 'self.postID set to %s' % self.postId
         
-        self.__siteInfo = None
+        self.siteInfo = createObject('groupserver.SiteInfo', context )
         self.groupInfo = createObject('groupserver.GroupInfo', context)
         self.__userInfo = None
         self.__userPostingInfo = None
@@ -65,6 +67,8 @@ class GSTopicView(PageForm):
         self.__nextTopic = None
         self.__previousTopic = None
         self.__stickyTopics = None
+
+        self.__message = None
 
     def setUpWidgets(self, ignore_request=False):
         self.adapters = {}
@@ -82,7 +86,27 @@ class GSTopicView(PageForm):
         
     @form.action(label=u'Add', failure='handle_action_failure')
     def handle_add(self, action, data):
-      self.status = u'Should have added a post'
+      if self.__message != data['message']:
+          # --=mpj17=-- Formlib sometimes submits twice submits twice
+          self.__message = data['message']
+          r = add_a_post(
+            groupId=self.groupInfo.id, 
+            siteId=self.siteInfo.id, 
+            replyToId=self.topic[-1]['post_id'], 
+            topic=self.topicName, 
+            message=data['message'],
+            tags=[], 
+            email=data['fromAddress'], 
+            uploadedFiles=[], 
+            context=self.context, 
+            request=self.request)
+          if r['error']:
+              # TODO make a seperate validator for messages that the
+              #   web and email subsystems can use to verifiy the
+              #   messages before posting them.
+              self.status = r['message']
+          else:
+              self.status = u'<a href="%(id)s#(id)s">%(message)s</a>' % r
       assert self.status
       assert type(self.status) == unicode
 
@@ -100,6 +124,19 @@ class GSTopicView(PageForm):
               u'topics in %s' % (self.topicName, self.groupInfo.name)
         assert self.status
         assert type(self.status) == unicode
+       
+    def handle_action_failure(self, action, data, errors):
+      print type(errors)
+      print errors
+      print dir(errors)
+      for error in errors:
+          print type(error)
+          print error
+          print dir(error)
+      if len(errors) == 1:
+          self.status = u'<p>There is an error:</p>'
+      else:
+          self.status = u'<p>There are errors:</p>'
 
     def add_topic_to_sticky(self):
         group = self.groupInfo.groupObj
@@ -123,20 +160,7 @@ class GSTopicView(PageForm):
         else:
             group.manage_addProperty('sticky_topics', [], 'lines')
         assert group.hasProperty('sticky_topics')
-        
-    def handle_action_failure(self, action, data, errors):
-      if len(errors) == 1:
-          self.status = u'<p>There is an error:</p>'
-      else:
-          self.status = u'<p>There are errors:</p>'
 
-    @property
-    def siteInfo(self):
-        if self.__siteInfo == None:
-            self.__siteInfo = \
-              createObject('groupserver.SiteInfo', self.context )
-        assert self.__siteInfo != None
-        return self.__siteInfo
     @property
     def userInfo(self):
         if self.__userInfo == None:
