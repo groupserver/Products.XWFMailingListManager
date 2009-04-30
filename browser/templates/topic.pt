@@ -61,31 +61,7 @@
           title string:A short link to all posts in ${topicName}">(Short 
           link)</a>
       </h1>
-      
-      <!--form method="post" enctype="multipart/form-data"
-        class="adminTasks" id="toggleStickyTopic"
-        tal:attributes="action request/URL"
-        tal:define="topic view/get_topic_name;
-        groupInfo view/groupInfo;
-        siteInfo view/siteInfo;
-        roles python:user.getRolesInContext(groupInfo.groupObj);
-        isGroupAdmin python:'GroupAdmin' in roles;
-        isDivisionAdmin python:'DivisionAdmin' in roles;
-        topicId python:view.topicId;"
-        tal:condition="python:isGroupAdmin or isDivisionAdmin">
-        <p 
-          tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicFormData.pt"
-          tal:replace="structure provider:groupserver.StickyTopicToggle">
-          The space for the hidden metadata associated with the
-          sticky topic toggle.
-        </p>
-      <p tal:define="pageTemplateFileName string:browser/templates/toggleStickyTopicForm.pt;"
-          tal:replace="structure provider:groupserver.StickyTopicToggle">
-          The button to do the toggling!.
-        </p>
-      </form-->
-      
-      <form tal:condition="view/userPostingInfo/canPost" 
+      <form tal:condition="view/userIsAdmin"
         class="adminTasks" id="toggleStickyTopic"
         enctype="multipart/form-data"  method="post" action="."
         tal:attributes="action request/URL">
@@ -99,7 +75,6 @@
           </div>
         </div><!--buttons-->
       </form><!--sticky-->
-
       <div class="messages-nl" id="topicNavigation">
         <p class="label">Topic Navigation</p>
         <ul>
@@ -132,14 +107,11 @@
           </li>
         </ul>
       </div>
-
-      <div tal:define="topic topicList" 
-        tal:condition="python:len(topic) &gt; 1"
+      <div tal:condition="python:len(topic) &gt; 1"
+        tal:define="topic topicList"
         tal:replace="structure provider:groupserver.TopicSummary"/>
-      
       <p tal:define="topic topicList"
         tal:replace="structure provider:groupserver.TopicIndex"/>
-      
       <div class="postList">
         <tal:block repeat="post topicList">
           <p tal:define="position repeat/post/number;
@@ -156,7 +128,7 @@
         <h2>Add to the topic
           <cite class="topic" 
             tal:content="view/topicName">topicName</cite></h2>
-        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message']]">
+        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message'], view.widgets['uploadeFile']]">
           <tal:block replace="structure provider:groupserver.FormWidgets"/>
         </tal:block>
         <div class="buttons" tal:condition="view/availableActions">

@@ -85,7 +85,6 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     # --=mpj17-- Bless WebKit. It adds a file, even when no file has
     #   been specified; if the files are empty, do not add the files.
     uploadedFiles = [f for f in uploadedFiles if f]
-    
     # Step 2, Create the message
     # Step 2.1 Body
     message = message.encode('utf-8')
@@ -109,6 +108,9 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             
     # Step 2.3 Attachments
     for f in uploadedFiles:
+        # --=mpj17=-- zope.formlib has already read the data, so we
+        #   seek to the beginning to read it all again :)
+        f.seek(0)
         data = f.read()
         if data:
             t = f.headers.getheader('Content-Type', 
@@ -121,7 +123,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                                'Content-Disposition')              
             encode_base64(mimePart) # Solves a lot of problems.
             msg.attach(mimePart)
-
+            
     # Step 3, check the moderation. 
     # --=mpj17=-- This changes *how* we send the message to the 
     #   mailing list. No, really.
@@ -133,9 +135,6 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     if moderated and moderatedlist and (userInfo.id in moderatedlist):
         log.warn('User "%s" posted from web while moderated' % 
               userInfo.id)
-        
-        # TODO TELL THE FUCKING USER --=mpj17=--      
-        
         via_mailserver = True
     # --=rrw=-- otherwise if we are moderated, everyone is moderated
     elif moderated and not(moderatedlist):
@@ -170,6 +169,10 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                 result['message'] = errorM
                 log.error(e)
                 break
+            result['error'] = True
+            result['message'] = u'Your message has been sent to '\
+              'the moderators for approval.'
+            break
         else:
             # Send the message directly to the mailing list because
             #   it is not moderated

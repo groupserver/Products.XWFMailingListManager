@@ -1,4 +1,5 @@
 from time import time
+from StringIO import StringIO
 from zope.component import getMultiAdapter, createObject
 from zope.interface import implements
 from zope.traversing.interfaces import TraversalError
@@ -11,6 +12,7 @@ from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
 from zope.formlib import form
 from Products.Five.formlib.formbase import PageForm
 from addapost import add_a_post
+from Products.GSGroupMember.groupmembership import user_admin_of_group
 
 
 import logging
@@ -89,6 +91,7 @@ class GSTopicView(PageForm):
       if self.__message != data['message']:
           # --=mpj17=-- Formlib sometimes submits twice submits twice
           self.__message = data['message']
+          uploadedFiles = [self.request['form.uploadeFile']]
           r = add_a_post(
             groupId=self.groupInfo.id, 
             siteId=self.siteInfo.id, 
@@ -97,7 +100,7 @@ class GSTopicView(PageForm):
             message=data['message'],
             tags=[], 
             email=data['fromAddress'], 
-            uploadedFiles=[], 
+            uploadedFiles=uploadedFiles,
             context=self.context, 
             request=self.request)
           if r['error']:
@@ -126,13 +129,6 @@ class GSTopicView(PageForm):
         assert type(self.status) == unicode
        
     def handle_action_failure(self, action, data, errors):
-      print type(errors)
-      print errors
-      print dir(errors)
-      for error in errors:
-          print type(error)
-          print error
-          print dir(error)
       if len(errors) == 1:
           self.status = u'<p>There is an error:</p>'
       else:
@@ -273,6 +269,10 @@ class GSTopicView(PageForm):
             self.__stickyTopics = topics
         assert self.__stickyTopics != None
         return self.__stickyTopics
+
+    @property
+    def userIsAdmin(self):
+        return user_admin_of_group(self.userInfo, self.groupInfo)
 
 class TopicInfo(object):
     def __init__(self, topicId, subject):
