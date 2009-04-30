@@ -1,23 +1,18 @@
-from time import time
-from StringIO import StringIO
+# coding=utf-8
 from zope.component import getMultiAdapter, createObject
 from zope.interface import implements
 from zope.traversing.interfaces import TraversalError
-from interfaces import IGSTopicView, IGSAddToTopicFields
-from Products.GSGroupMember.interfaces import IGSPostingUser
 from zope.publisher.interfaces import IPublishTraverse
-from Products.Five import BrowserView
-import Products.GSContent, queries, view, stickyTopicToggleContentProvider
-from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
 from zope.formlib import form
+from Products.Five import BrowserView
+from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
 from Products.Five.formlib.formbase import PageForm
-from addapost import add_a_post
+from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import user_admin_of_group
-
-
-import logging
-log = logging.getLogger('topicView')
-
+from queries import MessageQuery
+from interfaces import IGSTopicView, IGSAddToTopicFields
+from addapost import add_a_post
+    
 class GSTopicTraversal(BrowserView):
     implements(IPublishTraverse)
     def __init__(self, context, request):
@@ -91,7 +86,10 @@ class GSTopicView(PageForm):
       if self.__message != data['message']:
           # --=mpj17=-- Formlib sometimes submits twice submits twice
           self.__message = data['message']
+          
+          # TODO Voodoo to get multiple files
           uploadedFiles = [self.request['form.uploadeFile']]
+          
           r = add_a_post(
             groupId=self.groupInfo.id, 
             siteId=self.siteInfo.id, 
@@ -184,7 +182,7 @@ class GSTopicView(PageForm):
             da = self.context.zsqlalchemy 
             assert da, 'No data-adaptor found'
             self.__messageQuery = \
-              queries.MessageQuery(self.context, da)
+              MessageQuery(self.context, da)
         assert self.__messageQuery
         return self.__messageQuery
 

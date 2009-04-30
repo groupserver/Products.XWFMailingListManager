@@ -160,7 +160,7 @@ class IGSPostMessage(Interface):
     uploadeFile = Bytes(title=u'File',
       description=u'A file you wish to add to your message.',
       required=False)
-
+      
 class IGSStickyTopic(Interface):
     sticky = Bool(title=u'Sticky',
       description=u'Display this topic before all other topics on '\

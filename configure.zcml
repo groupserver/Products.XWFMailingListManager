@@ -62,8 +62,7 @@
     class=".postsView.GSPostsViewWebFeed" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="newTopic.html"
-    class=".view.GSNewTopicView"
-    template="browser/templates/newTopic.pt" permission="zope2.View" />
+    class=".starttopic.GSStartANewTopicView" permission="zope2.View" />
 
   
   <!-- A marker interface -->

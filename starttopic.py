@@ -1,0 +1,89 @@
+# coding=utf-8
+from zope.component import getMultiAdapter, createObject
+from zope.traversing.interfaces import TraversalError
+from zope.publisher.interfaces import IPublishTraverse
+from zope.formlib import form
+from Products.Five import BrowserView
+from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
+from Products.Five.formlib.formbase import PageForm
+from Products.GSGroupMember.interfaces import IGSPostingUser
+from Products.GSGroupMember.groupmembership import user_admin_of_group
+from queries import MessageQuery
+from interfaces import IGSPostMessageNewTopic
+from addapost import add_a_post
+    
+class GSStartANewTopicView(PageForm):
+    """View of a single GroupServer Topic"""
+    label = u'Start a New Topic'
+    pageTemplateFileName = 'browser/templates/newTopic.pt'
+    template = ZopeTwoPageTemplateFile(pageTemplateFileName)
+    form_fields = form.Fields(IGSPostMessageNewTopic, render_context=False)
+    
+    def __init__(self, context, request):
+        PageForm.__init__(self, context, request)
+
+        self.siteInfo = createObject('groupserver.SiteInfo', context )
+        self.groupInfo = createObject('groupserver.GroupInfo', context)
+        self.__userInfo = None
+        self.__userPostingInfo = None
+        
+        self.__message = None
+        
+    @form.action(label=u'Start', failure='handle_action_failure')
+    def handle_add(self, action, data):
+      if self.__message != data['message']:
+          # --=mpj17=-- Formlib sometimes submits twice submits twice
+          self.__message = data['message']
+          
+          # TODO Voodoo to get multiple files
+          uploadedFiles = [self.request['form.uploadeFile']]
+          
+          r = add_a_post(
+            groupId=self.groupInfo.id, 
+            siteId=self.siteInfo.id, 
+            replyToId='', 
+            topic=data['topic'], 
+            message=data['message'],
+            tags=[], 
+            email=data['fromAddress'], 
+            uploadedFiles=uploadedFiles,
+            context=self.context, 
+            request=self.request)
+          if r['error']:
+              # TODO make a seperate validator for messages that the
+              #   web and email subsystems can use to verifiy the
+              #   messages before posting them.
+              self.status = r['message']
+          else:
+              self.status = u'<a href="%(id)s#(id)s">%(message)s</a>' % r
+      assert self.status
+      assert type(self.status) == unicode
+
+    def handle_action_failure(self, action, data, errors):
+      if len(errors) == 1:
+          self.status = u'<p>There is an error:</p>'
+      else:
+          self.status = u'<p>There are errors:</p>'
+      assert type(self.status) == unicode
+
+    @property
+    def userInfo(self):
+        if self.__userInfo == None:
+            self.__userInfo = createObject('groupserver.LoggedInUser', 
+              self.context)
+        return self.__userInfo
+        
+    @property
+    def userPostingInfo(self):
+        if self.__userPostingInfo == None:
+            g = self.groupInfo.groupObj
+            assert g
+            # --=mpj17=-- A Pixie Caramel to anyone who can tell me
+            #    why the following line does not work in Zope 2.10.
+            #   "Zope Five is screwed" is not sufficient.
+            #self.userPostingInfo = IGSPostingUser((g, userInfo))
+            self.__userPostingInfo = getMultiAdapter((g, self.userInfo), 
+                                                      IGSPostingUser)
+        assert self.__userPostingInfo
+        return self.__userPostingInfo
+
