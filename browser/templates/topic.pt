@@ -122,7 +122,7 @@
           </p>
         </tal:block>
       </div><!--postList-->
-      <form tal:condition="view/userPostingInfo/canPost" 
+      <form tal:condition="view/userPostingInfo/canPost"
         enctype="multipart/form-data"  method="post" action="."
         id="add-to-topic" tal:attributes="action request/URL">
         <h2>Add to the topic
