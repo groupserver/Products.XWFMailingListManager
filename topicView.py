@@ -202,8 +202,9 @@ class GSTopicView(PageForm):
         
     def topic_id_from_legacy_post_id(self, legacyPostId):
         p = self.messageQuery.post_id_from_legacy_id(legacyPostId)
+        assert p, 'Post not found for legacy post ID (%s)' % legacyPostId
         retval = self.messageQuery.topic_id_from_post_id(p)
-        assert retval
+        assert retval, 'Topic not found for post ID (%s)' % p
         return retval
         
     @property
