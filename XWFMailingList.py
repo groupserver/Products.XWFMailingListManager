@@ -861,7 +861,7 @@ class XWFMailingList(Folder):
                   '%s; attachment was of zero size.' % \
                   (self.getProperty('title'), self.getId(),
                    attachment['maintype'], attachment['filename'])
-                log.info(m)                
+                log.warn(m)                
             else:
                 m = '%s (%s): stripped and archiving %s attachment %s' %\
                   (self.getProperty('title'), self.getId(),
