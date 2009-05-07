@@ -840,17 +840,28 @@ class XWFMailingList(Folder):
                 # We definately don't want to save the plain text body again!
                 pass
             elif attachment['filename'] == '' and attachment['subtype'] == 'html':
-                # We might want to do something with the HTML body some day
+                # We might want to do something with the HTML body some day, but we
+                # archive the HTML body here, as it suggests in the log message. The
+                # HTML body is archived along with the plain text body.
                 m = '%s (%s): archiving HTML message.' % (
                                        self.getProperty('title'), self.getId())
                 log.info(m)
             elif attachment['contentid']:
-                # --=mpj17=-- ?
+                # TODO: What do we want to do with these? They are typically part
+                # of an HTML message, for example the images, but what should we do with
+                # them once we've stripped them?
                 m = '%s (%s): stripped, but not archiving %s attachment '\
                   '%s; it appears to be part of an HTML message.' % \
                   (self.getProperty('title'), self.getId(),
                    attachment['maintype'], attachment['filename'])
                 log.info(m)
+            elif attachment['length'] <= 0:
+                # Empty attachment. Kinda pointless archiving this!
+                m = '%s (%s): stripped, but not archiving %s attachment '\
+                  '%s; attachment was of zero size.' % \
+                  (self.getProperty('title'), self.getId(),
+                   attachment['maintype'], attachment['filename'])
+                log.info(m)                
             else:
                 m = '%s (%s): stripped and archiving %s attachment %s' %\
                   (self.getProperty('title'), self.getId(),
