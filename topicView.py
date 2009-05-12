@@ -254,7 +254,7 @@ class GSTopicView(PageForm):
 
     @property
     def topicSticky(self):
-        retval = self.topicId in self.groupInfo.get_property('sticky_topics', [])
+        retval = self.topicId in self.get_sticky_topics()
         assert type(retval) == bool
         return retval
 
@@ -262,14 +262,10 @@ class GSTopicView(PageForm):
         if self.__stickyTopics == None:
             stickyTopicsIds = self.groupInfo.get_property('sticky_topics', [])
             if type(stickyTopicsIds) != list:
-                stickyTopicIdIds = [stickyTopicsIds]
-            topics = [t for t in [self.messageQuery.topic(topicId) 
-                                  for topicId in stickyTopicsIds] if t]
-            assert type(topics) == list
-            for t in topics:
-                assert type(t) == dict
-            self.__stickyTopics = topics
+                stickyTopicIdIds = list(stickyTopicsIds)
+            self.__stickyTopics = stickyTopicIdIds
         assert self.__stickyTopics != None
+        assert type(self.__stickyTopics) == list
         return self.__stickyTopics
 
     @property
