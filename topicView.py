@@ -58,7 +58,6 @@ class GSTopicView(PageForm):
         self.__userPostingInfo = None
         self.__messageQuery = None
         self.__topicId = None
-        self.__topic = None
         self.__lastPostId = None
         self.__topicName = None
         self.__nextTopic = None
@@ -67,7 +66,7 @@ class GSTopicView(PageForm):
 
         self.__message = None
 
-    def setUpWidgets(self, ignore_request=False):
+    def setUpWidgets(self, ignore_request=True):
         self.adapters = {}
         if self.userInfo.anonymous:
             fromAddr = ''
@@ -145,6 +144,7 @@ class GSTopicView(PageForm):
         else:
             group.manage_addProperty('sticky_topics', [self.topicId],
                 'lines')
+        self.__stickyTopics == None
         assert group.hasProperty('sticky_topics')
 
     def remove_topic_from_sticky(self):
@@ -156,6 +156,7 @@ class GSTopicView(PageForm):
             group.manage_changeProperties(sticky_topics=topics)
         else:
             group.manage_addProperty('sticky_topics', [], 'lines')
+        self.__stickyTopics == None
         assert group.hasProperty('sticky_topics')
 
     @property
@@ -209,12 +210,11 @@ class GSTopicView(PageForm):
         
     @property
     def topic(self):
-        if self.__topic == None:
-            self.__topic = self.messageQuery.topic_posts(self.topicId)
-        assert type(self.__topic) == list
-        assert len(self.__topic) >= 1, \
+        topic = self.messageQuery.topic_posts(self.topicId)
+        assert type(topic) == list
+        assert len(topic) >= 1, \
           "No posts in the topic %s" % self.topicId
-        return self.__topic
+        return topic
         
     @property
     def lastPostId(self):
