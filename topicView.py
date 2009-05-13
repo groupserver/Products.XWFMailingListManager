@@ -262,8 +262,8 @@ class GSTopicView(PageForm):
         if self.__stickyTopics == None:
             stickyTopicsIds = self.groupInfo.get_property('sticky_topics', [])
             if type(stickyTopicsIds) != list:
-                stickyTopicIdIds = list(stickyTopicsIds)
-            self.__stickyTopics = stickyTopicIdIds
+                stickyTopicsIds = list(stickyTopicsIds)
+            self.__stickyTopics = stickyTopicsIds
         assert self.__stickyTopics != None
         assert type(self.__stickyTopics) == list
         return self.__stickyTopics
