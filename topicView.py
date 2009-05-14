@@ -71,7 +71,7 @@ class GSTopicView(PageForm):
         if self.userInfo.anonymous:
             fromAddr = ''
         else:
-            fromAddr = self.userInfo.user.get_verifiedEmailAddresses()[0]
+            fromAddr = self.userInfo.user.get_defaultDeliveryEmailAddresses()[0]
         data = {
           'fromAddress': fromAddr,
           'message':     u'',
