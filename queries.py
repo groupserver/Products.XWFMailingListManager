@@ -527,11 +527,13 @@ class MessageQuery(object):
                         'body': to_unicode(x['body'])} for x in r ]
         return retval
 
+    
     def post(self, post_id):
         """ Retrieve a particular post.
             
             Returns:
-                {'post_id': ID, 'group_id': ID, 'subject': String,
+                {'post_id': ID, 'group_id': ID, 'site_id': ID,
+                 'subject': String,
                  'date': Date, 'author_id': ID,
                  'body': Text,
                  'files_metadata': [Metadata]
@@ -551,6 +553,7 @@ class MessageQuery(object):
             
             return {'post_id': row['post_id'],
                     'group_id': row['group_id'],
+                    'site_id': row['site_id'],
                     'subject': to_unicode(row['subject']),
                     'date': row['date'],
                     'author_id': row['user_id'],
