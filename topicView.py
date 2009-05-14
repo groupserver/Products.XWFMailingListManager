@@ -63,7 +63,7 @@ class GSTopicView(PageForm):
         self.__nextTopic = None
         self.__previousTopic = None
         self.__stickyTopics = None
-
+        self.__topic = None
         self.__message = None
 
     def setUpWidgets(self, ignore_request=True):
@@ -210,11 +210,12 @@ class GSTopicView(PageForm):
         
     @property
     def topic(self):
-        topic = self.messageQuery.topic_posts(self.topicId)
-        assert type(topic) == list
-        assert len(topic) >= 1, \
+        if ((self.__topic == None) or self.status):
+            self.__topic = self.messageQuery.topic_posts(self.topicId)
+        assert type(self.__topic) == list
+        assert len(self.__topic) >= 1, \
           "No posts in the topic %s" % self.topicId
-        return topic
+        return self.__topic
         
     @property
     def lastPostId(self):
