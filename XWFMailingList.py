@@ -96,11 +96,10 @@ class XWFMailingList(Folder):
        )
     
     
-    # Internal storages for sender-loop-limitation
-    sendercache = {}
-    
-    # track the checksum of the last email sent
-    last_email_checksum = ''
+    # track the checksum of the last email sent. Volatile because we
+    # just want a quick short circuit (post ID is checked for uniqueness
+    # at the database level anyway)
+    _v_last_email_checksum = ''
     
     def __init__(self, id, title, mailto):
         """ Setup a mailing list with reasonable defaults.
@@ -938,7 +937,7 @@ class XWFMailingList(Folder):
             * None if the message *should* be processed.
         
         SIDE EFFECTS
-            If the user can post, "self.last_email_checksum" is set to the 
+            If the user can post, "self._v_last_email_checksum" is set to the 
             ID of the message, which is calculated by 
             "emailmessage.EmailMessage".
             
@@ -1037,7 +1036,7 @@ class XWFMailingList(Folder):
                                                 ndict)
                 
                 return message
-        self.last_email_checksum = msg.post_id
+        self._v_last_email_checksum = msg.post_id
     
         # look to see if we have a custom_mailcheck hook. If so, call it.
         # custom_mailcheck should return True if the message is to be blocked
@@ -1095,9 +1094,9 @@ class XWFMailingList(Folder):
         return retval
 
     def chk_msg_tight_loop(self, msg):
-        assert hasattr(self, 'last_email_checksum'), "no last_email_checksum"
-        retval = self.last_email_checksum and \
-          (self.last_email_checksum == msg.post_id) or False
+        assert hasattr(self, '_v_last_email_checksum'), "no _v_last_email_checksum"
+        retval = self._v_last_email_checksum and \
+          (self._v_last_email_checksum == msg.post_id) or False
         assert type(retval) == bool, "type was %s, not bool" % type(retval)
         return retval
         
