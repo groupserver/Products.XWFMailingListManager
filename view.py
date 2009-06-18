@@ -23,6 +23,10 @@ import addapost
 import logging
 log = logging.getLogger('XWFMailingListManager.view')
 
+
+# --=mpj17=-- TODO: Go through here with the view of throwing stuff
+#   out. Who knows what is still required.
+
 def process_post( context, request ):
     form = request.form
     result = {}

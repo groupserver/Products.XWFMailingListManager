@@ -28,6 +28,23 @@ class GSStartANewTopicView(PageForm):
         self.__userPostingInfo = None
         
         self.__message = None
+
+    def setUpWidgets(self, ignore_request=True):
+        self.adapters = {}
+        if self.userInfo.anonymous:
+            fromAddr = ''
+        else:
+            fromAddr = self.userInfo.user.get_defaultDeliveryEmailAddresses()[0]
+        data = {
+          'fromAddress': fromAddr,
+          'message':     u'',
+          'sticky':      False, # New topics cannot be sticky
+        }
+        self.widgets = form.setUpWidgets(
+            self.form_fields, self.prefix, self.context,
+            self.request, form=self, data=data,
+            ignore_request=ignore_request)
+        assert self.widgets
         
     @form.action(label=u'Start', failure='handle_action_failure')
     def handle_add(self, action, data):
