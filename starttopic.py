@@ -3,6 +3,8 @@ from zope.component import getMultiAdapter, createObject
 from zope.traversing.interfaces import TraversalError
 from zope.publisher.interfaces import IPublishTraverse
 from zope.formlib import form
+from zope.app.form import CustomWidgetFactory
+from zope.app.form.browser import ListSequenceWidget, FileWidget
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
 from Products.Five.formlib.formbase import PageForm
@@ -28,6 +30,12 @@ class GSStartANewTopicView(PageForm):
         self.__userPostingInfo = None
         
         self.__message = None
+        
+        file_widget = CustomWidgetFactory(FileWidget)
+        multipleFileWidget = CustomWidgetFactory(ListSequenceWidget, 
+          subwidget=file_widget)
+        print multipleFileWidget
+        self.form_fields['uploadeFile'].custom_widget = multipleFileWidget
 
     def setUpWidgets(self, ignore_request=True):
         self.adapters = {}
@@ -53,19 +61,21 @@ class GSStartANewTopicView(PageForm):
           self.__message = data['message']
           
           # TODO Voodoo to get multiple files
-          uploadedFiles = [self.request['form.uploadeFile']]
-          
-          r = add_a_post(
-            groupId=self.groupInfo.id, 
-            siteId=self.siteInfo.id, 
-            replyToId='', 
-            topic=data['topic'], 
-            message=data['message'],
-            tags=[], 
-            email=data['fromAddress'], 
-            uploadedFiles=uploadedFiles,
-            context=self.context, 
-            request=self.request)
+          #uploadedFiles = [self.request['form.uploadeFile']]
+          for k in data:
+              print '%s: %s' % (k, data[k])
+          r = {'error': True, 'message': u'stuff'}
+          #r = add_a_post(
+          #  groupId=self.groupInfo.id, 
+          #  siteId=self.siteInfo.id, 
+          #  replyToId='', 
+          #  topic=data['topic'], 
+          #  message=data['message'],
+          #  tags=[], 
+          #  email=data['fromAddress'], 
+          #  uploadedFiles=uploadedFiles,
+          #  context=self.context, 
+          #  request=self.request)
           if r['error']:
               # TODO make a seperate validator for messages that the
               #   web and email subsystems can use to verifiy the
