@@ -131,6 +131,7 @@
         <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message'], view.widgets['uploadedFile']]">
           <tal:block replace="structure provider:groupserver.FormWidgets"/>
         </tal:block>
+        <div id="fileList">&#160;</div>
         <div class="buttons" tal:condition="view/availableActions">
           <div class="formelementbutton">
             <span 
@@ -160,6 +161,37 @@
           button string:#form\\.actions\\.add"
         tal:content="provider:groupserver.RequiredWidgetsJavaScript">
         alert("I have not been replaced.");
+      </script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.form.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.MetaData.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.MultiFile.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.blockUI.js">&#160;</script>
+      <script type="text/javascript">
+        jQuery.noConflict();
+        var renameFileInputs = function(event) {
+          var multiFiles = jQuery('.MultiFile-applied');
+          var oldId = ''
+          var newId = ''
+          var i = null;
+          var input = null;
+          for ( i=0; i < multiFiles.length; i++ ) {
+              input = jQuery(multiFiles[i]);
+              oldId = input.attr('id');
+              newId = oldId + '.' + i;
+              input.attr('id', newId).attr('name', newId);
+          }
+          return true;
+        };
+        jQuery(document).ready(function () {
+          jQuery('#form\\.uploadedFile').MultiFile({
+            list: '#fileList'
+          });
+          jQuery('#add-to-topic').submit(renameFileInputs);
+        });
       </script>
     </tal:block>
   </body>

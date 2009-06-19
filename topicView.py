@@ -89,8 +89,10 @@ class GSTopicView(PageForm):
           # --=mpj17=-- Formlib sometimes submits twice submits twice
           self.__message = data['message']
           
-          # TODO Voodoo to get multiple files
-          uploadedFiles = [self.request['form.uploadeFile']]
+          uploadedFiles = [self.request[k] 
+                           for k in self.request.form 
+                           if (('form.uploadedFile' in k) and 
+                                self.request[k])]
           
           r = add_a_post(
             groupId=self.groupInfo.id, 

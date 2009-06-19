@@ -67,6 +67,22 @@
     </tal:block>
     <tal:block metal:fill-slot="javascript">
       <script type="text/javascript"
+        src="/++resource++popup_help-20071218.js">&#160;</script>
+      <script type="text/javascript">
+          jQuery.noConflict();
+          jQuery(document).ready( function () {
+              GSPopupFormHelp.init('#add-to-topic');
+          });
+      </script>
+      <script type="text/javascript"
+        src="/++resource++check_required-20071214.js">&#160;</script>
+      <script type="text/javascript"
+        tal:define="widgets view/widgets; 
+          button string:#form\\.actions\\.add"
+        tal:content="provider:groupserver.RequiredWidgetsJavaScript">
+        alert("I have not been replaced.");
+      </script>
+      <script type="text/javascript"
         src="/++resource++multiple_file_upload/jquery.form.js">&#160;</script>
       <script type="text/javascript"
         src="/++resource++multiple_file_upload/jquery.MetaData.js">&#160;</script>
