@@ -58,28 +58,21 @@ class GSStartANewTopicView(PageForm):
       if self.__message != data['message']:
           # --=mpj17=-- Formlib sometimes submits twice submits twice
           self.__message = data['message']
-          
-          # TODO Voodoo to get multiple files
-          #uploadedFiles = [self.request['form.uploadeFile']]
-          print self.request.form
-          print [self.request[k] 
-                  for k in self.request.form 
-                  if 'form.uploadedFile' in k]
-          print '*** Data ***'
-          for k in data:
-              print '%s: %s' % (k, data[k])
-          r = {'error': True, 'message': u'stuff'}
-          #r = add_a_post(
-          #  groupId=self.groupInfo.id, 
-          #  siteId=self.siteInfo.id, 
-          #  replyToId='', 
-          #  topic=data['topic'], 
-          #  message=data['message'],
-          #  tags=[], 
-          #  email=data['fromAddress'], 
-          #  uploadedFiles=uploadedFiles,
-          #  context=self.context, 
-          #  request=self.request)
+          uploadedFiles = [self.request[k] 
+                           for k in self.request.form 
+                           if (('form.uploadedFile' in k) and 
+                                self.request[k])]
+          r = add_a_post(
+            groupId=self.groupInfo.id, 
+            siteId=self.siteInfo.id, 
+            replyToId='', 
+            topic=data['topic'], 
+            message=data['message'],
+            tags=[], 
+            email=data['fromAddress'], 
+            uploadedFiles=uploadedFiles,
+            context=self.context, 
+            request=self.request)
           if r['error']:
               # TODO make a seperate validator for messages that the
               #   web and email subsystems can use to verifiy the
