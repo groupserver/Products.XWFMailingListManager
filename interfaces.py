@@ -157,13 +157,9 @@ class IGSPostMessage(Interface):
       description=u'The message you want to post to this topic.',
       required=True)
     
-    uploadeFile = List(title=u'File',
-      min_length=0,
-      max_length=512,
-      value_type=Bytes(title=u'File',
-                       description=u'A file you wish to add to your message.',
-                       required=False),
-      default=[])
+    uploadedFile = Bytes(title=u'File',
+                         description=u'A file you wish to add.',
+                         required=False)
       
 class IGSStickyTopic(Interface):
     sticky = Bool(title=u'Sticky',

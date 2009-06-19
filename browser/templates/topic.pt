@@ -128,7 +128,7 @@
         <h2>Add to the topic
           <cite class="topic" 
             tal:content="view/topicName">topicName</cite></h2>
-        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message'], view.widgets['uploadeFile']]">
+        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message'], view.widgets['uploadedFile']]">
           <tal:block replace="structure provider:groupserver.FormWidgets"/>
         </tal:block>
         <div class="buttons" tal:condition="view/availableActions">

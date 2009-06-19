@@ -42,16 +42,61 @@
       <form tal:condition="view/userPostingInfo/canPost" 
         enctype="multipart/form-data"  method="post" action="."
         id="add-to-topic" tal:attributes="action request/URL">
-        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['topic'], view.widgets['message'], view.widgets['uploadeFile']]">
+        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['topic'], view.widgets['message'], view.widgets['uploadedFile']]">
           <tal:block replace="structure provider:groupserver.FormWidgets"/>
         </tal:block>
+        <div id="fileList">&#160;</div>
+
+        <!--div class="form-widget not-required"
+          id="widget-form.uploadedFile">
+          <label for="form.uploadedFile"
+            title="A file you wish to add.">File</label>
+          <input class="hiddenType" id="form.uploadedFile.used"
+            name="form.uploadedFile.used" type="hidden" value="" /> 
+          <input class="fileType" id="form.uploadedFile" 
+            name="form.uploadedFile" size="20" type="file"  />
+        </div>--<!--form-widget-->
+
         <div class="buttons" tal:condition="view/availableActions">
-          <div class="formelementbutton">
-            <span 
-              tal:replace="structure python:view.availableActions()[0].render()">Button</span>
-          </div>
+          <tal:block repeat="button view/availableActions">
+            <div class="formelementbutton"
+              tal:content="structure button/render">Button</div>
+          </tal:block>
         </div><!--buttons-->
       </form><!--add-to-topic-->
+    </tal:block>
+    <tal:block metal:fill-slot="javascript">
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.form.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.MetaData.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.MultiFile.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.blockUI.js">&#160;</script>
+      <script type="text/javascript">
+        jQuery.noConflict();
+        var renameFileInputs = function(event) {
+          var multiFiles = jQuery('.MultiFile-applied');
+          var oldId = ''
+          var newId = ''
+          var i = null;
+          var input = null;
+          for ( i=0; i < multiFiles.length; i++ ) {
+              input = jQuery(multiFiles[i]);
+              oldId = input.attr('id');
+              newId = oldId + '.' + i;
+              input.attr('id', newId).attr('name', newId);
+          }
+          return true;
+        };
+        jQuery(document).ready(function () {
+          jQuery('#form\\.uploadedFile').MultiFile({
+            list: '#fileList'
+          });
+          jQuery('#add-to-topic').submit(renameFileInputs);
+        });
+      </script>
     </tal:block>
   </body>
 </html>

@@ -13,7 +13,13 @@ from Products.GSGroupMember.groupmembership import user_admin_of_group
 from queries import MessageQuery
 from interfaces import IGSPostMessageNewTopic
 from addapost import add_a_post
-    
+
+
+class MyFileWidget(FileWidget):
+    def _toFieldValue(self, input):
+        #--=mpj17=-- Lookie! A hack!
+        return self.context.missing_value
+
 class GSStartANewTopicView(PageForm):
     """View of a single GroupServer Topic"""
     label = u'Start a New Topic'
@@ -26,16 +32,9 @@ class GSStartANewTopicView(PageForm):
 
         self.siteInfo = createObject('groupserver.SiteInfo', context )
         self.groupInfo = createObject('groupserver.GroupInfo', context)
-        self.__userInfo = None
-        self.__userPostingInfo = None
-        
-        self.__message = None
-        
-        file_widget = CustomWidgetFactory(FileWidget)
-        multipleFileWidget = CustomWidgetFactory(ListSequenceWidget, 
-          subwidget=file_widget)
-        print multipleFileWidget
-        self.form_fields['uploadeFile'].custom_widget = multipleFileWidget
+        self.__userInfo = self.__userPostingInfo = self.__message = None
+        cw = CustomWidgetFactory(MyFileWidget)
+        self.form_fields['uploadedFile'].custom_widget = cw
 
     def setUpWidgets(self, ignore_request=True):
         self.adapters = {}
@@ -62,6 +61,11 @@ class GSStartANewTopicView(PageForm):
           
           # TODO Voodoo to get multiple files
           #uploadedFiles = [self.request['form.uploadeFile']]
+          print self.request.form
+          print [self.request[k] 
+                  for k in self.request.form 
+                  if 'form.uploadedFile' in k]
+          print '*** Data ***'
           for k in data:
               print '%s: %s' % (k, data[k])
           r = {'error': True, 'message': u'stuff'}
