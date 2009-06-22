@@ -97,6 +97,10 @@
     directory="browser/javascript/multiple_file_upload" 
     permission="zope2.Public" />
 
+  <browser:resource name="gsfileupload-20090622.js"
+    file="browser/javascript/gsfileupload.js" 
+    permission="zope2.Public" />
+
   <utility component=".emailbody.markup_email"
            provides=".interfaces.IMarkupEmail" />
   

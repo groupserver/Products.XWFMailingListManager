@@ -128,10 +128,23 @@
         <h2>Add to the topic
           <cite class="topic" 
             tal:content="view/topicName">topicName</cite></h2>
-        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message'], view.widgets['uploadedFile']]">
+        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message']]">
           <tal:block replace="structure provider:groupserver.FormWidgets"/>
         </tal:block>
-        <div id="fileList">&#160;</div>
+
+        <div class="form-widget" id="widget-abc123" 
+          tal:define="widget python:view.widgets['uploadedFile'];"
+          tal:attributes="id string:widget-${widget/name};">
+          <label for="abc123" title="The hint for the widget"
+            tal:attributes="for widget/name; title widget/hint"
+            tal:content="widget/label">
+            A label
+          </label>
+          <div id="fileList">&#160;</div>
+          <span
+            tal:condition="python:hasattr(widget, 'tag')"
+            tal:replace="structure widget">Widget</span>
+        </div><!--form-widget-->
         <div class="buttons" tal:condition="view/availableActions">
           <div class="formelementbutton">
             <span 
@@ -146,14 +159,6 @@
         tal:content="structure provider:groupserver.UserCanPost" />
     </tal:block>
     <tal:block metal:fill-slot="javascript">
-      <script type="text/javascript"
-        src="/++resource++popup_help-20071218.js">&#160;</script>
-      <script type="text/javascript">
-          jQuery.noConflict();
-          jQuery(document).ready( function () {
-              GSPopupFormHelp.init('#add-to-topic');
-          });
-      </script>
       <script type="text/javascript"
         src="/++resource++check_required-20071214.js">&#160;</script>
       <script type="text/javascript"
@@ -170,28 +175,16 @@
         src="/++resource++multiple_file_upload/jquery.MultiFile.js">&#160;</script>
       <script type="text/javascript"
         src="/++resource++multiple_file_upload/jquery.blockUI.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++gsfileupload-20090622.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++popup_help-20071218.js">&#160;</script>
       <script type="text/javascript">
-        jQuery.noConflict();
-        var renameFileInputs = function(event) {
-          var multiFiles = jQuery('.MultiFile-applied');
-          var oldId = ''
-          var newId = ''
-          var i = null;
-          var input = null;
-          for ( i=0; i < multiFiles.length; i++ ) {
-              input = jQuery(multiFiles[i]);
-              oldId = input.attr('id');
-              newId = oldId + '.' + i;
-              input.attr('id', newId).attr('name', newId);
-          }
-          return true;
-        };
-        jQuery(document).ready(function () {
-          jQuery('#form\\.uploadedFile').MultiFile({
-            list: '#fileList'
+          jQuery.noConflict();
+          jQuery(document).ready( function () {
+              GSPopupFormHelp.init('#add-to-topic');
+              GSFileUpload.init();
           });
-          jQuery('#add-to-topic').submit(renameFileInputs);
-        });
       </script>
     </tal:block>
   </body>
