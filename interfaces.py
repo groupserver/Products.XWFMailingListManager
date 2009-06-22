@@ -157,7 +157,7 @@ class IGSPostMessage(Interface):
       description=u'The message you want to post to this topic.',
       required=True)
     
-    uploadedFile = Bytes(title=u'File',
+    uploadedFile = Bytes(title=u'Files',
                          description=u'A file you wish to add.',
                          required=False)
       
