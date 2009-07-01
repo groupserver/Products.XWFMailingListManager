@@ -762,7 +762,7 @@ class XWFMailingList(Folder):
                     'mid': msg.post_id,
                     'body': msg.body,
                     'absolute_url': self.absolute_url(),
-                    'moderatedUserName': moderatedUser.getProperty('preferredName','')}
+                    'moderatedUserName': moderatedUser.getProperty('fn','')}
                 moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
@@ -776,7 +776,7 @@ class XWFMailingList(Folder):
               'mid': msg.post_id,
               'body': msg.body,
               'absolute_url': self.absolute_url(),
-              'moderatedUserName': moderatedUser.getProperty('preferredName','')}
+              'moderatedUserName': moderatedUser.getProperty('fn','')}
 
             moderatedUser.send_notification('mail_moderated_user', 
               'default', n_dict=nDict)
