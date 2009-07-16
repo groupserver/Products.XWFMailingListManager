@@ -41,6 +41,14 @@ def parse_disposition(s):
         name = matchObj.group('filename')
     return name
 
+reRegexp = re.compile('re:', re.IGNORECASE)
+fwRegexp = re.compile('fw:', re.IGNORECASE)
+fwdRegexp = re.compile('fwd:', re.IGNORECASE)
+# See <http://www.w3.org/TR/unicode-xml/#Suitable>
+uParaRegexep = re.compile(u'[\u2028\u2029]+')
+annoyingChars = string.whitespace + u'\uFFF9\uFFFA\uFFFB\uFFFC\uFEFF'
+annoyingCharsL = annoyingChars + u'\u202A\u202D'
+annoyingCharsR = annoyingChars + u'\u202B\u202E'
 def strip_subject(subject, list_title, remove_re=True):
     """ A helper function for tidying the subject line.
 
@@ -49,18 +57,22 @@ def strip_subject(subject, list_title, remove_re=True):
     if list_title:
         subject = re.sub('\[%s\]' % re.escape(list_title), '', subject).strip()
     
+    subject = uParaRegexep.sub(u' ', subject)
     # compress up the whitespace into a single space
     subject = re.sub('\s+', ' ', subject).strip()
-    
     if remove_re:
         # remove the "re:" from the subject line. There are probably other variants
         # we don't yet handle.
-        if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
-            subject = subject[3:].strip()
-    
+        subject = reRegexp.sub('', subject)
+        subject = fwRegexp.sub('', subject)
+        subject = fwdRegexp.sub('', subject)
+        subject = subject.lstrip(annoyingCharsL +'[')
+        subject = subject.rstrip(annoyingCharsR +']')
+    else:
+        subject = subject.lstrip(annoyingCharsL)
+        subject = subject.rstrip(annoyingCharsR)
     if len(subject) == 0:
         subject = 'No Subject'
-        
     return subject
 
 def normalise_subject(subject):
@@ -317,6 +329,7 @@ class EmailMessage(object):
 
         self.__body = None
         self.__attachments = None
+        self.__subject = None
         
     def get(self, name, default=''):
         value = self.message.get(name, default)
@@ -488,7 +501,9 @@ class EmailMessage(object):
 
     @property
     def subject(self):
-        return strip_subject(self.get('subject'), self._list_title)
+        if self.__subject == None:
+            self.__subject = strip_subject(self.get('subject'), self._list_title)
+        return self.__subject
 
     @property
     def compressed_subject(self):
