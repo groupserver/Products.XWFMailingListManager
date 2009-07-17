@@ -75,7 +75,7 @@
       - from the messages, grabbed from the XWFVirtualMailingList
       - instance.
     -->
-    <tal:block metal:fill-slot="body">
+    <div class="hatom" metal:fill-slot="body">
       <h1>Posts in
         <span class="group"
           tal:content="view/groupInfo/name"/></h1>
@@ -144,7 +144,7 @@
           There are no posts in this group.
         </p>
       </tal:block>
-    </tal:block>
+    </div><!--hatom-->
   </body>
 </html>
 

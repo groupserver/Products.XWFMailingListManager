@@ -30,7 +30,7 @@ class DigestQuery(object):
 
         statement.append_whereclause(dt.c.site_id==site_id)
         statement.append_whereclause(dt.c.group_id==group_id)
-        statement.append_whereclause(dt.c.sent_date > sincetime)
+        statement.append_whereclause(dt.c.sent_date >= sincetime)
 
         r = statement.execute()
         

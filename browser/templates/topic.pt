@@ -48,18 +48,17 @@
         </tal:block>
       </dl>
     </div>
-    <tal:block metal:fill-slot="body"
-      define="topicList view/topic"
-      condition="topicList">
+    <div class="hfeed" metal:fill-slot="body"
+      tal:define="topicList view/topic"
+      tal:condition="topicList">
       <h1>All posts in the topic
         <cite tal:content="view/topicName">This Topic</cite>
         <a href="#" title="A short link to this topic" 
-          class="shortLink"
           tal:define="topicName view/topicName;
           lastPostId python:topicList[-1]['post_id']"
           tal:attributes="href string:/r/topic/${lastPostId};
-          title string:A short link to all posts in ${topicName}">(Short 
-          link)</a>
+          title string:A short link to all posts in ${topicName}"
+          class="shortLink rel-bookmark">(Short link)</a>
       </h1>
       <form tal:condition="view/userIsAdmin"
         class="adminTasks" id="toggleStickyTopic"
@@ -157,7 +156,7 @@
         tal:define="statusNum view/userPostingInfo/statusNum;
           status view/userPostingInfo/status;"
         tal:content="structure provider:groupserver.UserCanPost" />
-    </tal:block>
+    </div><!--hfeed-->
     <tal:block metal:fill-slot="javascript">
       <script type="text/javascript"
         src="/++resource++check_required-20071214.js">&#160;</script>

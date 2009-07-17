@@ -96,6 +96,8 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
         msg = MIMEText(message, 'plain', 'utf-8')
     # Step 2.2 Headers
     # msg['To'] set below
+    # TODO: Add the user's name. The Header class will be needed
+    #   to ensure it is escaped properly.
     msg['From'] = email
     msg['Subject'] = topic
     tagsList = tagProcess(tags)
