@@ -19,6 +19,7 @@ from OFS.Folder import Folder, manage_addFolder
 from zope.component import createObject, getMultiAdapter
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+from Products.XWFCore.XWFUtils import removePathsFromFilenames
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
@@ -1710,9 +1711,10 @@ class XWFMailingList(Folder):
         storage = self.FileLibrary2.get_fileStorage()
         id = storage.add_file(data)
         file = storage.get_file(id)
-        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'], 
-                                     group_ids=[group_id], dc_creator=creator, 
-                                     topic=topic)
+        title = removePathsFromFilenames(title)
+        file.manage_changeProperties(content_type=content_type,
+          title=title, tags=['attachment'], group_ids=[group_id],
+          dc_creator=creator, topic=topic)
         file.reindex_file()
         
         #
