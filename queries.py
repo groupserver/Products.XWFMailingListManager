@@ -61,6 +61,26 @@ class MemberQuery(object):
         self.emailSettingTable = da.createTable('email_setting')
         self.userEmailTable = da.createTable('user_email')
         self.groupUserEmailTable = da.createTable('group_user_email')
+        self.emailBlacklist = da.createTable('email_blacklist')
+
+    def process_blacklist(self, email_addresses):
+        eb = self.emailBlacklist
+
+        blacklist = eb.select()
+        r = blacklist.execute()
+        blacklisted_addresses = []
+        if r.rowcount():
+            for row in r:
+                blacklist_email = row.strip()
+                if blacklist_email:
+                    blacklisted_addresses.append(blacklist_email)
+                    
+        for blacklist_email in blacklisted_addresses:
+            if blacklist_email in email_addresses:
+                email_addresses.remove(blacklist_email)
+                log.warn('Found blacklisted email address: "%s" in email list' % blacklist_email)
+
+        return email_addresses
 
     def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True, verified_only=True):
         # TODO: We currently can't use site_id
@@ -130,6 +150,8 @@ class MemberQuery(object):
                 else:
                     email_addresses.append(row['email'].lower())
 
+        email_addresses = self.process_blacklist(email_addresses)
+
         return email_addresses
 
     def get_digest_addresses(self, site_id, group_id, id_getter):
@@ -180,6 +202,8 @@ class MemberQuery(object):
             for row in r:
                 if row['user_id'] in user_ids:
                     email_addresses.append(row['email'].lower())
+
+        email_addresses = self.process_blacklist(email_addresses)
 
         return email_addresses
         
