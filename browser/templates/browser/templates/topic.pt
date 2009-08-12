@@ -1,0 +1,191 @@
+<html metal:use-macro="context/@@groupserver_layout/page">
+  <head>
+    <title metal:fill-slot="title">All posts in
+      <span tal:define="retval view/update;"
+        tal:replace="view/topicName">
+        Standard Template for a Single Post
+      </span>:
+      <span tal:replace="view/groupInfo/name"/>:
+      <span tal:replace="view/siteInfo/name"/>
+    </title>
+    <tal:block metal:fill-slot="metadata" 
+      tal:define="topicName view/topicName">
+      <link tal:condition="view/previousTopic/topicId" 
+        rel="prev" title="Previous topic" href="wibble"
+        tal:attributes="href view/previousTopic/topicId; 
+        title string:Later topic: ${view/previousTopic/subject}" />
+      <link tal:condition="view/nextTopic/topicId" 
+        rel="next" title="earlier topic" href="wibble"
+        tal:attributes="href view/nextTopic/topicId; 
+        title string:Earlier topic: ${view/nextTopic/subject};" />
+      <link rel="up" title="All topics" href="../topics.html"
+        tal:attributes="title string:Topics in ${view/groupInfo/name};"/>
+      <link rel="bookmark" title="Group Homepage" href="#"
+        tal:attributes="title string:${view/groupInfo/name} Homepage;
+        href view/groupInfo/url" />
+      <link rel="home" 
+        tal:attributes="title string:${view/siteInfo/name} Homepage;
+        href view/siteInfo/url" />
+      <link rel="help" 
+        tal:attributes="title string:${view/siteInfo/name} Help;
+        href string:${view/siteInfo/url}/help" />
+    </tal:block>
+  </head>
+  
+  <body>
+    <div metal:fill-slot="messages" tal:condition="view/status" 
+      class="message-error"
+      tal:define="e view/errors"
+      tal:attributes="class python:e and 'message-error' or 'message-result'">
+      <p class="form-status" tal:content="structure view/status"/>
+      <dl tal:condition="view/errors">
+        <tal:block repeat="widget view/widgets">
+          <tal:block tal:condition="widget/error">
+            <dt tal:content="widget/label">Widget Name</dt>
+            <dd class="error" 
+              tal:content="structure widget/error">Error message</dd>
+          </tal:block>
+        </tal:block>
+      </dl>
+    </div>
+    <div class="hfeed" metal:fill-slot="body"
+      tal:define="topicList view/topic"
+      tal:condition="topicList">
+      <h1>All posts in the topic
+        <cite tal:content="view/topicName">This Topic</cite>
+        <a href="#" title="A short link to this topic" 
+          tal:define="topicName view/topicName;
+          lastPostId python:topicList[-1]['post_id']"
+          tal:attributes="href string:/r/topic/${lastPostId};
+          title string:A short link to all posts in ${topicName}"
+          class="shortLink rel-bookmark">(Short link)</a>
+      </h1>
+      <form tal:condition="view/userIsAdmin"
+        class="adminTasks" id="toggleStickyTopic"
+        enctype="multipart/form-data"  method="post" action="."
+        tal:attributes="action request/URL">
+        <tal:block define="widgets python:[view.widgets['sticky']]">
+          <tal:block replace="structure provider:groupserver.FormWidgets"/>
+        </tal:block>
+        <div class="buttons" tal:condition="view/availableActions">
+          <div class="formelementbutton">
+            <span 
+              tal:replace="structure python:view.availableActions()[1].render()">Button</span>
+          </div>
+        </div><!--buttons-->
+      </form><!--sticky-->
+      <div class="messages-nl" id="topicNavigation">
+        <p class="label">Topic Navigation</p>
+        <ul>
+          <li class="prev">
+            <span tal:condition="not:view/previousTopic/topicId">No later 
+              topic</span>
+          <a href="#" tal:condition="view/previousTopic/topicId"
+              tal:attributes="href view/previousTopic/topicId;
+                title string:The topic with more recent posts: view/previousTopic/subject;">
+              Later topic: <cite tal:content="view/previousTopic/subject">Topic Name</cite>
+            </a>
+          </li>
+          <li class="next">
+            <span tal:condition="not:view/nextTopic/topicId">No 
+              earlier topic</span>
+            <a tal:condition="view/nextTopic/topicId" href="#"
+              tal:attributes="href view/nextTopic/topicId;
+              title string:The topic with earlier posts: ${view/nextTopic/subject};">Earlier
+              topic: <cite tal:content="view/nextTopic/subject">Topic 
+                Name</cite></a>
+          </li>
+        </ul>
+      </div>
+      <div class="messages-nl" id="usefulLinks">
+      <p class="label">Useful Links</p>
+      <ul>
+        <li class="topics">
+          <a href="../topics.html">Topics in 
+            <span tal:replace="view/groupInfo/name"/></a> 
+          </li>
+        </ul>
+      </div>
+      <div tal:condition="python:len(topic) &gt; 1"
+        tal:define="topic topicList"
+        tal:replace="structure provider:groupserver.TopicSummary"/>
+      <p tal:define="topic topicList"
+        tal:replace="structure provider:groupserver.TopicIndex"/>
+      <div class="postList">
+        <tal:block repeat="post topicList">
+          <p tal:define="position repeat/post/number;
+            showPhoto python:(position==1) or (topicList[position-1]['author_id'] != topicList[position-2]['author_id'])"
+            tal:replace="structure provider:groupserver.Post">
+            The email message is rendered by the Post content provider,
+            not by this page.
+          </p>
+        </tal:block>
+      </div><!--postList-->
+      <form tal:condition="view/userPostingInfo/canPost"
+        enctype="multipart/form-data"  method="post" action="."
+        id="add-to-topic" tal:attributes="action request/URL">
+        <h2>Add to the topic
+          <cite class="topic" 
+            tal:content="view/topicName">topicName</cite></h2>
+        <tal:block define="widgets python:[view.widgets['fromAddress'], view.widgets['message']]">
+          <tal:block replace="structure provider:groupserver.FormWidgets"/>
+        </tal:block>
+
+        <div class="form-widget" id="widget-abc123" 
+          tal:define="widget python:view.widgets['uploadedFile'];"
+          tal:attributes="id string:widget-${widget/name};">
+          <label for="abc123" title="The hint for the widget"
+            tal:attributes="for widget/name; title widget/hint"
+            tal:content="widget/label">
+            A label
+          </label>
+          <div id="fileList">&#160;</div>
+          <span
+            tal:condition="python:hasattr(widget, 'tag')"
+            tal:replace="structure widget">Widget</span>
+        </div><!--form-widget-->
+        <div class="buttons" tal:condition="view/availableActions">
+          <div class="formelementbutton">
+            <span 
+              tal:replace="structure python:view.availableActions()[0].render()">Button</span>
+          </div>
+        </div><!--buttons-->
+      </form><!--add-to-topic-->
+      <p class="message-result"
+        tal:condition="not:view/userPostingInfo/canPost"
+        tal:define="statusNum view/userPostingInfo/statusNum;
+          status view/userPostingInfo/status;"
+        tal:content="structure provider:groupserver.UserCanPost" />
+    </div><!--hfeed-->
+    <tal:block metal:fill-slot="javascript">
+      <script type="text/javascript"
+        src="/++resource++check_required-20071214.js">&#160;</script>
+      <script type="text/javascript"
+        tal:define="widgets view/widgets; 
+          button string:#form\\.actions\\.add"
+        tal:content="provider:groupserver.RequiredWidgetsJavaScript">
+        alert("I have not been replaced.");
+      </script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.form.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.MetaData.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.MultiFile.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++multiple_file_upload/jquery.blockUI.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++gsfileupload-20090622.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++popup_help-20071218.js">&#160;</script>
+      <script type="text/javascript">
+          jQuery.noConflict();
+          jQuery(document).ready( function () {
+              GSPopupFormHelp.init('#add-to-topic');
+              GSFileUpload.init();
+          });
+      </script>
+    </tal:block>
+  </body>
+</html>
+

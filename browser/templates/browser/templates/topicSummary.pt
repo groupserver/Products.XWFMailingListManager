@@ -1,0 +1,30 @@
+<div id="topicSummary"
+  tal:define="length options/length;
+  lenAuthors options/lenAuthors;
+  lastPostId options/lastPostId;
+  lastPostDate options/lastPostDate;
+  authorInfo python:options['authorInfo']; 
+  munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date">
+  <p class="label">Summary</p>
+  <ul>
+    <li>There are
+      <strong><span class="cardinal" tal:content="length"/> posts</strong>
+      &#8212; by <span class="cardinal" tal:content="lenAuthors"/> authors
+      &#8212; in this topic.</li>
+    <li><a title="View the latest post"
+      tal:attributes="href string:${lastPostId}#post-${lastPostId}"
+      href="#">Latest post</a> made by
+      <a tal:omit-tag="python:authorInfo.anonymous" class="fn"
+        tal:attributes="href python:authorInfo.url"
+        tal:content="python:authorInfo.name">Me!</a>
+      at
+      <span class="date" 
+        tal:define="date python:munge_date(options['context'], lastPostDate)">
+        <span 
+          tal:replace="date">
+          Today, Tomorrow, Timaru
+        </span>
+      </span>
+    </li>
+  </ul>
+</div>  
