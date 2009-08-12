@@ -19,6 +19,7 @@ from OFS.Folder import Folder, manage_addFolder
 from zope.component import createObject, getMultiAdapter
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+from Products.XWFCore.XWFUtils import removePathsFromFilenames
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
@@ -96,11 +97,10 @@ class XWFMailingList(Folder):
        )
     
     
-    # Internal storages for sender-loop-limitation
-    sendercache = {}
-    
-    # track the checksum of the last email sent
-    last_email_checksum = ''
+    # track the checksum of the last email sent. Volatile because we
+    # just want a quick short circuit (post ID is checked for uniqueness
+    # at the database level anyway)
+    _v_last_email_checksum = ''
     
     def __init__(self, id, title, mailto):
         """ Setup a mailing list with reasonable defaults.
@@ -193,10 +193,10 @@ class XWFMailingList(Folder):
         """
 
         if self.checkMail(REQUEST):
-            return FALSE
-
-        self.listMail(REQUEST)
-        return TRUE
+            retval = False
+        else:
+            retval = self.listMail(REQUEST)
+        return retval
     
     security.declareProtected('View', 'manage_inboxer')
     def manage_inboxer(self, REQUEST):
@@ -489,12 +489,16 @@ class XWFMailingList(Folder):
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
                                        sender_id_cb=self.get_mailUserId)
+        # TODO: Audit                                       
         m = 'listMail: Processing message in group "%s", post id "%s" from <%s>' % \
                 (self.getId(), msg.post_id, msg.sender)
         log.info(m)
 
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
+        # --=mpj17=-- Does the following condition  *ever* return 
+        #   false? If it did "file_ids" would not be set and the 
+        #   call to self.mail_header would fail.
         if self.getValueFor('archived') != self.archive_options[0]:
             (post_id, file_ids) = self.manage_addMail(msg)
         
@@ -513,8 +517,10 @@ class XWFMailingList(Folder):
                                        file_ids=file_ids, 
                                        post_id=post_id)
 
-        # the mail header needs to be committed to a bytestream, not just a unicode object
+        # The mail header needs to be committed to a  bytestream, 
+        # not just a unicode object.
         mail_header = mail_header.encode('utf-8', 'ignore').strip()
+
 
         customHeader = EmailMessage(mail_header)
         
@@ -534,7 +540,7 @@ class XWFMailingList(Folder):
                                               body=msg.body, 
                                               file_ids=file_ids, 
                                               post_id=post_id).strip()
-        
+
         for hdr in customHeader.message.keys():
             if customHeader.message[hdr].strip():
                 if msg.message.has_key(hdr):
@@ -575,26 +581,28 @@ class XWFMailingList(Folder):
                                       customFooter)
         
         if not DEFER_EMAIL:
-            return self.sendMail(newMail)
+            self.sendMail(newMail)
+        else:
+            # otherwise, we save the email into a spool file for 
+            # sending later. This should provide a _much_ faster 
+            # response time for listMail we write the email to the 
+            # spool file after we put the groupname at the top.
+            spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
 
-        # otherwise, we save the email into a spool file for sending later.
-        # this should provide a _much_ faster response time for listMail
-        # we write the email to the spool file after we put the groupname
-        # at the top
-        spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
+            objpath = os.path.join(*self.aq_parent.getPhysicalPath())
+            tempfilepath = makeTempPath(objpath)
+            lockfilepath = '%s.lck' % tempfilepath
 
-        objpath = os.path.join(*self.aq_parent.getPhysicalPath())
-        tempfilepath = makeTempPath(objpath)
-        lockfilepath = '%s.lck' % tempfilepath
+            lockfile = file(lockfilepath, 'a+')
+            lockfile.write('locked')
+            lockfile.close()
 
-        lockfile = file(lockfilepath, 'a+')
-        lockfile.write('locked')
-        lockfile.close()
+            spoolfile = file(tempfilepath, 'ab+')
+            spoolfile.write(spoolMail.encode('utf-8'))
 
-        spoolfile = file(tempfilepath, 'ab+')
-        spoolfile.write(spoolMail)
-
-        os.remove(lockfilepath)
+            os.remove(lockfilepath)
+            
+        return post_id
         
     def processMail(self, REQUEST):
         # Zeroth sanity check ... herein lies only madness.
@@ -755,7 +763,7 @@ class XWFMailingList(Folder):
                     'mid': msg.post_id,
                     'body': msg.body,
                     'absolute_url': self.absolute_url(),
-                    'moderatedUserName': moderatedUser.getProperty('preferredName','')}
+                    'moderatedUserName': moderatedUser.getProperty('fn','')}
                 moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
@@ -769,7 +777,7 @@ class XWFMailingList(Folder):
               'mid': msg.post_id,
               'body': msg.body,
               'absolute_url': self.absolute_url(),
-              'moderatedUserName': moderatedUser.getProperty('preferredName','')}
+              'moderatedUserName': moderatedUser.getProperty('fn','')}
 
             moderatedUser.send_notification('mail_moderated_user', 
               'default', n_dict=nDict)
@@ -832,17 +840,28 @@ class XWFMailingList(Folder):
                 # We definately don't want to save the plain text body again!
                 pass
             elif attachment['filename'] == '' and attachment['subtype'] == 'html':
-                # We might want to do something with the HTML body some day
+                # We might want to do something with the HTML body some day, but we
+                # archive the HTML body here, as it suggests in the log message. The
+                # HTML body is archived along with the plain text body.
                 m = '%s (%s): archiving HTML message.' % (
                                        self.getProperty('title'), self.getId())
                 log.info(m)
             elif attachment['contentid']:
-                # --=mpj17=-- ?
+                # TODO: What do we want to do with these? They are typically part
+                # of an HTML message, for example the images, but what should we do with
+                # them once we've stripped them?
                 m = '%s (%s): stripped, but not archiving %s attachment '\
                   '%s; it appears to be part of an HTML message.' % \
                   (self.getProperty('title'), self.getId(),
                    attachment['maintype'], attachment['filename'])
                 log.info(m)
+            elif attachment['length'] <= 0:
+                # Empty attachment. Kinda pointless archiving this!
+                m = '%s (%s): stripped, but not archiving %s attachment '\
+                  '%s; attachment was of zero size.' % \
+                  (self.getProperty('title'), self.getId(),
+                   attachment['maintype'], attachment['filename'])
+                log.warn(m)                
             else:
                 m = '%s (%s): stripped and archiving %s attachment %s' %\
                   (self.getProperty('title'), self.getId(),
@@ -868,20 +887,6 @@ class XWFMailingList(Folder):
                                           ' '.join(ids), 'ustring')
             mailObject.manage_addProperty('x-xwfnotification-message-length', 
                                           len(msg.body.replace('\r', '')), 'ustring')
-
-        # if this is a post from the web, we may have also been passed the
-        # file ID in the header
-
-        file_ids = msg.get('x-xwfnotification-file-id')
-        if file_ids:
-            ids = ids+filter(None, file_ids.strip().split())
-            file_notification_message_length = msg.get('x-xwfnotification-message-length')
-            # if we are archiving to ZODB, update now
-            if archive and file_ids and file_notification_message_length:
-                mailObject.manage_addProperty('x-xwfnotification-file-id', 
-                                              file_ids, 'ustring')
-                mailObject.manage_addProperty('x-xwfnotification-message-length', 
-                                              file_notification_message_length, 'ustring')
 
         if archive:
             self.catalogMailBoxerMail(mailObject)
@@ -933,7 +938,7 @@ class XWFMailingList(Folder):
             * None if the message *should* be processed.
         
         SIDE EFFECTS
-            If the user can post, "self.last_email_checksum" is set to the 
+            If the user can post, "self._v_last_email_checksum" is set to the 
             ID of the message, which is calculated by 
             "emailmessage.EmailMessage".
             
@@ -1032,7 +1037,7 @@ class XWFMailingList(Folder):
                                                 ndict)
                 
                 return message
-        self.last_email_checksum = msg.post_id
+        self._v_last_email_checksum = msg.post_id
     
         # look to see if we have a custom_mailcheck hook. If so, call it.
         # custom_mailcheck should return True if the message is to be blocked
@@ -1090,9 +1095,9 @@ class XWFMailingList(Folder):
         return retval
 
     def chk_msg_tight_loop(self, msg):
-        assert hasattr(self, 'last_email_checksum'), "no last_email_checksum"
-        retval = self.last_email_checksum and \
-          (self.last_email_checksum == msg.post_id) or False
+        assert hasattr(self, '_v_last_email_checksum'), "no _v_last_email_checksum"
+        retval = self._v_last_email_checksum and \
+          (self._v_last_email_checksum == msg.post_id) or False
         assert type(retval) == bool, "type was %s, not bool" % type(retval)
         return retval
         
@@ -1706,9 +1711,10 @@ class XWFMailingList(Folder):
         storage = self.FileLibrary2.get_fileStorage()
         id = storage.add_file(data)
         file = storage.get_file(id)
-        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'], 
-                                     group_ids=[group_id], dc_creator=creator, 
-                                     topic=topic)
+        title = removePathsFromFilenames(title)
+        file.manage_changeProperties(content_type=content_type,
+          title=title, tags=['attachment'], group_ids=[group_id],
+          dc_creator=creator, topic=topic)
         file.reindex_file()
         
         #

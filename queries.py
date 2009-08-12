@@ -9,8 +9,8 @@ def to_unicode(s):
     retval = s
     if not isinstance(s, unicode):
         retval = unicode(s, 'utf-8')
-        
-    return retval
+
+    return retval    
 
 class DigestQuery(object):
     def __init__(self, context, da):
@@ -30,7 +30,7 @@ class DigestQuery(object):
 
         statement.append_whereclause(dt.c.site_id==site_id)
         statement.append_whereclause(dt.c.group_id==group_id)
-        statement.append_whereclause(dt.c.sent_date > sincetime)
+        statement.append_whereclause(dt.c.sent_date >= sincetime)
 
         r = statement.execute()
         
@@ -151,7 +151,7 @@ class MemberQuery(object):
                     email_addresses.append(row['email'].lower())
 
         email_addresses = self.process_blacklist(email_addresses)
-                
+
         return email_addresses
 
     def get_digest_addresses(self, site_id, group_id, id_getter):
@@ -306,7 +306,7 @@ class MessageQuery(object):
                         'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'], 
-                        'body': x['body'], 
+                        'body': to_unicode(x['body']), 
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
                         'has_attachments': x['has_attachments']} for x in r ]
@@ -551,11 +551,13 @@ class MessageQuery(object):
                         'body': to_unicode(x['body'])} for x in r ]
         return retval
 
+    
     def post(self, post_id):
         """ Retrieve a particular post.
             
             Returns:
-                {'post_id': ID, 'group_id': ID, 'subject': String,
+                {'post_id': ID, 'group_id': ID, 'site_id': ID,
+                 'subject': String,
                  'date': Date, 'author_id': ID,
                  'body': Text,
                  'files_metadata': [Metadata]
@@ -575,6 +577,7 @@ class MessageQuery(object):
             
             return {'post_id': row['post_id'],
                     'group_id': row['group_id'],
+                    'site_id': row['site_id'],
                     'subject': to_unicode(row['subject']),
                     'date': row['date'],
                     'author_id': row['user_id'],

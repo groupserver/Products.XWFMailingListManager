@@ -123,7 +123,6 @@ class GSTopicsView(BrowserView):
               topics = filter(lambda t: t!=None, [self.messageQuery.topic(topicId) 
                                                   for topicId in stickyTopicsIds])
               self.stickyTopics = topics
-              
           retval =  self.stickyTopics
           assert hasattr(self, 'stickyTopics'), 'Sticky topics not cached'
           return retval

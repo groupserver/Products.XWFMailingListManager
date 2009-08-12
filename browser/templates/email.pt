@@ -1,48 +1,51 @@
 <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
-  post python:options['post'];
-  postId python:post['post_id'];
-  authorInfo python:options['authorInfo']; 
+  change_tz python:modules['Products.XWFCore.XWFUtils'].change_timezone;
+  post options/post;
+  authorInfo options/authorInfo;
   authored python:options['authored'];
   showPhoto options/showPhoto;
   postIntro options/postIntro;
   postRemainder options/postRemainder;
   filesMetadata options/filesMetadata">
-  <div tal:attributes="class options/cssClass; id string:post-${postId};">
+  <div tal:attributes="class string:hentry ${options/cssClass}; 
+    id string:post-${post/post_id};">
     <p class="email-metadata">
-      <a class="topic" tal:condition="options/topicName"
-        tal:attributes="href string:/r/topic/${postId};"
+      <a class="topic entry-title" tal:condition="options/topicName"
+        tal:attributes="href string:/r/topic/${post/post_id};"
         tal:content="options/topicName">A Topic</a>
-      <span class="author vcard">
+      <span class="author">
         <strong>From:</strong>
-        <a class="fn url" tal:omit-tag="python:authorInfo.anonymous"
-          tal:attributes="href python:authorInfo.url;
-            title python:u'Profile of %s' % authorInfo.name;"
-          tal:content="python:authorInfo.name">Me!</a>
-        </span>
-      <span class="posted">
-        <strong>Date:</strong>
-        <span class="date" 
-          tal:define="date python:munge_date(options['context'], post['date'])">
-          <span 
-            tal:replace="date">
-            Today, Tomorrow, Timaru
-          </span>
+        <span class="vcard">
+          <a class="fn url" 
+            tal:omit-tag="authorInfo/anonymous"
+            tal:attributes="href authorInfo/url;
+              title string:Profile of ${authorInfo/name};"
+            tal:content="authorInfo/name">Me!</a>
         </span>
       </span>
-      <a class="email-link"
-        tal:attributes="href string:/r/post/${postId};"
+      <span class="posted"
+        tal:define="d python:change_tz(post['date'], 'UTC').replace(microsecond=0);
+          date python:munge_date(options['context'], post['date'])">
+        <strong>Date:</strong>
+        <abbr class="date updated published"
+          title="Stuff"
+          tal:attributes="title string:${d/isoformat}Z"
+          tal:content="date">Today, Tomorrow, Timaru</abbr>
+      </span>
+      <a class="email-link rel-bookmark"
+        tal:attributes="href string:/r/post/${post/post_id};"
         title="A short link to this post">Short link</a>
       </p><!--email-metadata-->
     <div tal:condition="showPhoto"
-      tal:define="user python:authorInfo.user"
+      tal:define="user authorInfo/user"
       tal:replace="structure provider:groupserver.UserImage"/>
-    <pre class="email-body"><p tal:replace="structure options/postIntro">
+    <pre class="email-body entry-content"><p tal:replace="structure options/postIntro">
         This is the body of the document.
       </p>
     </pre><!--email-body-->
     <div class="email-remainder"
-      tal:define="remId string:emailRemainder${postId}; 
-      discloseId string:emailDiscloseButton${postId}">
+      tal:define="remId string:emailRemainder${post/post_id};
+      discloseId string:emailDiscloseButton${post/post_id}">
         <div class="disclosureWidget" tal:condition="options/postRemainder"
           tal:attributes="id remId">
           <p>

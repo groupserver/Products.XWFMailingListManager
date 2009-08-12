@@ -6,7 +6,7 @@ from Products.GSGroup.utils import *
 
 log = logging.getLogger('emailbody')
 
-email_matcher = re.compile(r"\b([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4})\b",
+email_matcher = re.compile(r".*?([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4}).*?",
                            re.I|re.M|re.U)
 
 def escape_word(word):

@@ -1,17 +1,24 @@
 # coding=utf-8
+from email.Encoders import encode_base64
+from email.MIMENonMultipart import MIMENonMultipart
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText 
+from mimetypes import MimeTypes
 
-from zLOG import LOG, PROBLEM, INFO
+from zope.component import createObject, getMultiAdapter
 from zExceptions import BadRequest
 from sqlalchemy.exceptions import SQLError
-import queries
-import random
-import time
+
+from queries import MessageQuery
 from MailBoxerTools import lowerList
-import logging
-log = logging.getLogger('addapost')
+from Products.GSGroupMember.interfaces import IGSPostingUser
 
-from Products.XWFCore.XWFUtils import getOption
+from logging import getLogger
+log = getLogger('addapost')
+from webpostaudit import WebPostAuditor, POST
 
+from Products.XWFCore.XWFUtils import getOption, \
+  removePathsFromFilenames
 def tagProcess(tagsString):
     # --=mpj17=-- Not the most elegant function, but I did not want to
     #   use the regular-expression library.
@@ -45,124 +52,106 @@ def tagProcess(tagsString):
     return map(lambda t: t.strip(), filter(lambda t: t!='', retval))
 
 def add_a_post(groupId, siteId, replyToId, topic, message,
-               tags, email, uploadedFile, context, request):
+               tags, email, uploadedFiles, context, request):
     
-    result = {'error': False, 'message': 'No errror'} #@UnusedVariable
-
-    tagsList = tagProcess(tags)
-    tagsString = ', '.join(tagsList)
+    result = {
+      'error': False,
+      'message': u"Message posted.",
+      'id': u''}
 
     site_root = context.site_root()
     assert site_root
-
-    user = request.AUTHENTICATED_USER
-    assert user
+    userInfo = createObject('groupserver.LoggedInUser', context)
 
     siteObj = getattr(site_root.Content, siteId)
     groupObj = getattr(siteObj.groups, groupId)
-    ptnCoachId = groupObj.getProperty('ptn_coach_id', '')
-    # FIXME: why is onlinegroups.net hardcoded here?
-    canonicalHost = getOption('canonicalHost', 'onlinegroups.net')
     
     messages = getattr(groupObj, 'messages')
     assert messages
-    
-    da = context.zsqlalchemy 
-    assert da, 'No data-adaptor found'
-    messageQuery = queries.MessageQuery(context, da)
-    
-    files = getattr(groupObj, 'files')
-    assert files
     listManager = messages.get_xwfMailingListManager()
     assert listManager
     groupList = getattr(listManager, groupObj.getId())
     assert groupList
 
-    if replyToId:
-        origEmail = messageQuery.post(replyToId)
-        topic = origEmail['subject']
-        subject = 'Re: %s'  % topic
-        emailMessageReplyToId = replyToId
-        emailMessageId = ''
-        # --=mpj17=-- I should really handle the References header here.
+    audit = WebPostAuditor(groupObj)
+    audit.info(POST, topic)
+
+    # Step 1, check if the user can post
+    userPostingInfo = getMultiAdapter((groupObj, userInfo), 
+                                       IGSPostingUser)
+    if not userPostingInfo.canPost:
+        raise 'Forbidden', userPostingInfo.status
+
+    # --=mpj17-- Bless WebKit. It adds a file, even when no file has
+    #   been specified; if the files are empty, do not add the files.
+    uploadedFiles = [f for f in uploadedFiles if f]
+    # Step 2, Create the message
+    # Step 2.1 Body
+    message = message.encode('utf-8')
+    if uploadedFiles:
+        msg = MIMEMultipart()
+        msgBody = MIMEText(message, 'plain', 'utf-8') # As God intended.
+        msg.attach(msgBody)
     else:
-        subject = topic
-        emailMessageReplyToId = ''
-        emailMessageId = '%s.%2.0f.%s.%s' % (time.time(), (random.random()*10000), groupId, siteId)
-
-    m = 'Adding post from %s (%s) via the Web, to the topic "%s" in %s '\
-      '(%s) on %s (%s)'%\
-      (user.getProperty('fn', ''), user.getId(), 
-       topic, groupObj.title_or_id(), groupObj.getId(),
-       siteObj.title_or_id(), siteObj.getId())
-    log.info(m)
-
-    # Step 1, check if the user is blocked
-    blocked_members = groupList.getProperty('blocked_members')
-    if blocked_members and user.getId() in blocked_members:
-        message = 'Blocked user: %s from posting via web' % user.getId()
-        LOG('XWFVirtualMailingListArchive', PROBLEM, message)
-        m = '''You are currently blocked from posting. Please contact 
-        the group administrator'''
-        raise 'Forbidden', m
-
-    # Step 2, check the moderation
-    moderatedlist = groupList.get_moderatedUserObjects(ids_only=True)
-    print moderatedlist
-    moderated = groupList.getValueFor('moderated')
-    print moderated
+        msg = MIMEText(message, 'plain', 'utf-8')
+    # Step 2.2 Headers
+    # msg['To'] set below
+    # TODO: Add the user's name. The Header class will be needed
+    #   to ensure it is escaped properly.
+    msg['From'] = email
+    msg['Subject'] = topic
+    tagsList = tagProcess(tags)
+    tagsString = ', '.join(tagsList)
+    if tagsString:
+        msg['Keywords'] = tagsString
+    if replyToId:
+        msg['In-Reply-To'] = replyToId
+    # msg['Reply-To'] set by the list
+            
+    # Step 2.3 Attachments
+    for f in uploadedFiles:
+        # --=mpj17=-- zope.formlib has already read the data, so we
+        #   seek to the beginning to read it all again :)
+        f.seek(0)
+        data = f.read()
+        if data:
+            t = f.headers.getheader('Content-Type', 
+                                    'application/octet-stream')
+            mimePart = MIMENonMultipart(*t.split('/'))
+            mimePart.set_payload(data)
+            mimePart['Content-Disposition'] = 'attachment'
+            filename = removePathsFromFilenames(f.filename)
+            mimePart.set_param('filename', filename, 
+                               'Content-Disposition')              
+            encode_base64(mimePart) # Solves a lot of problems.
+            msg.attach(mimePart)
+            
+    # Step 3, check the moderation. 
+    # --=mpj17=-- This changes *how* we send the message to the 
+    #   mailing list. No, really.
     via_mailserver = False
+    moderatedlist = groupList.get_moderatedUserObjects(ids_only=True)
+    moderated = groupList.getValueFor('moderated')
     # --=rrw=--if we are moderated _and_ we have a moderatedlist, only
     # users in the moderated list are moderated
-    if moderated and moderatedlist and (user.getId() in moderatedlist):
-        LOG('XWFVirtualMailingListArchive', INFO,
-            'User "%s" posted from web while moderated' % 
-              user.getId())
+    if moderated and moderatedlist and (userInfo.id in moderatedlist):
+        log.warn('User "%s" posted from web while moderated' % 
+              userInfo.id)
         via_mailserver = True
     # --=rrw=-- otherwise if we are moderated, everyone is moderated
     elif moderated and not(moderatedlist):
-        LOG('XWFVirtualMailingListArchive', INFO,
-            'User "%s" posted from web while moderated' % user.getId())
+        log.warn('User "%s" posted from web while moderated' % userInfo.id)
         via_mailserver = True
-
-    # Step 3, Create the file object, if necessary
-    fileObj = None
-    if (not(uploadedFile) or not(uploadedFile.readlines())):
-        # --=mpj17-- Bless WebKit. It adds a file, even when no file has
-        #   been specified; if the file is empty, do not add the file.
-        uploadedFile = None
     
-    if uploadedFile:
-        fileProperties = {'topic': topic,
-                          'tags': tagsString,
-                          'dc_creator': user.getId(),
-                          'description': message[:200]}
-        fileObj = files.add_file(uploadedFile, fileProperties)
-
-    # Step 3, Get the templates
-    templateDir = site_root.Templates.email.notifications.new_file
-    assert templateDir, 'No template folder %s' % templateDir
-    assert templateDir.message
-    messageTemplate = templateDir.message
-
-    result = {}
-    result['error'] = False
-    result['message'] = "Message posted."
     errorM = u'The post was not added to the topic '\
-      u'<code class="topic">%s</code> because a post already exists in '\
-      u'the topic with the same body.' % subject
+      u'<code class="topic">%s</code> because a post with the same '\
+      u'body already exists in the topic.' % topic
+    
+    # Step 4, send the message.
     for list_id in messages.getProperty('xwf_mailing_list_ids', []):
         curr_list = listManager.get_list(list_id)
-        m = messageTemplate(request, list_object=curr_list,
-                            user=user, from_addr=email,
-                            subject=subject, tags=tagsString,
-                            canonicalHost=canonicalHost,
-                            group=groupObj, ptn_coach_id=ptnCoachId,
-                            message=message,
-                            reply_to_id=emailMessageReplyToId, message_id=emailMessageId,
-                            n_type='new_file', n_id=groupObj.getId(),
-                            file=fileObj)
-
+        msg['To'] = curr_list.getValueFor('mailto')
+        
         if via_mailserver:
             # If the message is being moderated, we have to emulate
             #   a post via email so it can go through the moderation
@@ -171,28 +160,43 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             try:
                 listManager.MailHost._send(mfrom=email,
                                            mto=mailto,
-                                           messageText=m)
-            except BadRequest, e: #@UnusedVariable
+                                           messageText=msg.as_string())
+            except BadRequest, e:
                 result['error'] = True
                 result['message'] = errorM
+                log.error(e)
                 break
-            except SQLError, e: #@UnusedVariable
+            except SQLError, e:
                 result['error'] = True
                 result['message'] = errorM
+                log.error(e)
                 break
+            result['error'] = True
+            result['message'] = u'Your message has been sent to '\
+              'the moderators for approval.'
+            break
         else:
+            # Send the message directly to the mailing list because
+            #   it is not moderated
             try:
-                # TODO: Completely rewrite message handling so we actually
-                #       have a vague idea what is going on.
-                r = (groupList.manage_listboxer({'Mail': m}) != 'FALSE')
-                # --=mpj17=-- I kid you not, the above code is legit.
-                #   Too legit. Too legit to quit.
-            except BadRequest, e: #@UnusedVariable
+                request = {'Mail': msg.as_string()}
+                r = groupList.manage_listboxer(request)
+                result['message'] = \
+                  u'<a href="/r/topic/%s#post-%s">Message '\
+                  u'posted.</a>' % (r, r)
+                # --=mpj17=-- The reason that I rewrite the result,
+                # rather than doing a redirect, is the database may
+                # not contain the post yet, so we have nowhere to
+                # redirect to. The few seconds it will take the user
+                # to click on the link should be fine: a race 
+                # condition :)
+            except BadRequest, e:
                 result['error'] = True
                 result['message'] = errorM
+                log.error(e)
                 break
             if (not r):
-                # This could be lies.
+                # --=mpj17=-- This could be lies.
                 result['error'] = True
                 result['message'] = errorM
                 break
