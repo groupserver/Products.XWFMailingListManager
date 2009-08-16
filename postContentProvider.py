@@ -1,4 +1,4 @@
-from Products.XWFCore.cache import LRUCache, SimpleCache
+# coding=utf-8
 from interfaces import IGSPostContentProvider
 from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
 from zope.interface import implements, Interface
@@ -6,7 +6,8 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.component import adapts, provideAdapter, createObject
 from zope.app.pagetemplate import ViewPageTemplateFile, metaconfigure
 from zope.contentprovider import tales
-
+from Products.XWFCore.cache import LRUCache, SimpleCache
+from Products.XWFCore.XWFUtils import getOption
 from emailbody import get_email_intro_and_remainder
 
 # <zope-3 weirdness="high">
@@ -89,8 +90,10 @@ class GSPostContentProvider(object):
         self.__updated = True
         
         # setup a cache key based on the unique attributes of this post
-        self.cacheKey = '%s:%s:%s:%s' % (self.post['post_id'], 
-            self.position, self.topicName, self.pageTemplateFileName)
+        tz = getOption(self.context, 'tz', default='UTC')
+        self.cacheKey = '%s:%s:%s:%s:%s' % (self.post['post_id'], 
+            self.position, self.topicName, self.pageTemplateFileName,
+            tz)
           
         if not self.cookedResult.has_key(self.cacheKey):
             self.authored = self.user_authored()
