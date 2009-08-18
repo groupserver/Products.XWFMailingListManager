@@ -69,9 +69,9 @@ class MemberQuery(object):
         blacklist = eb.select()
         r = blacklist.execute()
         blacklisted_addresses = []
-        if r.rowcount():
+        if r.rowcount:
             for row in r:
-                blacklist_email = row.strip()
+                blacklist_email = row['email'].strip()
                 if blacklist_email:
                     blacklisted_addresses.append(blacklist_email)
                     
