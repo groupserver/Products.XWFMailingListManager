@@ -34,9 +34,21 @@
     class=".postView.GSPostView"
     template="browser/templates/post.pt" permission="zope2.Public" />
 
+  <class class=".topicView.GSTopicTraversal">
+    <implements interface="zope.publisher.interfaces.IPublishTraverse"/>
+  </class>
   <browser:page for=".interfaces.IGSMessagesFolder" name="topic"
+    class=".topicView.GSTopicTraversal"
+    permission="zope2.View" />
+    
+  <class class=".topicView.GSTopicView">
+    <implements interface=".interfaces.IGSTopicView"/>
+  </class>
+  <browser:page 
+    for=".interfaces.IGSMessagesFolder" 
+    name="gstopic"
     class=".topicView.GSTopicView"
-    template="browser/templates/topic.pt" permission="zope2.View" />
+    permission="zope2.Public" />
   
   <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"
     class=".topicsView.GSTopicsView"
@@ -47,12 +59,10 @@
     template="browser/templates/posts.pt" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="posts.atom"
-    class=".postsView.GSPostsView"
-    template="browser/templates/posts_atom.pt" permission="zope2.View" />
+    class=".postsView.GSPostsViewWebFeed" permission="zope2.View" />
 
   <browser:page for=".interfaces.IGSMessagesFolder" name="newTopic.html"
-    class=".view.GSNewTopicView"
-    template="browser/templates/newTopic.pt" permission="zope2.View" />
+    class=".starttopic.GSStartANewTopicView" permission="zope2.View" />
 
   
   <!-- A marker interface -->
@@ -81,9 +91,20 @@
   
   <!--Resources-->
   <browser:resourceDirectory name="postImages"
-    directory="browser/images/green/" permission="zope2.View" />
+    directory="browser/images/green/" permission="zope2.Public" />
 
-  <browser:resource name="post.js"
-    file="browser/javascript/showHideInlineElements.js" 
-    permission="zope2.View" />
+  <browser:resourceDirectory name="multiple_file_upload"
+    directory="browser/javascript/multiple_file_upload" 
+    permission="zope2.Public" />
+
+  <browser:resource name="gsfileupload-20090622.js"
+    file="browser/javascript/gsfileupload.js" 
+    permission="zope2.Public" />
+
+  <utility component=".emailbody.markup_email"
+           provides=".interfaces.IMarkupEmail" />
+  
+  <utility component=".emailbody.wrap_message"
+           provides=".interfaces.IWrapEmail" />
+
 </configure>

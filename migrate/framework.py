@@ -79,3 +79,7 @@ print 'SOFTWARE_HOME: %s' % os.environ.get('SOFTWARE_HOME', 'Not set')
 print 'INSTANCE_HOME: %s' % os.environ.get('INSTANCE_HOME', 'Not set')
 sys.stdout.flush()
 
+from Zope2.Startup.run import configure
+
+configure(__INSTANCE_HOME+'/etc/zope.conf')
+

@@ -25,7 +25,7 @@ import os, sys
 
 import sqlalchemy
 if __name__ == '__main__':
-    execfile(os.path.join(sys.path[0], 'framework.py'))
+    execfile('framework.py')
     
 from Products.Five import zcml
 from Products.XWFMailingListManager import emailmessage
@@ -40,7 +40,6 @@ import csv
 
 app = base.app()
 
-
 zcml.load_config('meta.zcml', Products.Five)
 zcml.load_config('permissions.zcml', Products.Five)
 zcml.load_config('configure.zcml', Products.XWFMailingListManager)
@@ -53,9 +52,8 @@ alchemy_adaptor.manage_changeProperties( hostname=DBHOSTNAME,
                                          dbtype='postgres',
                                          database=DBNAME)
 
-     
-filemetadata_csv = file(sys.argv[1])
-filegroup_csv = file(sys.argv[2])
+filemetadata_csv = os.environ.get('FILE_METADATA', '')
+filegroup_csv = os.environ.get('POST_TOPIC_FILEIDS', '')
 
 fmetadata = {}
 for fid, mtype, title, size, date in csv.reader(filemetadata_csv):

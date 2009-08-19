@@ -6,17 +6,16 @@
 # You MUST follow the rules in README_STYLE before checking in code
 # to the head. Code which does not follow the rules will be rejected.  
 #
-import os, Globals
+import Globals
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
 
 from AccessControl import getSecurityManager, ClassSecurityInfo
-from types import *
-from Globals import InitializeClass, PersistentMapping
+from types import * #@UnusedWildImport
 from OFS.Folder import Folder
 from Products.XWFCore.XWFUtils import createBatch
-from zLOG import LOG, WARNING, PROBLEM, INFO
+from zLOG import LOG, PROBLEM, INFO
 
 class XWFVirtualListError(Exception):
     pass
@@ -185,8 +184,8 @@ class XWFVirtualMailingListArchive(Folder, XWFIdFactoryMixin):
                     break
         # otherwise if we are moderated, everyone is moderated
         elif moderated:
-              LOG('XWFVirtualMailingListArchive', INFO, 'User "%s" posted from web while moderated' % user.getId())
-              via_mailserver = True
+            LOG('XWFVirtualMailingListArchive', INFO, 'User "%s" posted from web while moderated' % user.getId())
+            via_mailserver = True
         
         group_email = group.getProperty('mailto')
         group_name = group.getProperty('title')
@@ -421,12 +420,12 @@ Subject: %s
         """
         presentation = self.Presentation.Tofu.MailingListManager.xml
         presenter = getattr(presentation, 'threaded')
-	
+
         (b_start, b_end, b_size, 
          result_size, result_set) = self.thread_results(REQUEST, b_start,
                                                         b_size, s_on,
                                                         s_order)
-	
+
         return presenter(result_set=result_set,
                          b_start=b_start+1, b_size=b_size, b_end=b_end,
                          result_size=result_size)
@@ -444,7 +443,7 @@ Subject: %s
                                                         b_start,
                                                         b_size, s_on,
                                                         s_order)
-	
+
         return presenter(result_set=result_set,
                          b_start=b_start+1, b_size=b_size, b_end=b_end,
                          result_size=result_size)
@@ -463,25 +462,6 @@ Subject: %s
 
         threads = self.get_all_threads(REQUEST, s_on, s_order)
         return createBatch(threads, b_start, b_size)
-
-    def get_all_posts(self, REQUEST, s_on, s_order):
-        from DocumentTemplate import sequence
-        presentation = self.Presentation.Tofu.MailingListManager.xml
-        
-        result_set = self.find_email(REQUEST)
-        
-        if s_on == 'mailDate':
-            result_set = sequence.sort(result_set, (('mailDate',
-                                                     'cmp', s_order),
-                                                    ('mailSubject',
-                                                     'nocase',
-                                                     s_order)))
-        else:
-            result_set = sequence.sort(result_set, ((s_on, 'nocase', s_order),
-                                                    ('mailDate',
-                                                     'cmp', s_order)))
-        
-        return createBatch(result_set, b_start, b_size)
 
     security.declarePublic('view_results')
     def view_results(self, REQUEST, b_start=1, b_size=20,
@@ -560,7 +540,6 @@ def manage_addXWFVirtualMailingListArchive(self, id, title=None,
             RESPONSE.redirect('%s/manage_main' % id)
 
 def initialize(context):
-    import os
     context.registerClass(
         XWFVirtualMailingListArchive,
         permission='Add XWF Virtual Mailing List Archive',

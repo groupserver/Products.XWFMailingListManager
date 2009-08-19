@@ -1,7 +1,9 @@
+# coding=utf-8
+
 from sqlalchemy.exceptions import SQLError
 import re
 import md5
-import sqlalchemy
+import sqlalchemy as sa
 import string
 import datetime, time
 import codecs
@@ -12,7 +14,7 @@ from rfc822 import AddressList
 
 from zope.interface import Interface, Attribute, implements
 
-from zope.app.datetimeutils import parseDatetimetz
+from zope.app.datetimeutils import parseDatetimetz #@UnresolvedImport
 
 from addapost import tagProcess
 from crop_email import crop_email
@@ -39,6 +41,14 @@ def parse_disposition(s):
         name = matchObj.group('filename')
     return name
 
+reRegexp = re.compile('re:', re.IGNORECASE)
+fwRegexp = re.compile('fw:', re.IGNORECASE)
+fwdRegexp = re.compile('fwd:', re.IGNORECASE)
+# See <http://www.w3.org/TR/unicode-xml/#Suitable>
+uParaRegexep = re.compile(u'[\u2028\u2029]+')
+annoyingChars = string.whitespace + u'\uFFF9\uFFFA\uFFFB\uFFFC\uFEFF'
+annoyingCharsL = annoyingChars + u'\u202A\u202D'
+annoyingCharsR = annoyingChars + u'\u202B\u202E'
 def strip_subject(subject, list_title, remove_re=True):
     """ A helper function for tidying the subject line.
 
@@ -47,18 +57,22 @@ def strip_subject(subject, list_title, remove_re=True):
     if list_title:
         subject = re.sub('\[%s\]' % re.escape(list_title), '', subject).strip()
     
+    subject = uParaRegexep.sub(u' ', subject)
     # compress up the whitespace into a single space
     subject = re.sub('\s+', ' ', subject).strip()
-    
     if remove_re:
         # remove the "re:" from the subject line. There are probably other variants
         # we don't yet handle.
-        if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
-            subject = subject[3:].strip()
-    
+        subject = reRegexp.sub('', subject)
+        subject = fwRegexp.sub('', subject)
+        subject = fwdRegexp.sub('', subject)
+        subject = subject.lstrip(annoyingCharsL +'[')
+        subject = subject.rstrip(annoyingCharsR +']')
+    else:
+        subject = subject.lstrip(annoyingCharsL)
+        subject = subject.rstrip(annoyingCharsR)
     if len(subject) == 0:
         subject = 'No Subject'
-        
     return subject
 
 def normalise_subject(subject):
@@ -96,20 +110,20 @@ class RDBFileMetadataStorage(object):
         self.file_ids = file_ids
     
     def set_zalchemy_adaptor(self, da):
-        self.fileTable = da.createMapper('file')[1]
-        self.postTable = da.createMapper('post')[1]
+        self.fileTable = da.createTable('file')
+        self.postTable = da.createTable('post')
         
     def insert(self):
         # FIXME: references like this should *NOT* be hardcoded!
         storage = self.context.FileLibrary2.get_fileStorage()
-        for id in self.file_ids:
+        for fid in self.file_ids:
             # for each file, get the metadata and insert it into our RDB table
-            file = storage.get_file(id)
+            attachedFile = storage.get_file(fid)
             i = self.fileTable.insert()
-            i.execute(file_id=id,
-                      mime_type=file.getProperty('content_type',''),
-                      file_name=file.getProperty('title',''),
-                      file_size=getattr(file, 'size', 0),
+            i.execute(file_id=fid,
+                      mime_type=attachedFile.getProperty('content_type',''),
+                      file_name=attachedFile.getProperty('title',''),
+                      file_size=getattr(attachedFile, 'size', 0),
                       date=self.email_message.date,
                       post_id=self.email_message.post_id,
                       topic_id=self.email_message.topic_id)
@@ -125,14 +139,14 @@ class RDBEmailMessageStorage(object):
         self.email_message = email_message
 
     def set_zalchemy_adaptor(self, da):
-        self.postTable = da.createMapper('post')[1]
-        self.topicTable = da.createMapper('topic')[1]
-        self.topic_word_countTable = da.createMapper('topic_word_count')[1]
-        self.post_tagTable = da.createMapper('post_tag')[1]
-        self.post_id_mapTable = da.createMapper('post_id_map')[1]
+        self.postTable = da.createTable('post')
+        self.topicTable = da.createTable('topic')
+        self.topic_word_countTable = da.createTable('topic_word_count')
+        self.post_tagTable = da.createTable('post_tag')
+        self.post_id_mapTable = da.createTable('post_id_map')
 
     def _get_topic(self):
-        and_ = sqlalchemy.and_
+        and_ = sa.and_
         
         r = self.topicTable.select(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
                                         self.topicTable.c.group_id == self.email_message.group_id, 
@@ -141,7 +155,7 @@ class RDBEmailMessageStorage(object):
         return r.fetchone()
 
     def insert(self):
-        and_ = sqlalchemy.and_
+        and_ = sa.and_
 
         #
         # add the post itself
@@ -156,7 +170,7 @@ class RDBEmailMessageStorage(object):
                    subject=self.email_message.subject, 
                    date=self.email_message.date, 
                    body=self.email_message.body, 
-                   html_body=self.email_message.html_body, 
+                   htmlbody=self.email_message.html_body, 
                    header=self.email_message.headers, 
                    has_attachments=bool(self.email_message.attachment_count))
         #
@@ -208,7 +222,7 @@ class RDBEmailMessageStorage(object):
                       new_post_id=self.email_message.post_id)
 
     def insert_keyword_count( self ):
-        and_ = sqlalchemy.and_
+        and_ = sa.and_
         #    
         # add/update the word count for the topic
         #
@@ -312,6 +326,10 @@ class EmailMessage(object):
         self.sender_id_cb = sender_id_cb
         self.replace_mail_date = replace_mail_date
         self._date = datetime.datetime.now()
+
+        self.__body = None
+        self.__attachments = None
+        self.__subject = None
         
     def get(self, name, default=''):
         value = self.message.get(name, default)
@@ -331,7 +349,7 @@ class EmailMessage(object):
     
     @property
     def encoding(self):
-        encoding = check_encoding(self.message.get_param('charset', 'ascii'))
+        encoding = check_encoding(self.message.get_param('charset', 'utf-8'))
         
         return encoding
 
@@ -346,49 +364,55 @@ class EmailMessage(object):
             
             return pl           
 
-        payload = self.message.get_payload()
-        if isinstance(payload, list):
-            outmessages = []
-            out = []
-            for i in payload:
-                outmessages = split_multipart(i, outmessages)
-                    
-            for msg in outmessages:
-                actual_payload = msg.get_payload(decode=True)
-                encoding = msg.get_param('charset', self.encoding)
-                filename = unicode(parse_disposition(msg.get('content-disposition', '')), 
-                                   encoding, 'ignore')
-                fileid, length, md5_sum = calculate_file_id(actual_payload, msg.get_content_type())
-                out.append({'payload': actual_payload, 
-                             'fileid': fileid, 
-                             'filename': filename, 
-                             'length': length, 
-                             'md5': md5_sum, 
-                             'charset': msg.get_charset(), 
-                             'maintype': msg.get_content_maintype(), 
-                             'subtype': msg.get_content_subtype(), 
-                             'mimetype': msg.get_content_type(), 
-                             'contentid': msg.get('content-id', '')})
-            return out
-        else:
-            # since we aren't a bunch of attachments, actually decode the body
-            payload = self.message.get_payload(decode=True)
-            
-        filename = unicode(parse_disposition(self.message.get('content-disposition', '')), 
-                            self.encoding, 'ignore')
-        
-        fileid, length, md5_sum = calculate_file_id(payload, self.message.get_content_type())
-        return [ {'payload': payload, 
-                  'md5': md5_sum, 
-                  'fileid': fileid, 
-                  'filename': filename, 
-                  'length': length, 
-                  'charset': self.message.get_charset(), 
-                  'maintype': self.message.get_content_maintype(), 
-                  'subtype': self.message.get_content_subtype(), 
-                  'mimetype': self.message.get_content_type(), 
-                  'contentid': self.message.get('content-id', '')}
-               ]
+        if self.__attachments == None:
+            payload = self.message.get_payload()
+            if isinstance(payload, list):
+                outmessages = []
+                self.__attachments = []
+                for i in payload:
+                    outmessages = split_multipart(i, outmessages)
+                        
+                for msg in outmessages:
+                    actual_payload = msg.get_payload(decode=True)
+                    encoding = msg.get_param('charset', self.encoding)
+                    filename = unicode(parse_disposition(msg.get('content-disposition', '')), 
+                                       encoding, 'ignore')
+                    fileid, length, md5_sum = calculate_file_id(actual_payload, msg.get_content_type())
+                    self.__attachments.append({
+                          'payload': actual_payload, 
+                          'fileid': fileid, 
+                          'filename': filename, 
+                          'length': length, 
+                          'md5': md5_sum, 
+                          'charset': encoding, # --=mpj17=-- Issues?
+                          'maintype': msg.get_content_maintype(), 
+                          'subtype': msg.get_content_subtype(), 
+                          'mimetype': msg.get_content_type(), 
+                          'contentid': msg.get('content-id', '')})
+                
+            else:
+                # since we aren't a bunch of attachments, actually decode the body
+                payload = self.message.get_payload(decode=True)
+                
+                filename = unicode(parse_disposition(self.message.get('content-disposition', '')), 
+                                    self.encoding, 'ignore')
+                
+                fileid, length, md5_sum = calculate_file_id(payload, self.message.get_content_type())
+                self.__attachments = [ {
+                          'payload': payload, 
+                          'md5': md5_sum, 
+                          'fileid': fileid, 
+                          'filename': filename, 
+                          'length': length, 
+                          'charset': self.message.get_charset(), 
+                          'maintype': self.message.get_content_maintype(), 
+                          'subtype': self.message.get_content_subtype(), 
+                          'mimetype': self.message.get_content_type(), 
+                          'contentid': self.message.get('content-id', '')}
+                       ]
+        assert self.__attachments != None
+        assert type(self.__attachments) == list
+        return self.__attachments
 
     @property
     def headers(self):
@@ -411,14 +435,14 @@ class EmailMessage(object):
 
     @property
     def language(self):
-       # one day we might want to detect languages, primarily this
-       # will be used for stemming, stopwords and search
-       return 'en'
+        # one day we might want to detect languages, primarily this
+        # will be used for stemming, stopwords and search
+        return 'en'
     
     @property
     def word_count(self):
         wc = {}
-        cropped_body, rest = crop_email(self.body)
+        cropped_body, rest = crop_email(self.body) #@UnusedVariable
         process_body = ''
         for line in cropped_body.split('\n'):
             if line and line[0] != '>':
@@ -452,16 +476,21 @@ class EmailMessage(object):
 
     @property
     def body(self):
-        for item in self.attachments:
-            if item['filename'] == '' and item['subtype'] != 'html':
-                return unicode(item['payload'], self.encoding, 'ignore')
-        
-        html_body = self.html_body
-        if html_body:
-            plain_body = convertHTML2Text(str(html_body))
-            return unicode(plain_body, self.encoding, 'ignore')
-        
-        return ''
+        if self.__body == None:
+            self.__body = u''
+            for item in self.attachments:
+                if item['filename'] == '' and item['subtype'] != 'html':
+                    retval = item
+                    self.__body = unicode(item['payload'], self.encoding, 'ignore')
+                    break
+            html_body = self.html_body
+            if html_body and (not self.__body):
+                plain_body = convertHTML2Text(str(html_body))
+                self.__body = unicode(plain_body, self.encoding, 'ignore')
+
+        assert self.__body != None
+        assert type(self.__body) == unicode
+        return self.__body
 
     @property
     def html_body(self):
@@ -472,7 +501,9 @@ class EmailMessage(object):
 
     @property
     def subject(self):
-        return strip_subject(self.get('subject'), self._list_title)
+        if self.__subject == None:
+            self.__subject = strip_subject(self.get('subject'), self._list_title)
+        return self.__subject
 
     @property
     def compressed_subject(self):
@@ -483,7 +514,7 @@ class EmailMessage(object):
         sender = self.get('from')
         
         if sender:
-            name, sender = AddressList(sender)[0]
+            name, sender = AddressList(sender)[0] #@UnusedVariable
             sender = sender.lower()
         
         return sender
@@ -503,7 +534,7 @@ class EmailMessage(object):
         to = self.get('to')
         
         if to:
-            name, to = AddressList(to)[0]
+            name, to = AddressList(to)[0] #@UnusedVariable
             to = to.lower()
         
         return to

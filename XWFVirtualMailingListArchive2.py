@@ -6,17 +6,15 @@
 # You MUST follow the rules in README_STYLE before checking in code
 # to the head. Code which does not follow the rules will be rejected.  
 #
-import os, Globals
+import Globals
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
 
-from AccessControl import getSecurityManager, ClassSecurityInfo
-from types import *
-from Globals import InitializeClass, PersistentMapping
+from AccessControl import ClassSecurityInfo
+from types import * #@UnusedWildImport
 from OFS.Folder import Folder
 from Products.XWFCore.XWFUtils import createBatch
-from zLOG import LOG, WARNING, PROBLEM, INFO
 
 class XWFVirtualListError(Exception):
     pass
@@ -392,7 +390,6 @@ def manage_addXWFVirtualMailingListArchive2(self, id, title=None,
             RESPONSE.redirect('%s/manage_main' % id)
 
 def initialize(context):
-    import os
     context.registerClass(
         XWFVirtualMailingListArchive2,
         permission='Add XWF Virtual Mailing List Archive II',

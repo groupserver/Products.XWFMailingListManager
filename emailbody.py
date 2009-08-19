@@ -1,36 +1,97 @@
-import re, cgi, textwrap
+import re, cgi, textwrap, logging
 
-email_matcher = re.compile(r"\b([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4})\b",
+from zope.component import getUtility, createObject
+from interfaces import IMarkupEmail, IWrapEmail
+from Products.GSGroup.utils import *
+
+log = logging.getLogger('emailbody')
+
+email_matcher = re.compile(r".*?([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4}).*?",
                            re.I|re.M|re.U)
 
-def markup_text(messageText):
-    """Mark up the plain text
+def escape_word(word):
+    word = cgi.escape(word)
     
-    Used to mark up the email: the URLs are escaped, and email addresses are 
-    obfuscated.
+    return word
 
-    ARGUMENTS
-        "messageText" The text to alter.
-          
-    RETURNS
-        A string containing the marked-up text.
-        
-    SIDE EFFECTS
-        None.
-
-    NOTE    
-        Originally found in XWFCore.
-        
+def markup_uri(context, word, substituted, substituted_words):
+    """ Markup URI in word.
+    
     """
-    # substitute email addresses
-    text = email_matcher.sub('<email obscured>', messageText)
-    
-    text = cgi.escape(text)
-    text = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
+    if substituted:
+        return word
+
+    word = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
             '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
-            text)
+            word)
+
+    return word    
+
+def markup_email_address(context, word, substituted, substituted_words):
+    retval = word
+    if not(substituted) and email_matcher.match(word):
+        groupInfo = createObject('groupserver.GroupInfo', context)
+        if ((not groupInfo.groupObj) or \
+            (get_visibility(groupInfo.groupObj) == PERM_ANN)):
+            # The messages in the group are visibile to the anonymous user,
+            #   so obfuscate (redact) any email addresses in the post.
+            retval = email_matcher.sub('&lt;email obscured&gt;', word)
+        else:
+            # The messages in the group are visibile to group members only
+            # so show email addresses in the post, and make them useful.
+            retval = '<a class="email" href="mailto:%s">%s</a>' % (word, word)
+
+    assert retval, 'Email address <%s> not marked up' % word
     
-    return text
+    return retval
+
+def markup_youtube(context, word, substituted, substituted_words):
+    """ Markup youtube URIs.
+    
+    """
+    if substituted:
+        return word
+
+    if word in substituted_words:
+        return word
+
+    word = re.sub('(?i)(http://)(.*)(youtube.com/watch\?v\=)(.*)($|\s)',
+                  '<div class="markup-youtube"><object width="425" height="344"><param name="movie" value="http://\g<2>youtube.com/v/\g<4>'
+                  '&amp;hl=en&amp;fs=1"></param><param name="allowFullScreen" value="true"></param><embed src="http://\g<2>youtube.com/v/\g<4>&amp;hl=en&amp;fs=1"'
+                  ' type="application/x-shockwave-flash" allowfullscreen="true" width="425" height="344"></embed></object></div>\g<5>',
+                  word)
+    
+    return word
+
+def markup_splashcast(context, word, substituted, substituted_words):
+    """ Markup splashcast URIs.
+    
+    """
+    if substituted:
+        return word
+
+    if word in substituted_words:
+        return word
+
+    word = re.sub('(?i)(http://www.splashcastmedia.com/web_watch/\?code\=)(.*)($|\s)',
+                  '<div class="markup-splashcast"><embed src="http://web.splashcast.net/go/skin/\g<2>/sz/wide" wmode="Transparent" width="380" height="416" allowFullScreen="true" type="application/x-shockwave-flash" /></div>\g<3>',
+                  word)
+    
+    return word
+
+def markup_bold(context, word, substituted, substituted_words):
+    """Markup words that should be bold, because they have astersisks 
+      around them.
+    """
+    if substituted:
+        # Do not substitute if the word has already been marked-up
+        return word
+
+    word = re.sub('(\*.*\*)',
+                  '<strong>\g<1></strong>',
+                  word)
+    
+    return word
 
 def wrap_message(messageText, width=79):
     """Word-wrap the message
@@ -169,8 +230,8 @@ def split_message(messageText, max_consecutive_comment=12,
     # Do not snip, if we will only snip a single line of 
     #  actual content          
     if(len(body)==1):
-      rintro = rintro + body
-      body = []
+        rintro = rintro + body
+        body = []
 
     intro = '\n'.join(rintro)
     body = '\n'.join(body)
@@ -179,8 +240,49 @@ def split_message(messageText, max_consecutive_comment=12,
     assert len(retval) == 2
     return retval
 
-              
-def get_mail_body(text):
+standard_markup_functions = (markup_email_address, markup_youtube,
+                             markup_splashcast, markup_uri, markup_bold)
+
+def markup_word(context, word, substituted_words):
+    word = escape_word(word)
+    substituted = False
+
+    for function in standard_markup_functions:
+        nword = function(context, word, substituted, substituted_words)
+        if nword != word:
+            substituted = True
+            if word not in substituted_words:
+                substituted_words.append(word)
+        
+        word = nword
+
+    return word
+
+def markup_email(context, text):
+    retval = ''
+    substituted_words = []
+    if text:
+        out_text = ''
+        curr_word = ''
+        for char in text:
+            if char.isspace():
+                if curr_word:
+                    markedUpWord = markup_word(context, curr_word, substituted_words)
+                    curr_word = ''
+                    out_text += markedUpWord
+                out_text += char
+            else:
+                curr_word += char
+ 
+        if curr_word:
+            markedUpWord = markup_word(context, curr_word, substituted_words)
+            out_text += markedUpWord
+
+        retval = out_text.strip()
+
+    return retval    
+
+def get_mail_body(context, text):
     """Get the body of the mail message, formatted for the Web.
     
     The "self.post" instance contains the plain-text version
@@ -192,7 +294,8 @@ def get_mail_body(text):
     does these things.  
     
     ARGUMENTS
-        None.
+        context:  The context of the message.
+        text:     The text to extract a body from
     
     RETURNS
         A string representing the formatted body of the email 
@@ -201,27 +304,24 @@ def get_mail_body(text):
     SIDE EFFECTS
         None.  
     """
-    # --==mpj17=-- 
-    #   I have to check up with rrw to see if posts support has_key
-    # assert self.post['mailBody']
-
-    #contentType = getattr(self.post, 'content-type', None)
-    #ctct = Products.XWFCore.XWFUtils.convertTextUsingContentType
-    #text = ctct(body, contentType)  
     retval = ''
     if text:    
-        wrappedText = wrap_message(text)
-        markedUpPost = markup_text(wrappedText).strip()
-        retval = markedUpPost
+        wrapEmail = getUtility(IWrapEmail)
+        text = wrapEmail(text)
+        
+        markupEmail = getUtility(IMarkupEmail)
+        text = markupEmail(context, text)
+        
+        retval = text
 
-    #assert retval # Some messages may be blank
     return retval
 
-def get_email_intro_and_remainder(text):
+def get_email_intro_and_remainder(context, text):
     """Get the intoduction and remainder text of the formatted post
     
     ARGUMENTS
-        None.
+        context:  The context of the post.
+        text:     The text to split into an introduction and remainder
         
     RETURNS
         A 2-tuple of the strings that represent the email intro
@@ -229,7 +329,8 @@ def get_email_intro_and_remainder(text):
         
     SIDE EFFECTS
         None.
-    """
-    retval = split_message(get_mail_body(text))
+    """             
+    mailBody = get_mail_body(context, text)
+    retval = split_message(mailBody)
     return retval
 

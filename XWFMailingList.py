@@ -1,3 +1,4 @@
+# coding=utf-8
 # Copyright IOPEN Technologies Ltd., 2003
 # richard@iopen.net
 #
@@ -8,53 +9,45 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
-
+import random, smtplib, os, re, time, transaction
+from cgi import escape
+    
 from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
 from Globals import InitializeClass
-from OFS.Folder import Folder
-from OFS.Folder import manage_addFolder
+from OFS.Folder import Folder, manage_addFolder
+from zope.component import createObject, getMultiAdapter
 
-from Products.CustomProperties.CustomProperties import CustomProperties
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.XWFCore.XWFUtils import munge_date
+from Products.XWFCore.XWFUtils import removePathsFromFilenames
+from Products.GSGroupMember.interfaces import IGSPostingUser
+from Products.GSGroupMember.groupmembership import join_group
+from Products.GSSearch.topicdigestview import TopicDigestView
+from Products.GSProfile.utils import create_user_from_email, \
+  send_verification_message
+from Products.GSGroup.joining import GSGroupJoining
 
 import MailBoxerTools
-from emailmessage import EmailMessage
-from emailmessage import IRDBStorageForEmailMessage
-from emailmessage import RDBFileMetadataStorage
-from emailmessage import strip_subject
+from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
+  RDBFileMetadataStorage, strip_subject
 
-from queries import MemberQuery, MessageQuery
-
+from queries import MemberQuery, MessageQuery, DigestQuery
 from export import export_archive_as_mbox
-from utils import check_for_commands
-from utils import pin
-from utils import getMailFromRequest
+from utils import check_for_commands, pin, getMailFromRequest
 
-# from zLOG import LOG, PROBLEM, INFO
 import logging
 log = logging.getLogger('XWFMailingList')
 
-import random
-import smtplib
-import os
-import re
-import time
-import transaction
-
-from cgi import escape
-    
 null_convert = lambda x: x
 
 try:
-    import Products.MaildropHost
+    from Products import MaildropHost #@UnresolvedImport @UnusedImport
     MaildropHostIsAvailable = 1
 except:
     MaildropHostIsAvailable = 0
 
 try:
-    import Products.SecureMailHost
+    from Products import SecureMailHost #@UnresolvedImport @UnusedImport
     SecureMailHostIsAvailable = 1
 except:
     SecureMailHostIsAvailable = 0
@@ -104,11 +97,10 @@ class XWFMailingList(Folder):
        )
     
     
-    # Internal storages for sender-loop-limitation
-    sendercache = {}
-    
-    # track the checksum of the last email sent
-    last_email_checksum = ''
+    # track the checksum of the last email sent. Volatile because we
+    # just want a quick short circuit (post ID is checked for uniqueness
+    # at the database level anyway)
+    _v_last_email_checksum = ''
     
     def __init__(self, id, title, mailto):
         """ Setup a mailing list with reasonable defaults.
@@ -201,10 +193,10 @@ class XWFMailingList(Folder):
         """
 
         if self.checkMail(REQUEST):
-            return FALSE
-
-        self.listMail(REQUEST)
-        return TRUE
+            retval = False
+        else:
+            retval = self.listMail(REQUEST)
+        return retval
     
     security.declareProtected('View', 'manage_inboxer')
     def manage_inboxer(self, REQUEST):
@@ -330,6 +322,7 @@ class XWFMailingList(Folder):
             membership list, assuming we can.
         
         """
+        # TODO: --=mpj17=-- Do we need this method?
         member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
         uids = []
         for gid in member_groups:
@@ -492,35 +485,44 @@ class XWFMailingList(Folder):
         
         # Send a mail to all members of the list.
         mailString = getMailFromRequest(REQUEST)
-        
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
                                        group_id=self.getId(), 
                                        site_id=self.getProperty('siteId', ''), 
                                        sender_id_cb=self.get_mailUserId)
-        m = '%s (%s) Listing message %s from <%s>' %\
-          (self.getProperty('title', ''), self.getId(), msg.post_id, 
-           msg.sender)
+        # TODO: Audit                                       
+        m = 'listMail: Processing message in group "%s", post id "%s" from <%s>' % \
+                (self.getId(), msg.post_id, msg.sender)
         log.info(m)
-        
+
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
+        # --=mpj17=-- Does the following condition  *ever* return 
+        #   false? If it did "file_ids" would not be set and the 
+        #   call to self.mail_header would fail.
         if self.getValueFor('archived') != self.archive_options[0]:
             (post_id, file_ids) = self.manage_addMail(msg)
-                    
+        
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again
         headers = {}
         for item in msg.message.items():
             headers[item[0].lower()] = item[1]
-            
-        customHeader = EmailMessage(self.mail_header(self, 
-                                                    REQUEST, 
-                                                    getValueFor=self.getValueFor, 
-                                                    title=self.getValueFor('title'), 
-                                                    mail=headers, 
-                                                    body=msg.body, 
-                                                    file_ids=file_ids, 
-                                                    post_id=post_id).strip())
+      
+        mail_header = self.mail_header(self,
+                                       REQUEST, 
+                                       getValueFor=self.getValueFor, 
+                                       title=self.getValueFor('title'), 
+                                       mail=headers, 
+                                       body=msg.body, 
+                                       file_ids=file_ids, 
+                                       post_id=post_id)
+
+        # The mail header needs to be committed to a  bytestream, 
+        # not just a unicode object.
+        mail_header = mail_header.encode('utf-8', 'ignore').strip()
+
+
+        customHeader = EmailMessage(mail_header)
         
         # If customBody is not empty, use it as new mailBody, and we need to
         # fetch it before any other changes are made, since changing the
@@ -538,7 +540,7 @@ class XWFMailingList(Folder):
                                               body=msg.body, 
                                               file_ids=file_ids, 
                                               post_id=post_id).strip()
-        
+
         for hdr in customHeader.message.keys():
             if customHeader.message[hdr].strip():
                 if msg.message.has_key(hdr):
@@ -579,31 +581,32 @@ class XWFMailingList(Folder):
                                       customFooter)
         
         if not DEFER_EMAIL:
-            return self.sendMail(newMail)
+            self.sendMail(newMail)
+        else:
+            # otherwise, we save the email into a spool file for 
+            # sending later. This should provide a _much_ faster 
+            # response time for listMail we write the email to the 
+            # spool file after we put the groupname at the top.
+            spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
 
-        # otherwise, we save the email into a spool file for sending later.
-        # this should provide a _much_ faster response time for listMail
-        # we write the email to the spool file after we put the groupname
-        # at the top
-        spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
+            objpath = os.path.join(*self.aq_parent.getPhysicalPath())
+            tempfilepath = makeTempPath(objpath)
+            lockfilepath = '%s.lck' % tempfilepath
 
-        objpath = os.path.join(*self.aq_parent.getPhysicalPath())
-        tempfilepath = makeTempPath(objpath)
-        lockfilepath = '%s.lck' % tempfilepath
+            lockfile = file(lockfilepath, 'a+')
+            lockfile.write('locked')
+            lockfile.close()
 
-        lockfile = file(lockfilepath, 'a+')
-        lockfile.write('locked')
-        lockfile.close()
+            spoolfile = file(tempfilepath, 'ab+')
+            spoolfile.write(spoolMail.encode('utf-8'))
 
-        spoolfile = file(tempfilepath, 'ab+')
-        spoolfile.write(spoolMail)
-
-        os.remove(lockfilepath)
+            os.remove(lockfilepath)
+            
+        return post_id
         
     def processMail(self, REQUEST):
         # Zeroth sanity check ... herein lies only madness.
-        m = '%s (%s) Processing mail' %\
-          (self.getProperty('title', ''), self.getId())
+        m = 'processMail: list (%s)' % self.getId()
         log.info(m)
         
         da = self.zsqlalchemy 
@@ -659,7 +662,7 @@ class XWFMailingList(Folder):
                 self.listMail(REQUEST)
                 
             return email
-        m = '%s (%s): Mail received from unknown sender <%s>' %\
+        m = 'processMail %s (%s): Mail received from unknown sender <%s>'%\
           (self.getProperty('title', ''), self.getId(), email)
         log.info(m)
         log.info( 'memberlist was: %s' % memberlist)
@@ -692,16 +695,13 @@ class XWFMailingList(Folder):
         # Get individually moderated members
         moderatedlist = filter(None, 
                                MailBoxerTools.lowerList(self.getValueFor('moderatedlist') or []))
-        moderateduserlist = self.get_moderatedUserObjects(True)
-
+        
         unclosed = self.getValueFor('unclosed')
         
         # if we have a moderated list we _only_ moderate those individual
-        # members, no others. It's possible, due to the fact that we have
-        # unverified email addresses that moderatedlist can be empty, so
-        # we also check for the existence of moderated users
+        # members, no others.
         moderate = False
-        if len(moderatedlist) or len(moderateduserlist):
+        if len(moderatedlist):
             m = '%s (%s) is a moderated list; hunting for individual '\
               'moderation' % (self.getProperty('title', ''), self.getId())
             log.info(m)
@@ -753,7 +753,7 @@ class XWFMailingList(Folder):
 
             moderators = self.get_moderatorUserObjects()
             for moderator in moderators:
-                  nDict = {'mailingList': self,
+                nDict = {'mailingList': self,
                     'pin': pin(self.getValueFor('mailto'),
                                self.getValueFor('hashkey')),
                     'moderatedUserAddress': msg.sender,
@@ -763,8 +763,8 @@ class XWFMailingList(Folder):
                     'mid': msg.post_id,
                     'body': msg.body,
                     'absolute_url': self.absolute_url(),
-                    'moderatedUserName': moderatedUser.getProperty('preferredName','')}
-                  moderator.send_notification('mail_moderator', 'default',
+                    'moderatedUserName': moderatedUser.getProperty('fn','')}
+                moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
             nDict = {'mailingList': self,
@@ -777,7 +777,7 @@ class XWFMailingList(Folder):
               'mid': msg.post_id,
               'body': msg.body,
               'absolute_url': self.absolute_url(),
-              'moderatedUserName': moderatedUser.getProperty('preferredName','')}
+              'moderatedUserName': moderatedUser.getProperty('fn','')}
 
             moderatedUser.send_notification('mail_moderated_user', 
               'default', n_dict=nDict)
@@ -840,19 +840,28 @@ class XWFMailingList(Folder):
                 # We definately don't want to save the plain text body again!
                 pass
             elif attachment['filename'] == '' and attachment['subtype'] == 'html':
-                # We might want to do something with the HTML body some day
-                m = '%s (%s): stripped, but not archiving %s attachment '\
-                  '%s; it appears to be part of an HTML message.' % \
-                  (self.getProperty('title'), self.getId(),
-                   attachment['maintype'], attachment['filename'])
+                # We might want to do something with the HTML body some day, but we
+                # archive the HTML body here, as it suggests in the log message. The
+                # HTML body is archived along with the plain text body.
+                m = '%s (%s): archiving HTML message.' % (
+                                       self.getProperty('title'), self.getId())
                 log.info(m)
             elif attachment['contentid']:
-                # --=mpj17=-- ?
+                # TODO: What do we want to do with these? They are typically part
+                # of an HTML message, for example the images, but what should we do with
+                # them once we've stripped them?
                 m = '%s (%s): stripped, but not archiving %s attachment '\
                   '%s; it appears to be part of an HTML message.' % \
                   (self.getProperty('title'), self.getId(),
                    attachment['maintype'], attachment['filename'])
                 log.info(m)
+            elif attachment['length'] <= 0:
+                # Empty attachment. Kinda pointless archiving this!
+                m = '%s (%s): stripped, but not archiving %s attachment '\
+                  '%s; attachment was of zero size.' % \
+                  (self.getProperty('title'), self.getId(),
+                   attachment['maintype'], attachment['filename'])
+                log.warn(m)                
             else:
                 m = '%s (%s): stripped and archiving %s attachment %s' %\
                   (self.getProperty('title'), self.getId(),
@@ -879,20 +888,6 @@ class XWFMailingList(Folder):
             mailObject.manage_addProperty('x-xwfnotification-message-length', 
                                           len(msg.body.replace('\r', '')), 'ustring')
 
-        # if this is a post from the web, we may have also been passed the
-        # file ID in the header
-
-        file_ids = msg.get('x-xwfnotification-file-id')
-        if file_ids:
-            ids = ids+filter(None, file_ids.strip().split())
-            file_notification_message_length = msg.get('x-xwfnotification-message-length')
-            # if we are archiving to ZODB, update now
-            if archive and file_ids and file_notification_message_length:
-                mailObject.manage_addProperty('x-xwfnotification-file-id', 
-                                              file_ids, 'ustring')
-                mailObject.manage_addProperty('x-xwfnotification-message-length', 
-                                              file_notification_message_length, 'ustring')
-
         if archive:
             self.catalogMailBoxerMail(mailObject)
 
@@ -914,80 +909,85 @@ class XWFMailingList(Folder):
         else:
             return (msg.post_id, ids)
     
-    def is_senderBlocked(self, user_id):
-        """ Get the sendercache entry for a particular user.
-
-            Returns a tuple containing:
-            (isblocked (boolean), unblock time (datetime))
-        """
-
-         # TODO
-         # --=mpj17=-- This needs to be converted to use the new 
-         # IGSMessagePosting adaptors.
-
-        senderlimit = self.getValueFor('senderlimit')
-        senderinterval = self.getValueFor('senderinterval')
-        user = self.acl_users.getUserById(user_id)
-        
-        ptnCoachId = self.getProperty('ptn_coach_id', '')
-
-        retval = (False, -1) # Uncharacteristic optimism
-        if user.getId() != ptnCoachId:
-            for email in user.get_emailAddresses():
-                ntime = int(time.time())
-                count = 0
-                etime = ntime-senderinterval
-                earliest = 0
-                for atime in self.sendercache.get(email, []):
-                    if atime > etime:
-                        if not earliest or atime < earliest:
-                            earliest = atime
-                        count += 1
-                    else:
-                        break
-
-                if count >= senderlimit:
-                    retval = (True, DateTime(earliest+senderinterval))
-                    break
-        return retval
-
     def checkMail(self, REQUEST):
-        # Check for ip, loops and spam.
+        '''Check the email for the correct IP address, loops and spam.
+        
+        The work of this method is done in three places:
+            1. The "chk_*" methods of the mailing list.
+            2. The "check_for_commands" method of the mailing list.
+            3. A Group Member Posting Info, which is instantiated here.
 
-        # Check for correct IP
-        mtahosts = self.getValueFor('mtahosts')
-        if mtahosts:
-            if 'HTTP_X_FORWARDED_FOR' in self.REQUEST.environ.keys():
-                REMOTE_IP = self.REQUEST.environ['HTTP_X_FORWARDED_FOR']
-            else:
-                REMOTE_IP = self.REQUEST.environ['REMOTE_ADDR']
-
-            if REMOTE_IP not in mtahosts:
-                message = '%s (%s): Host %s is not allowed' %\
-                  (self.getProperty('title', ''), self.getId(), REMOTE_IP)
-                log.error(message)
-                return message
-
-        # Check for x-mailer-loop
-        mailString = getMailFromRequest(REQUEST)
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''), 
-                                       group_id=self.getId(), 
-                                       site_id=self.getProperty('siteId', ''), 
-                                       sender_id_cb=self.get_mailUserId)
-        m  = '%s (%s): processing message from <%s>' %\
-          (self.getProperty('title', ''), self.getId(), msg.sender)
-        log.info(m)
-                
-        if msg.get('x-mailer') == self.getValueFor('xmailer'):
-            message = '%s (%s): X-Mailer header detected, a loop is '\
-              'likely' % (self.getProperty('title', ''), self.getId())
+        The "chk_*" methods check for fundamental issues with the message:
+          * Mail loops,
+          * Automatic responces,
+          * Verboten text in the message, and
+          * Banned email addresses.
+        If one of these checks fails then the poster is not notified.
+        
+        If the message is recognised as a command then this method will
+        return "None" (which is a good thing, see RETURNS below) so the
+        message can be processed by the command-handling subsystem.
+        
+        The group member posting info class checks for more user-specific
+        problems, such as exceeding the posting limit and being a banned 
+        member of a group. If these checks fail the user is sent a 
+        notification.
+        
+        RETURNS
+            * Unicode if the message should *not* be processed, or 
+            * None if the message *should* be processed.
+        
+        SIDE EFFECTS
+            If the user can post, "self._v_last_email_checksum" is set to the 
+            ID of the message, which is calculated by 
+            "emailmessage.EmailMessage".
+            
+            If the user cannot post, and the user exists in the system,
+            then he or she is sent a notification, stating why the post
+            was not processed.
+        '''
+        if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
+            message = u'%s (%s): Host is not allowed' %\
+              (self.getProperty('title', ''), self.getId())
             log.error(message)
             return message
+
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         
-        # Check for empty return-path => automatic mail
-        if msg.get('return-path') == '<>':
-            message = '%s (%s): automated response detected from <%s>' %\
-              (self.getProperty('title', ''), self.getId(), msg.get('from', '<>'))
+        mailString = getMailFromRequest(REQUEST)
+        msg = EmailMessage(mailString, 
+                           list_title   =  self.getProperty('title', ''), 
+                           group_id     =  groupId,
+                           site_id      =  siteId, 
+                           sender_id_cb =  self.get_mailUserId)
+        m  = u'checkMail: %s (%s) checking message from <%s>' %\
+          (groupInfo.name, groupInfo.id, msg.sender)
+        log.info(m)
+                
+        message = u''
+        if self.chk_msg_xmailer_loop(msg):
+            message = u'%s (%s): X-Mailer header detected, a loop is '\
+              'likely' % (groupInfo.name, groupInfo.id)
+        elif self.chk_msg_automatic_email(msg):
+            message = u'%s (%s): automated response detected from <%s>' %\
+              (groupInfo.name, groupInfo.id, msg.get('from', '<>'))
+        elif self.chk_msg_tight_loop(msg):
+            message = u'%s (%s): Detected duplicate message, using tight '\
+              u'loop, from <%s>' % \
+              (groupInfo.name, groupInfo.id, msg.get('from'))
+        elif self.chk_msg_disabled(msg):
+            message = u'%s (%s): Email address <%s> is disabled.' %\
+              (groupInfo.name, groupInfo.id, msg.sender)
+        elif self.chk_msg_spam(mailString): # --=mpj17=--I moved this far
+            message = u'%s (%s): Spam detected' %\
+              (groupInfo.name, groupInfo.id)
+        
+        if message:
+            assert type(message) == unicode
             log.error(message)
             return message
         
@@ -995,131 +995,125 @@ class XWFMailingList(Folder):
         # or other infinite mail-loops...
         email = msg.sender
         sender_id = msg.sender_id
-        user = None
-        
-        disabled = list(self.getValueFor('disabled'))
-
-        if email in disabled:
-            message = '%s (%s): Email address <%s> is disabled.' %\
-              (self.getProperty('title', ''), self.getId(), email)
-            log.error(message)
-            return message
-        
-        senderlimit = self.getValueFor('senderlimit')
-        senderinterval = self.getValueFor('senderinterval')
-        unsubscribe = self.getValueFor('unsubscribe')
-        
-        # A sanity check ... was this email the last one we saw (tight loop)?
-        # TODO: expand this to check the archives
-        if self.last_email_checksum and (self.last_email_checksum == msg.post_id):
-            message = '%s (%s): Detected duplicate message from <%s>' % \
-              (self.getProperty('title', ''), self.getId(), msg.get('from'))
-            log.error(message)
-            return message
-
-        # if the person is unsubscribing, we can't handle it with the loop
-        # stuff, because they might easily exceed it if it is a tight setting
-        if unsubscribe != '' and check_for_commands(msg, unsubscribe):
-            pass
-        
-        elif senderlimit and senderinterval:
-            sendercache = self.sendercache
-
-            ntime = int(DateTime())
-
-            count = 0
-            etime = ntime-senderinterval
-            earliest = 0
-            for atime in sendercache.get(email, []):
-                if atime > etime:
-                    if not earliest or atime < earliest:
-                        earliest = atime
-                    count += 1
-                else:
-                    break
-
-            if sender_id:
-                user = self.acl_users.getUser(sender_id)
-            ptnCoachId = self.getProperty('ptn_coach_id', '')
-
-            if count >= senderlimit:
-                if  user and (user.getId() != ptnCoachId):
-                    expTime = DateTime(earliest+senderinterval)
-                    expTime = munge_date(self, expTime)
-                    user.send_notification('sender_limit_exceeded', 
-                                           self.listId(), 
-                                           n_dict={'expiry_time': expTime, 
-                                                   'email': mailString})
-                    rm = r'%s (%s): user %s (%s) has sent %s mails in %s seconds'
-                    message = (rm % (self.getProperty('title', ''), 
-                      self.getId(), user.getProperty('fn', ''), user.getId(), 
-                      count, senderinterval))
-                    log.error(message)
-                    
-                    self.last_email_checksum = msg.post_id
-            
-                    return message
-
-            # this only happens if we're not already blocking
-            if sendercache.has_key(email):
-                sendercache[email].insert(0, ntime)
-            else:
-                sendercache[email] = [ntime]
-            
-            # prune our cache back to the limit
-            sendercache[email] = sendercache[email][:senderlimit+1]
-            
-            self.sendercache = sendercache
-
-        self.last_email_checksum = msg.post_id
-        
-        # Check for spam
-        for regexp in self.getValueFor('spamlist'):
-            if regexp and re.search(regexp, mailString):
-                message = '%s (%s): Spam detected: %s\n\n%s\n' %\
-                  (self.getProperty('title', ''), self.getId(), regexp, mailString)
+        userInfo = createObject('groupserver.UserFromId', 
+                                self.site_root(), sender_id)
+        commands = [
+          self.getValueFor('unsubscribe'),
+          self.getValueFor('subscribe'), 
+          'digest on',
+          'digest off']
+        if check_for_commands(msg, commands):
+            # If the message is a command, we have to let the 
+            #   command-handling subsystem deal with it.
+            m = u'%s (%s) email-command from <%s>: "%s"' % \
+              (groupInfo.name, groupInfo.id, msg.sender, msg.subject)
+            log.info(m)
+            return None
+        else:
+            # Not a command
+            insts = (groupInfo.groupObj, userInfo)
+            postingInfo = getMultiAdapter(insts, IGSPostingUser)
+            if not(postingInfo.canPost) and not(userInfo.anonymous):
+                message = postingInfo.status
                 log.error(message)
+                siteInfo = groupInfo.siteInfo
+                joiningInfo = GSGroupJoining(groupInfo.groupObj).joinability
+                ndict = {
+                  'userName':        userInfo.name,
+                  'userURL':         userInfo.url,
+                  'groupName':       groupInfo.name,
+                  'groupURL':        groupInfo.url,
+                  'joiningInfo':     joiningInfo,
+                  'siteName':        siteInfo.name,
+                  'siteURL':         siteInfo.url,
+                  'canPost':         postingInfo.canPost,
+                  'postStatus':      postingInfo.status,
+                  'postStatuNum':    postingInfo.statusNum,
+                  'subject':         msg.subject,
+                  'originalMessage': mailString,
+                  'boundary':       'blocked%s' % msg.post_id
+                }
+                userInfo.user.send_notification('cannot_post', 'default', 
+                                                ndict)
+                
                 return message
-        
-        # GroupServer specific checks
-        blocked_members = filter(None, self.getProperty('blocked_members', []))
-        required_properties = filter(None, self.getProperty('required_properties', []))
-        
-        if sender_id:
-            user = self.acl_users.getUser(sender_id)
-        if (blocked_members or required_properties) and user:
-            if user and user.getId() in blocked_members:
-                message = '%s (%s): Blocked user %s (%s) from posting' %\
-                  (self.getProperty('title', ''), self.getId(), 
-                   user.getProperty('fn', ''), user.getId())
-                log.error(message)
-                user.send_notification('post_blocked', self.listId(), 
-                                       n_dict={'email': mailString})
-                return message
-            
-            for required_property in required_properties:
-                # we just test for existence, and being set.
-                # for backward compatibility we test for the string being
-                # set to the string 'None' too.
-                prop_val = str(user.getProperty(required_property, None))
-                prop_val = prop_val.strip()
-                if not prop_val or prop_val == 'None':
-                    message = '%s (%s) blocked user %s (%s) because of '\
-                      'missing user property %s' %\
-                        (self.getProperty('title', ''), self.getId(), 
-                         user.getProperty('fn', ''), user.getId(),
-                         required_property)
-                    log.error(message)
-                    user.send_notification('missing_properties', self.listId(), 
-                                           n_dict={'email': mailString})
-                    return message
+        self._v_last_email_checksum = msg.post_id
     
         # look to see if we have a custom_mailcheck hook. If so, call it.
         # custom_mailcheck should return True if the message is to be blocked
         custom_mailcheck = getattr(self, 'custom_mailcheck', None)
         if custom_mailcheck:
-            if custom_mailcheck(mailinglist=self, sender=email, header=msg, body=msg.body):
+            if custom_mailcheck(mailinglist=self, sender=email, header=msg,
+                                body=msg.body):
                 return message
+                
+        m  = u'checkMail: %s (%s) message from <%s> checks ok' %\
+          (groupInfo.name, groupInfo.id, msg.sender)
+        log.info(m)
+        return None
+        
+    def chk_request_from_allowed_mta_hosts(self, REQUEST):
+        '''Check if the request comes from one of the allowed Mail Transfer
+        Agent host-machines.
+        '''
+        retval = True
+        mtahosts = self.getValueFor('mtahosts')
+        if mtahosts:
+            if 'HTTP_X_FORWARDED_FOR' in self.REQUEST.environ.keys():
+                REMOTE_IP = self.REQUEST.environ['HTTP_X_FORWARDED_FOR']
+            else:
+                REMOTE_IP = self.REQUEST.environ['REMOTE_ADDR']
+
+            retval = REMOTE_IP in mtahosts
+
+        if not retval:
+            message = u'%s (%s): Host %s is not allowed' %\
+              (self.getProperty('title', ''), self.getId(), REMOTE_IP)
+            log.info(message)
+            
+        assert type(retval) == bool
+        return retval
+
+    def chk_msg_xmailer_loop(self, msg):
+        '''Check to see if the x-mailer header is one that GroupServer 
+        set'''
+        retval = msg.get('x-mailer') == self.getValueFor('xmailer')
+        assert type(retval) == bool
+        return retval
+
+    def chk_msg_disabled(self, msg):
+        '''Check if the email is from a disabled email address'''
+        disabled = list(self.getValueFor('disabled'))
+        retval = msg.sender in disabled
+        assert type(retval) == bool
+        return retval
+
+    def chk_msg_automatic_email(self, msg):
+        '''Check for empty return-path, which implies automatic mail'''
+        retval = msg.get('return-path') == '<>'
+        assert type(retval) == bool
+        return retval
+
+    def chk_msg_tight_loop(self, msg):
+        assert hasattr(self, '_v_last_email_checksum'), "no _v_last_email_checksum"
+        retval = self._v_last_email_checksum and \
+          (self._v_last_email_checksum == msg.post_id) or False
+        assert type(retval) == bool, "type was %s, not bool" % type(retval)
+        return retval
+        
+    def chk_msg_spam(self, mailString):
+        '''Check if the message is "spam". Actually, check if the message
+        matches the list of banned regular expressions. This is normally
+        used to prevent out-of-office autoreply messages hitting the list.
+        '''
+        retval = False # Uncharacteristic optimism
+        for regexp in self.getValueFor('spamlist'):
+            if regexp and re.search(regexp, mailString):
+                log.info(u'%s matches message' % regexp)
+                retval = True
+                break
+        assert type(retval) == bool
+        return retval
 
     def requestMail(self, REQUEST):
         # Handles requests for subscription changes
@@ -1147,15 +1141,10 @@ class XWFMailingList(Folder):
         if email in memberlist and msg.sender_id:
             user = self.acl_users.getUser(msg.sender_id)
             if check_for_commands(msg, 'digest on'):
-                user.set_enableDigestByKey(self.getId())
-                self.mail_digest_on(self, REQUEST, mail=header, body=body)
-                
+                self.digest_on(REQUEST, user, header, body)
                 return email
-            
             elif check_for_commands(msg, 'digest off'):
-                user.set_disableDigestByKey(self.getId())
-                self.mail_digest_off(self, REQUEST, mail=header, body=body)
-                
+                self.digest_off(REQUEST, user, header, body)
                 return email 
         
         # subscription? only subscribe if subscription is enabled.
@@ -1169,25 +1158,7 @@ class XWFMailingList(Folder):
                     if user: # if the user exists, send out a subscription email
                         self.mail_subscribe_key(self, REQUEST, msg )
                     else: # otherwise handle subscription as part of registration
-                        # --=mpj17=-- TODO: Update this to the new system.
-                        user_id, password, verification_code = \
-                                 self.acl_users.register_user(email=email, 
-                                                              preferred_name=msg.name)
-                        user = self.acl_users.getUser(user_id)
-                        group_object = self.Scripts.get.group_by_id(self.getId())
-                        
-                        division = group_object.Scripts.get.division_object()
-                        div_groups = division.groups_with_local_role('DivisionMember')
-                        div_mem = None
-                        if len(div_groups) == 1:
-                            div_mem = div_groups[0]
-                        if div_mem:
-                            v_groups = ['%s_member' % self.getId(), div_mem]
-                        else:
-                            v_groups = ['%s_member' % self.getId()]
-                            
-                        user.set_verificationGroups(v_groups)
-                        user.send_userVerification()
+                        self.register_newUser(REQUEST, msg)
             else:
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
@@ -1205,8 +1176,144 @@ class XWFMailingList(Folder):
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
             return email
-    
+
+    def register_newUser(self, REQUEST, msg):
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        m = u'Registering <%s> with %s (%s) on %s (%s)' %\
+          (msg.sender, groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id)
+        log.info(m)
+        email = str(msg.sender)
+        user = create_user_from_email(groupInfo.groupObj, email)
+        send_verification_message(groupInfo.groupObj, user, email)
+        join_group(user, groupInfo)
+        
+        assert user
+
+    def digest_on(self, REQUEST, user, header, body):
+        '''Turn on digest mode for a user
+        '''
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), user.getId())
+
+        m = u'%s (%s) on %s (%s) turning on digest for %s (%s)' %\
+          (groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id,
+           userInfo.name, userInfo.id)
+        log.info(m)
+        
+        user.set_enableDigestByKey(groupInfo.id)
+        self.mail_digest_on(self, REQUEST, mail=header, body=body)
+                
+
+    def digest_off(self, REQUEST, user, header, body):
+        '''Turn off digest mode (and turn on one email per post) for a user
+        '''
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), user.getId())
+
+        m = u'%s (%s) on %s (%s) turning off digest for %s (%s)' %\
+          (groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id,
+           userInfo.name, userInfo.id)
+        log.info(m)
+        
+        user.set_disableDigestByKey(groupInfo.id)
+        self.mail_digest_off(self, REQUEST, mail=header, body=body)
+
     def manage_digestBoxer(self, REQUEST):
+        '''Generate a topic digest for the group
+        
+        Generate a topic digest for the group, if necessary, and send
+        it out to all users that wish to recieve a topic digest. Normally
+        this method is called by "process_all_digests" scripts
+        
+        ARGUMENTS
+            REQUEST:  The HTTP request.
+            
+        RETURNS
+            None.
+            
+        SIDE EFFECTS
+            Sends an email message containing the topic digest to all 
+            users that wish to recieve it. 
+            
+        SEE ALSO
+            "self.send_digest"
+        '''
+        # --=mpj17=-- Get group here
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        da = self.zsqlalchemy 
+        assert da
+        digestQuery = DigestQuery(self, da)
+        # check to see if we have a digest in the last day, and if so, shortcut
+        if digestQuery.has_digest_since(siteId, groupId):
+            m = u'%s (%s) on %s (%s): Have already issued digest in last day' % \
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
+            log.info(m)
+            return
+        
+        # -- Call topic digest view
+        topicDigestView = TopicDigestView(groupInfo.groupObj, REQUEST)
+        if topicDigestView.showDigest:
+            topicDigestStats = topicDigestView.post_stats()
+            m = u'%s (%s) on %s (%s): sending out topic digest with %s '\
+              u'new topics and %s existing topics'%\
+                  (groupInfo.name, groupInfo.id, siteInfo.name, 
+                   siteInfo.id,
+                   topicDigestStats['newTopics'], 
+                   topicDigestStats['existingTopics'])
+            log.info(m)
+
+            # --=mpj17=-- For some broken reason, best known to the crack
+            #   head who wrote Zope 2, calling "get_property" causes a
+            #   permission-failure with the page template, even though
+            #   everything is either on the file-system or got the 
+            #   Manager proxy. So I get the short-name of the group here,
+            #   even though the group-info instance is passed into the page
+            #   template.
+            shortName = groupInfo.get_property('short_name', groupInfo.name)
+
+            emailTemplate = groupInfo.groupObj.Templates.email.list.digest
+            digest = emailTemplate(REQUEST, 
+                                    mailList=self,
+                                    groupInfo=groupInfo,
+                                    siteInfo=siteInfo,
+                                    digestText=topicDigestView(),
+                                    digestStats=topicDigestStats,
+                                    shortGroupName=shortName)
+            
+            # even if we screw up, mark in the database that we've sent the digest,
+            # because we don't want repeat screwups to lead to repeat digests
+            digestQuery.update_group_digest(siteId, groupId)
+            
+            self.send_digest(digest)
+        else:
+            m = u'%s (%s) on %s (%s): No topics for digest' % \
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
+            log.info(m)
+
+    def send_digest(self, digest):
         """ Send out a digest of topics to users who have
 	    requested it.
         
@@ -1226,9 +1333,6 @@ class XWFMailingList(Folder):
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
 
-        digest = self.xwf_email_topic_digest(REQUEST, list_object=self, 
-                                             getValueFor=self.getValueFor)
-        
         if ((MaildropHostIsAvailable and
              getattr(self, "MailHost").meta_type=='Maildrop Host')
             or (SecureMailHostIsAvailable and
@@ -1239,7 +1343,7 @@ class XWFMailingList(Folder):
         else:
             TransactionalMailHost = None
             batchsize = self.getValueFor('batchsize')
-        
+
         # start batching mails
         while maillist:
             # if no batchsize is set (default)
@@ -1262,26 +1366,54 @@ class XWFMailingList(Folder):
 
             # remove already bulked addresses
             maillist = maillist[batch:]
-            	
+            
     security.declareProtected('Manage properties', 'manage_addMember')
     def manage_addMember(self, email):
         """ Add member to group. """
-
+        retval = 0
         user = self.acl_users.get_userByEmail(email)
         if user:
-            user.add_groupWithNotification('%s_member' % self.getId())
-        
-        return 1
+            userInfo = createObject('groupserver.UserFromId', 
+                                self.site_root(), user.getId())
+            siteId = self.getProperty('siteId', '')
+            groupId = self.getId()
+            site = getattr(self.site_root().Content, siteId)
+            siteInfo  = createObject('groupserver.SiteInfo', site)
+            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+            m = u'%s (%s) on %s (%s) subscribing %s (%s) <%s>'%\
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+               userInfo.name, userInfo.id, email)
+            log.info(m)
+
+            join_group(user, groupInfo)
+            
+            retval = 1
+            
+        return retval
 
     security.declareProtected('Manage properties', 'manage_delMember')
     def manage_delMember(self, email):
         """ Remove member from group. """
-        
+        retval = 0    
         user = self.acl_users.get_userByEmail(email)
         if user:
+            userInfo = createObject('groupserver.UserFromId', 
+                                self.site_root(), user.getId())
+            siteId = self.getProperty('siteId', '')
+            groupId = self.getId()
+            site = getattr(self.site_root().Content, siteId)
+            siteInfo  = createObject('groupserver.SiteInfo', site)
+            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+            m = u'%s (%s) on %s (%s) unsubscribing %s (%s) <%s>'%\
+              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+               userInfo.name, userInfo.id, email)
+            log.info(m)
+
             user.del_groupWithNotification('%s_member' % self.getId())
-        
-        return 1
+            retval = 1
+        return retval
     
     def get_mailUserId(self, addr):
         """ From the email address, get the user's ID.
@@ -1336,6 +1468,8 @@ class XWFMailingList(Folder):
         a clean default.
         
         """
+        #TODO: Use a standard notification for this (cannot_post)
+        # even if we do not use a user.send_notificaion to send it.
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1357,7 +1491,27 @@ class XWFMailingList(Folder):
     def mail_subscribe_key(self, context, REQUEST, msg):
         """ Email out a subscription authentication notification.
         
+        This is only called when an existing user tries to subscribe by
+        email.
         """
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), msg.sender_id)
+        assert not userInfo.anonymous, \
+          'User (%s) does not exist' % msg.sender_id
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        
+        thepin = pin( msg.sender, self.getValueFor('hashkey') )
+
+        m = u'%s (%s) on %s (%s) sending subscribe key (%s) to '\
+          u'existing user %s (%s)' %\
+          (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+           thepin, userInfo.name, userInfo.id)
+        log.info(m)
+
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1366,42 +1520,46 @@ class XWFMailingList(Folder):
             returnpath = self.getValueFor('moderator')[0]
             
         reply = getattr(self, 'email_subscribe_key', None)
-        
-        thepin = pin( msg.sender, self.getValueFor('hashkey') )
 
-        member = self.acl_users.getUser(msg.sender_id)
-        memberName = member.getProperty('preferredName','')
-        
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
                                    getValueFor=self.getValueFor, 
                                    pin=thepin,
                                    email=msg.sender,
                                    sender_id=msg.sender_id,
-                                   member_name=memberName)
+                                   member_name=userInfo.name)
             
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         smtpserver.quit()
-
-
+    
     security.declarePrivate('mail_unsubscribe_key')
     def mail_unsubscribe_key(self, context, REQUEST, msg):
         """ Email out an unsubscription authentication notification.
         
         """
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), msg.sender_id)
+        
+        thepin = pin( msg.sender, self.getValueFor('hashkey') )
+
+        m = u'%s (%s) on %s (%s) sending unsubscribe key (%s) to %s (%s)'%\
+          (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+           thepin, userInfo.name, userInfo.id)
+        log.info(m)
+
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
-            
+
         reply = getattr(self, 'email_unsubscribe_key', None)
-        
-        thepin = pin( msg.sender, self.getValueFor('hashkey') )
-        
-        member = self.acl_users.getUser(msg.sender_id)
-        memberName = member.getProperty('preferredName','')
 
         if reply:
             reply_text = reply(REQUEST, list_object=context, 
@@ -1409,7 +1567,7 @@ class XWFMailingList(Folder):
                                    pin=thepin,
                                    email=msg.sender,
                                    sender_id=msg.sender_id,
-                                   member_name=memberName)
+                                   member_name=userInfo.name)
             
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         else:
@@ -1507,13 +1665,17 @@ class XWFMailingList(Folder):
         """
         header = getattr(self, 'xwf_email_header', None)
         if header:
-            return header(REQUEST, list_object=context, 
+            text = header(REQUEST, list_object=context, 
                                    getValueFor=getValueFor, 
                                    title=title, mail=mail, body=body, 
                                    file_ids=file_ids, 
                                    post_id=post_id)
+
+            if not isinstance(text, unicode):
+                text = unicode(text, 'utf-8', 'ignore')
+            return text
         else:
-            return ""
+            return u''
     
     security.declarePrivate('mail_footer')
     def mail_footer(self, context, REQUEST, getValueFor=None, title='', 
@@ -1549,9 +1711,10 @@ class XWFMailingList(Folder):
         storage = self.FileLibrary2.get_fileStorage()
         id = storage.add_file(data)
         file = storage.get_file(id)
-        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'], 
-                                     group_ids=[group_id], dc_creator=creator, 
-                                     topic=topic)
+        title = removePathsFromFilenames(title)
+        file.manage_changeProperties(content_type=content_type,
+          title=title, tags=['attachment'], group_ids=[group_id],
+          dc_creator=creator, topic=topic)
         file.reindex_file()
         
         #
@@ -1602,8 +1765,7 @@ class XWFMailingList(Folder):
         #
         # run through the spool, and actually send the mail out
         #
-        m = '%s (%s) Processing spool' %\
-          (self.getProperty('title', ''), self.getId())
+        m = 'processSpool: %s (%s)' % (self.getProperty('title', ''), self.getId())
         log.info(m)
         
         archive = self.restrictedTraverse(self.getValueFor('storage'))
@@ -1622,7 +1784,7 @@ class XWFMailingList(Folder):
                 continue # not for us
                      
             mailString = spoolfile.read()
-            (header, body) = self.splitMail(mailString)
+            (header, body) = self.splitMail(mailString) #@UnusedVariable
             
             # a robustness check -- if we an archive ID, and we aren't in
             # the archive, what are we doing here?
@@ -1655,7 +1817,7 @@ class XWFMailingList(Folder):
                 maillist.append(email)
 
         # if no returnpath is set, use first moderator as returnpath
-        returnpath = self.getValueFor('returnpath') or self.getValueFor('moderator')[0]
+        returnpath=self.getValueFor('returnpath') or self.getValueFor('moderator')[0]
         
         mailoptions = self.getValueFor('mailoptions')
         if not mailoptions:
@@ -1688,7 +1850,7 @@ class XWFMailingList(Folder):
                 batch = batchsize
 
             if TransactionalMailHost:
-                 TransactionalMailHost._send(returnpath, maillist[0:batch], mailString)
+                TransactionalMailHost._send(returnpath, maillist[0:batch], mailString)
             else:
                 smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
                                           int(self.MailHost.smtp_port))
@@ -1727,4 +1889,4 @@ def initialize(context):
         constructors=(manage_addXWFMailingListForm, 
                       manage_addXWFMailingList), 
         )
-        
+

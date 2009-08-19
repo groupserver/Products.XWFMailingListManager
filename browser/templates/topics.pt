@@ -1,28 +1,18 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  metal:use-macro="context/@@groupserver_layout/page">
+<html metal:use-macro="context/@@groupserver_layout/page">
   <head>
-    
     <!--Todo: add the division name.-->
     <title metal:fill-slot="title">
       Topics in <span tal:replace="python:view.groupInfo.get_name()">a Group</span>:
       <span tal:replace="python:view.siteInfo.get_name()"/>
     </title>
-    
     <meta name="title" content="Template for the Topics Summary"/>
     <meta name="author" content="Michael JasonSmith" />
     <meta name="description" 
       content="This template is used to render the summary of topics within a group" />
     <meta name="date" content="2006-11-02"/>
-    
     <tal:block metal:fill-slot="metadata" 
       tal:define="global topicURLPrefix string:topic/">
       <!-- The documents related to this post -->
-      
       <link rel="previous" title="Later topics" href=""
         tal:define="global laterURL python:view.get_later_url()"
         tal:condition="laterURL"
@@ -36,22 +26,20 @@
       <link rel="last" title="Oldest topics" href="" 
         tal:condition="earlierURL" 
         tal:attributes="href python:view.get_last_url()" />
-      
       <link rel="up" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
         href python:view.groupInfo.get_url()" />
-      
       <link rel="bookmark" href="posts.html"
-        tal:attributes="title python:'Posts in %s' % view.groupInfo.get_name()" />
+        tal:attributes="title python:u'Posts in %s' % view.groupInfo.get_name()" />
       <link rel="bookmark" title="Group Homepage" href="#"
-        tal:attributes="title python:'%s Homepage' % view.groupInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.groupInfo.get_name();
         href python:view.groupInfo.get_url()" />
       <link rel="home" 
-        tal:attributes="title python:'%s Homepage' % view.siteInfo.get_name();
+        tal:attributes="title python:u'%s Homepage' % view.siteInfo.get_name();
         href python:view.siteInfo.get_url()" />
       <link rel="help" 
-        tal:attributes="title python:'%s Help' % view.siteInfo.get_name();
-        href python:'%s/help' % view.siteInfo.get_url()" />
+        tal:attributes="title python:u'%s Help' % view.siteInfo.get_name();
+        href python:u'%s/help' % view.siteInfo.get_url()" />
     </tal:block>
   </head>
   
@@ -66,7 +54,6 @@
       tal:condition="python:result and result.has_key('message')"
       tal:attributes="class python:(isError and 'message-error') or 'message-result'"
       tal:content="structure result/message"/>
-    
     <!-- 
       - The body of the document. Most of the body-content is created 
       - from the messages, grabbed from the XWFVirtualMailingList
@@ -76,60 +63,53 @@
       <form method="post" action="" 
         enctype="application/x-www-form-urlencoded"
         onkeypress="javascript:return keypressEventHandler(this, event)">
-
         <h1>Topics in 
           <span class="group" 
             tal:content="python:view.groupInfo.get_name()">a Group</span></h1>
 
-        <tal:block 
-          define="canPost python:view.get_user_can_post(True)">
-          <div class="messages-nl" id="topicsNavigation"
-            tal:define="len python:view.get_summary_length()"
-            tal:condition="python:laterURL or earlierURL">
-            <p class="label">Topics Navigation</p>
-            <ul>
-              <li class="prev">
-                <a href="#" tal:condition="laterURL" 
-                  tal:attributes="href laterURL;
-                  title string:The ${len} more recent topics;">Later
-                  <span tal:replace="len">-1</span> topics</a>
-                <span tal:condition="not:laterURL">Later
-                  <span tal:replace="len">-1</span> topics
-                </span>
-              </li>
-              <li class="next">
-                <a href="#" tal:condition="earlierURL"
-                  tal:attributes="href earlierURL;
-                  title string:The ${len} older topics;">Earlier
-                  <span tal:replace="len">-1</span> topics</a>
-                <span tal:condition="not:earlierURL">Earlier
-                  <span tal:replace="len">-1</span> topics
-                </span>
-              </li>
-            </ul>
-          </div>
-          <div class="messages-nl" id="usefulLinks">
-            <p class="label">Useful Links</p>
-            <ul>
-              <li class="posts"><a href="posts.html">Posts in
-                  <span tal:replace="python:view.groupInfo.get_name()" />
-                </a>
-              </li>
-              <li class="start" tal:condition="user/getId | nothing">
-                <a tal:condition="python:canPost[1]"
-                  href="newTopic.html">Start a new topic</a>
-              </li>
-            </ul>
-          </div>
-
-          <p class="cannotPost" tal:condition="python:not canPost[1]">
-            You may not start topics, or add to topics, in 
-            <span class="group" 
-              tal:content="python:view.groupInfo.get_name()">a Group</span>:
-            <span tal:replace="python:canPost[0][0].lower()"/>
-          </p>
-        </tal:block>
-        
+        <div class="messages-nl" id="topicsNavigation"
+          tal:define="len python:view.get_summary_length()">
+          <p class="label">Topics Navigation</p>
+          <ul>
+            <li class="prev">
+              <a href="#" tal:condition="laterURL" 
+                tal:attributes="href laterURL;
+                title string:The ${len} more recent topics;">Later
+                <span tal:replace="len">-1</span> topics</a>
+              <span tal:condition="not:laterURL">Later
+                <span tal:replace="len">-1</span> topics
+              </span>
+            </li>
+            <li class="next">
+              <a href="#" tal:condition="earlierURL"
+                tal:attributes="href earlierURL;
+                title string:The ${len} older topics;">Earlier
+                <span tal:replace="len">-1</span> topics</a>
+              <span tal:condition="not:earlierURL">Earlier
+                <span tal:replace="len">-1</span> topics
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div class="messages-nl" id="usefulLinks">
+          <p class="label">Useful Links</p>
+          <ul>
+            <li class="posts"><a href="posts.html">Posts in
+                <span tal:replace="python:view.groupInfo.get_name()" />
+              </a>
+            </li>
+            <li class="start" 
+              tal:condition="view/userPostingInfo/canPost">
+              <a href="newTopic.html">Start a new topic</a>
+            </li>
+          </ul>
+        </div>
+        <p class="message-result"
+          tal:condition="python:not(view.userPostingInfo.canPost) and (view.userPostingInfo.status != 2)"
+          tal:define="statusNum view/userPostingInfo/statusNum;
+            status view/userPostingInfo/status;"
+          tal:content="structure provider:groupserver.UserCanPost" />
+            
         <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
           ctx view/context;
           topics view/get_topics;

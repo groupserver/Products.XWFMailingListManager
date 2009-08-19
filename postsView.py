@@ -1,4 +1,4 @@
-import Products.Five, Products.GSContent, DateTime, Globals
+import Products.Five, Products.GSContent, Globals
 import zope.schema
 import zope.pagetemplate.pagetemplatefile
 import zope.interface, zope.component, zope.publisher.interfaces
@@ -96,3 +96,18 @@ class GSPostsView(Products.Five.BrowserView):
           
       def process_form(self):
           pass
+
+      @property
+      def web_feed_uri(self):
+          retval = '/s/search.atom?g=%s&p=1&t=0&l=%d' %\
+            (self.groupInfo.id, self.get_chunk_length())
+          assert type(retval) == str
+          return retval
+
+class GSPostsViewWebFeed(GSPostsView):
+      def __init__(self, context, request):
+          GSPostsView.__init__(self, context, request)
+
+      def __call__(self):
+          self.request.response.redirect(self.web_feed_uri)
+

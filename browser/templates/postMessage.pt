@@ -1,11 +1,6 @@
 <div id="post-message" tal:define="startNew options/startNew">
   <!--Post a Message Content Provider-->
   
-  <h2 tal:condition="not:startNew">Add to the topic
-    <cite class="topic" tal:content="options/topic">topicName</cite>
-    <a class="helpLink" title="Help with posting a message" 
-      href="/help/manual/#groupserver-posting-a-message-using-the-web">[?]</a></h2>
-  
   <div id="post-topic-field" class="formelementtext"
     tal:condition="startNew">
     <label class="text" for="topic">Topic</label>
@@ -57,12 +52,12 @@
     </div-->
     <input id="tags" name="tags" class="hidden" type="hidden" value=""/>
     <div class="formelementtext" id="post-file-fields">
-      <label class="text" for="file">File (optional)
+      <label class="text">Files (optional)
         <a href="/help/manual/#groupserver-posting-files-using-the-web"
           title="Help with posting files"
           class="helpLink">[?]</a></label>
       <div class="hint">The file you wish to post.</div>
-      <input id="file" name="file" class="text" type="file" value="" 
+      <input name="files" class="multi" type="file" value="" 
         title="The file you wish to post." /> 
     </div>
   </fieldset>

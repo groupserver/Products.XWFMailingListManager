@@ -16,14 +16,15 @@
 # CHANGE THESE
 DBHOSTNAME='localhost'
 DBPORT=5432
-DBUSERNAME='onlinegroups.net'
+DBUSERNAME='testbed'
 DBPASSWORD=''
-DBNAME='onlinegroups.net'
+DBNAME='testbed'
 
 # You shouldn't need to change below here
 import os, sys
+
 if __name__ == '__main__':
-    execfile(os.path.join(sys.path[0], 'framework.py'))
+    execfile('framework.py')
 
 from Products.Five import zcml
 from Products.XWFMailingListManager import emailmessage
@@ -41,43 +42,60 @@ import time
 
 app = base.app()
 
-
 zcml.load_config('meta.zcml', Products.Five)
 zcml.load_config('permissions.zcml', Products.Five)
 zcml.load_config('configure.zcml', Products.XWFMailingListManager)
 
-alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
-alchemy_adaptor.manage_changeProperties( hostname=DBHOSTNAME,
+importDir = os.environ.get('IMPORT_DIR', '')
+fileName = os.environ.get('LOG_FILE', '')
+startPos = os.environ.get('START_POS', '')
+try:
+    dryRun = int(os.environ.get('DRY_RUN', '')) and True or False
+except:
+    dryRun = False
+
+print "importing from: '%s'" % importDir
+print "logging to: '%s'" % fileName
+
+if not dryRun:
+    alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
+    alchemy_adaptor.manage_changeProperties( hostname=DBHOSTNAME,
                                          port=DBPORT,
                                          username=DBUSERNAME,
                                          password=DBPASSWORD,
                                          dbtype='postgres',
                                          database=DBNAME)
 
-
-importDir = sys.argv[1]
 count = 0
 top = time.time()
-session = alchemy_adaptor.getSession()
-metadata = session.getMetaData()
-and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
-postTable = sqlalchemy.Table('post', metadata, autoload=True)
-log = file(sys.argv[2], 'a+')
-try:
-    position = int(sys.argv[3])
-except:
+
+if not dryRun:
+    session = alchemy_adaptor.getSession()
+    metadata = session.getMetaData()
+    and_ = sqlalchemy.and_; or_ = sqlalchemy.or_
+    postTable = sqlalchemy.Table('post', metadata, autoload=True)
+
+log = file(fileName, 'a+')
+
+if startPos:
+    position = int(startPos)
+else:
     position = 0
-print position
+
+print "starting at position: %s" % startPos
+
 for fname in os.listdir( importDir )[position:]:
      email = file( os.path.join( importDir, fname ) ).read()
      msg = emailmessage.EmailMessage( email, replace_mail_date=False )
      msg = emailmessage.EmailMessage( email, msg.get('x-gsgroup-title',''), msg.get('x-gsgroup-id',''), msg.get('x-gssite-id', ''), lambda x: msg.get('x-gsuser-id', ''), replace_mail_date=False)
      msgstorage = IRDBStorageForEmailMessage( msg )
-     msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
+     if not dryRun:
+         msgstorage.set_zalchemy_adaptor( alchemy_adaptor )
      try:
-         msgstorage.insert()
-         msgstorage.insert_keyword_count()
-         msgstorage.insert_legacy_id()
+         if not dryRun:
+             msgstorage.insert()
+             msgstorage.insert_keyword_count()
+             msgstorage.insert_legacy_id()
          print '.',
      except SQLError, x:
          print 'e',

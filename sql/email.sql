@@ -20,6 +20,14 @@ CREATE TABLE POST (
 CREATE INDEX SITE_GROUP_IDX ON POST USING BTREE (SITE_ID, GROUP_ID);
 CREATE INDEX TOPIC_IDX ON POST USING BTREE (TOPIC_ID);
 
+CREATE TABLE BOUNCE (
+    DATE	      TIMESTAMP WITH TIME ZONE	NOT NULL,
+    USER_ID	      TEXT			NOT NULL,	
+    GROUP_ID	      TEXT			NOT NULL,
+    SITE_ID	      TEXT			NOT NULL,	
+    EMAIL	      TEXT			NOT NULL	
+);
+
 CREATE TABLE POST_TAG (
 	POST_ID			  TEXT                     NOT NULL REFERENCES POST (POST_ID),
 	TAG				  TEXT					   NOT NULL
@@ -52,6 +60,12 @@ CREATE TABLE word_count (
 );
 
 CREATE UNIQUE INDEX WORD_COUNT_PKEY ON WORD_COUNT USING BTREE (word);
+
+CREATE TABLE group_digest (
+    site_id text not null,
+    group_id text not null,
+    sent_date timestamp with time zone not null
+);
 
 CREATE TABLE FILE (
     FILE_ID           TEXT                     NOT NULL,

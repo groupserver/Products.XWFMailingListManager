@@ -1,5 +1,54 @@
 from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
+import datetime
+
+import logging
+log = logging.getLogger("XMLMailingListManager.queries") #@UndefinedVariable
+
+def to_unicode(s):
+    retval = s
+    if not isinstance(s, unicode):
+        retval = unicode(s, 'utf-8')
+
+    return retval    
+
+class DigestQuery(object):
+    def __init__(self, context, da):
+        self.context = context
+        
+        self.digestTable = da.createTable('group_digest')
+        self.now = datetime.datetime.now()
+
+    def has_digest_since(self, site_id, group_id, interval=datetime.timedelta(0.9)):
+        """ Have there been any digests sent in the last 'interval' time period?
+        
+        """
+        sincetime = self.now-interval
+        dt = self.digestTable
+        
+        statement = dt.select()
+
+        statement.append_whereclause(dt.c.site_id==site_id)
+        statement.append_whereclause(dt.c.group_id==group_id)
+        statement.append_whereclause(dt.c.sent_date >= sincetime)
+
+        r = statement.execute()
+        
+        result = False
+        if r.rowcount:
+            result = True
+            
+        return result
+
+    def update_group_digest(self, site_id, group_id):
+        """ Update the group_digest table when we send out a new digest.
+        
+        """
+        dt = self.digestTable
+        
+        statement = dt.insert()
+
+        statement.execute(site_id=site_id,group_id=group_id,sent_date=self.now)
 
 class MemberQuery(object):
     # how many user ID's should we attempt to pass to the database before
@@ -8,10 +57,30 @@ class MemberQuery(object):
 
     def __init__(self, context, da):
         self.context = context
+        
+        self.emailSettingTable = da.createTable('email_setting')
+        self.userEmailTable = da.createTable('user_email')
+        self.groupUserEmailTable = da.createTable('group_user_email')
+        self.emailBlacklist = da.createTable('email_blacklist')
 
-        self.emailSettingTable = da.createMapper('email_setting')[1]
-        self.userEmailTable = da.createMapper('user_email')[1]
-        self.groupUserEmailTable = da.createMapper('group_user_email')[1]
+    def process_blacklist(self, email_addresses):
+        eb = self.emailBlacklist
+
+        blacklist = eb.select()
+        r = blacklist.execute()
+        blacklisted_addresses = []
+        if r.rowcount:
+            for row in r:
+                blacklist_email = row['email'].strip()
+                if blacklist_email:
+                    blacklisted_addresses.append(blacklist_email)
+                    
+        for blacklist_email in blacklisted_addresses:
+            if blacklist_email in email_addresses:
+                email_addresses.remove(blacklist_email)
+                log.warn('Found blacklisted email address: "%s" in email list' % blacklist_email)
+
+        return email_addresses
 
     def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True, verified_only=True):
         # TODO: We currently can't use site_id
@@ -38,7 +107,7 @@ class MemberQuery(object):
             if r.rowcount:
                 for row in r:
                     ignore_ids.append(row['user_id'])
-
+        
             cols = [guet.c.user_id, guet.c.email]
             email_group = sa.select(cols)
             
@@ -80,6 +149,8 @@ class MemberQuery(object):
                         email_addresses.append(row['email'].lower())                        
                 else:
                     email_addresses.append(row['email'].lower())
+
+        email_addresses = self.process_blacklist(email_addresses)
 
         return email_addresses
 
@@ -132,19 +203,21 @@ class MemberQuery(object):
                 if row['user_id'] in user_ids:
                     email_addresses.append(row['email'].lower())
 
+        email_addresses = self.process_blacklist(email_addresses)
+
         return email_addresses
         
 class MessageQuery(object):
     def __init__(self, context, da):
         self.context = context
-
-        self.topicTable = da.createMapper('topic')[1]
-        self.topic_word_countTable = da.createMapper('topic_word_count')[1]
-        self.postTable = da.createMapper('post')[1]
-        self.fileTable = da.createMapper('file')[1]
+        
+        self.topicTable = da.createTable('topic')
+        self.topic_word_countTable = da.createTable('topic_word_count')
+        self.postTable = da.createTable('post')
+        self.fileTable = da.createTable('file')
         
         try:
-            self.post_id_mapTable = da.createMapper('post_id_map')[1]
+            self.post_id_mapTable = da.createTable('post_id_map')
         except NoSuchTableError:
             self.post_id_mapTable = None
 
@@ -230,10 +303,10 @@ class MessageQuery(object):
         if r.rowcount:
             retval = [ {'post_id': x['post_id'], 
                         'topic_id': x['topic_id'], 
-                        'subject': unicode(x['subject'], 'utf-8'), 
+                        'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'], 
-                        'body': x['body'], 
+                        'body': to_unicode(x['body']), 
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
                         'has_attachments': x['has_attachments']} for x in r ]
@@ -241,7 +314,7 @@ class MessageQuery(object):
         return retval
     
     def post_count(self, site_id, group_ids=[]):
-        statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)])
+        statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)]) #@UndefinedVariable
         self.__add_std_where_clauses(statement, self.topicTable, 
                                            site_id, group_ids)
         r = statement.execute()
@@ -287,11 +360,12 @@ class MessageQuery(object):
             retval = [ {'topic_id': x['topic_id'], 
                         'site_id': x['site_id'], 
                         'group_id': x['group_id'], 
-                        'subject': unicode(x['original_subject'], 'utf-8'), 
+                        'subject': to_unicode(x['original_subject']),
                         'first_post_id': x['first_post_id'], 
                         'last_post_id': x['last_post_id'], 
                         'count': x['num_posts'], 
                         'last_post_date': x['last_post_date']} for x in r ]
+                        
         return retval
 
     def _nav_post(self, curr_post_id, direction, topic_id=None):
@@ -317,12 +391,12 @@ class MessageQuery(object):
         
         r = q.execute().fetchone()
         if r:
-             return {'post_id': r['post_id'], 
-                     'topic_id': r['topic_id'], 
-                     'subject': unicode(r['subject'], 'utf-8'), 
-                     'date': r['date'], 
-                     'author_id': r['user_id'], 
-                     'has_attachments': r['has_attachments']}
+            return {'post_id': r['post_id'], 
+                    'topic_id': r['topic_id'], 
+                    'subject': to_unicode(r['subject']), 
+                    'date': r['date'], 
+                    'author_id': r['user_id'], 
+                    'has_attachments': r['has_attachments']}
         return None
 
     def previous_post(self, curr_post_id):
@@ -371,10 +445,10 @@ class MessageQuery(object):
         
         r = q.execute().fetchone()
         if r:
-             return {'topic_id': r['topic_id'], 
-                     'last_post_id': r['last_post_id'], 
-                     'subject': unicode(r['subject'], 'utf-8'), 
-                     'date': r['date']}
+            return {'topic_id': r['topic_id'], 
+                    'last_post_id': r['last_post_id'], 
+                    'subject': to_unicode(r['subject']), 
+                    'date': r['date']}
         return None
 
     def later_topic(self, curr_topic_id):
@@ -413,14 +487,12 @@ class MessageQuery(object):
             ID may be None.
              
         """
-        topic_id = None
         first_post_id = None
         last_post_id = None
         next_post_id = None
         previous_post_id = None
         
         tt = self.topicTable
-        pt = self.postTable
         
         topic_id = self.topic_id_from_post_id(curr_post_id)
 
@@ -471,19 +543,21 @@ class MessageQuery(object):
         retval = []
         if r.rowcount:
             retval = [ {'post_id': x['post_id'], 
-                        'subject': unicode(x['subject'], 'utf-8'), 
+                        'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'],
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
-                        'body': unicode(x['body'], 'utf-8')} for x in r ]
+                        'body': to_unicode(x['body'])} for x in r ]
         return retval
 
+    
     def post(self, post_id):
         """ Retrieve a particular post.
             
             Returns:
-                {'post_id': ID, 'group_id': ID, 'subject': String,
+                {'post_id': ID, 'group_id': ID, 'site_id': ID,
+                 'subject': String,
                  'date': Date, 'author_id': ID,
                  'body': Text,
                  'files_metadata': [Metadata]
@@ -503,12 +577,13 @@ class MessageQuery(object):
             
             return {'post_id': row['post_id'],
                     'group_id': row['group_id'],
-                    'subject': unicode(row['subject'], 'utf-8'),
+                    'site_id': row['site_id'],
+                    'subject': to_unicode(row['subject']),
                     'date': row['date'],
                     'author_id': row['user_id'],
                     'files_metadata': row['has_attachments'] and 
                                       self.files_metadata(row['post_id']) or [],
-                    'body': unicode(row['body'], 'utf-8')}
+                    'body': to_unicode(row['body'])}
         
         return None
 
@@ -531,7 +606,7 @@ class MessageQuery(object):
             retval = {'topic_id': row['topic_id'], 
                       'site_id': row['site_id'],
                       'group_id': row['group_id'],
-                      'subject': unicode(row['original_subject'], 'utf-8'), 
+                      'subject': to_unicode(row['original_subject']), 
                       'first_post_id': row['first_post_id'],
                       'last_post_id': row['last_post_id'],
                       'last_post_date': row['last_post_date'],
@@ -558,9 +633,9 @@ class MessageQuery(object):
             out = []
             for row in r:
                 out.append({'file_id': row['file_id'],
-                            'file_name': unicode(row['file_name'], 'utf-8'),
+                            'file_name': to_unicode(row['file_name']),
                             'date': row['date'],
-                            'mime_type': unicode(row['mime_type'], 'utf-8'),
+                            'mime_type': to_unicode(row['mime_type']),
                             'file_size': row['file_size']})
                 
         return out
@@ -630,10 +705,28 @@ class MessageQuery(object):
             retval = [ {'topic_id': x['topic_id'], 
                         'site_id': x['site_id'], 
                         'group_id': x['group_id'], 
-                        'subject': unicode(x['original_subject'], 'utf-8'), 
+                        'subject': to_unicode(x['original_subject']),
                         'first_post_id': x['first_post_id'], 
                         'last_post_id': x['last_post_id'], 
                         'count': x['num_posts'], 
                         'last_post_date': x['last_post_date']} for x in r ]
         return retval
 
+    def num_posts_after_date(self, site_id, group_id, user_id, date):
+        assert type(site_id)  == str
+        assert type(group_id) == str
+        assert type(user_id)  == str
+                
+        pt = self.postTable
+        cols = [sa.func.count(pt.c.post_id)]
+        statement = sa.select(cols)
+        statement.append_whereclause(pt.c.site_id  == site_id)
+        statement.append_whereclause(pt.c.group_id == group_id)
+        statement.append_whereclause(pt.c.user_id  == user_id)
+        statement.append_whereclause(pt.c.date  > date)
+        
+        r = statement.execute()
+        retval = r.scalar()
+        assert type(retval) == long, 'retval is %s' % type(retval)
+        return retval
+        
