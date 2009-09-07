@@ -70,14 +70,6 @@
     </tal:block>
     <tal:block metal:fill-slot="javascript">
       <script type="text/javascript"
-        src="/++resource++check_required-20071214.js">&#160;</script>
-      <script type="text/javascript"
-        tal:define="widgets view/widgets; 
-          button string:#form\\.actions\\.add"
-        tal:content="provider:groupserver.RequiredWidgetsJavaScript">
-        alert("I have not been replaced.");
-      </script>
-      <script type="text/javascript"
         src="/++resource++multiple_file_upload/jquery.form.js">&#160;</script>
       <script type="text/javascript"
         src="/++resource++multiple_file_upload/jquery.MetaData.js">&#160;</script>
