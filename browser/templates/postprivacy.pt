@@ -2,7 +2,7 @@
   <p>
     <a class="disclosureButton">Post visibility: 
       <span class="vis" 
-        tal:content="options/visiblitiy">lurid</span></a>
+        tal:content="options/visibility">lurid</span></a>
   </p>
   <div class="disclosureShowHide" style="display: none;">
     <ul>

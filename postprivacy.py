@@ -1,3 +1,5 @@
+# coding=utf-8
+from AccessControl.PermissionRole import rolesForPermissionOn
 from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.interface import implements, Interface
 from zope.component import createObject, adapts, provideAdapter
@@ -27,11 +29,14 @@ class GSPostPrivacyContentProvider(object):
         userInfo = createObject('groupserver.LoggedInUser', 
           self.context)
           
-        self.visiblitiy = u''
+        anonView = 'Anonymous' in rolesForPermissionOn('View', 
+          self.context)
+        self.visibility = anonView and u'public' or u'private'
+
         self.webVisibility = u''
         self.emailVisibility = u''
 
-        assert type(self.visiblitiy) == unicode
+        assert type(self.visibility) == unicode
         assert type(self.webVisibility) == unicode
         assert type(self.emailVisibility) == unicode
         self.__updated = True
@@ -41,7 +46,7 @@ class GSPostPrivacyContentProvider(object):
             raise UpdateNotCalled
         pageTemplate = PageTemplateFile(self.pageTemplateFileName)
         retval = pageTemplate(
-                visiblitiy =      self.visiblitiy,
+                visibility =      self.visibility,
                 webVisibility =   self.webVisibility,
                 emailVisibility = self.emailVisibility)
         assert type(retval) == unicode
