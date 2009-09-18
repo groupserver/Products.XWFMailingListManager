@@ -144,6 +144,9 @@
             tal:condition="python:hasattr(widget, 'tag')"
             tal:replace="structure widget">Widget</span>
         </div><!--form-widget-->
+        <p tal:replace="structure provider:groupserver.PostPrivacy">
+          Privacy statement
+        </p>
         <div class="buttons" tal:condition="view/availableActions">
           <div class="formelementbutton">
             <span 

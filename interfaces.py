@@ -176,4 +176,10 @@ class IGSPostMessageNewTopic(IGSPostMessage):
           u'subject of the email messages that are sent out.',
         required=True)
     
+class IGSPostPrivacyContentProvider(Interface):
+    pageTemplateFileName = Text(title=u"Page Template File Name",
+        description=u"""The name of the ZPT file
+        that is used to render the post.""",
+        required=False,
+        default=u"browser/templates/postprivacy.pt")
 

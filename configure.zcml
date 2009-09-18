@@ -85,6 +85,9 @@
   <interface interface=".interfaces.IGSStickyTopicToggleContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
 
+  <interface interface=".interfaces.IGSPostPrivacyContentProvider"
+    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
+
   <adapter for=".emailmessage.IEmailMessage"
     factory=".emailmessage.RDBEmailMessageStorage"
     provides=".emailmessage.IRDBStorageForEmailMessage" />

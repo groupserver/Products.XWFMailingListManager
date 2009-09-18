@@ -11,7 +11,7 @@ import XWFVirtualMailingListArchive, XWFVirtualMailingListArchive2
 
 import postContentProvider, postMessageContentProvider
 import topicIndexContentProvider, topicSummaryContentProvider
-import stickyTopicToggleContentProvider
+import stickyTopicToggleContentProvider, postprivacy
 
 from AccessControl import ModuleSecurityInfo
 from AccessControl import allow_class, allow_module, allow_type
