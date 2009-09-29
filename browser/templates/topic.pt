@@ -131,7 +131,7 @@
           <tal:block replace="structure provider:groupserver.FormWidgets"/>
         </tal:block>
 
-        <div class="form-widget" id="widget-abc123" 
+        <div class="form-widget" id="widget-file-upload" 
           tal:define="widget python:view.widgets['uploadedFile'];"
           tal:attributes="id string:widget-${widget/name};">
           <label for="abc123" title="The hint for the widget"
@@ -143,7 +143,12 @@
           <span
             tal:condition="python:hasattr(widget, 'tag')"
             tal:replace="structure widget">Widget</span>
-        </div><!--form-widget-->
+        </div><!--widget-file-upload-->
+        
+        <tal:block repeat="widget python:[view.widgets['inReplyTo']]">
+          <span tal:replace="structure widget/hidden"/>
+        </tal:block>
+        
         <p tal:replace="structure provider:groupserver.PostPrivacy">
           Privacy statement
         </p>

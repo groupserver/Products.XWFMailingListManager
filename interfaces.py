@@ -169,6 +169,9 @@ class IGSStickyTopic(Interface):
 
 class IGSAddToTopicFields(IGSPostMessage, IGSStickyTopic):
     u'''Fields used on the topic page.'''
+    inReplyTo = TextLine(title=u'In Reply To Identifier',
+      description=u'The ID of the most recent post to the topic',
+      required=True)
 
 class IGSPostMessageNewTopic(IGSPostMessage):
     topic = TextLine(title=u'Topic',

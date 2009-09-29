@@ -76,6 +76,7 @@ class GSTopicView(PageForm):
           'fromAddress': fromAddr,
           'message':     u'',
           'sticky':      self.topicSticky,
+          'inReplyTo':   self.lastPostId,
         }
         self.widgets = form.setUpWidgets(
             self.form_fields, self.prefix, self.context,
