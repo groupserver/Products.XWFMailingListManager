@@ -58,13 +58,12 @@ class GSTopicView(PageForm):
         self.__userPostingInfo = None
         self.__messageQuery = None
         self.__topicId = None
-        self.__lastPostId = None
         self.__topicName = None
         self.__nextTopic = None
         self.__previousTopic = None
         self.__stickyTopics = None
         self.__topic = None
-        self.__message = None
+        self.__inReplyTo = None
 
     def setUpWidgets(self, ignore_request=True):
         self.adapters = {}
@@ -86,9 +85,9 @@ class GSTopicView(PageForm):
         
     @form.action(label=u'Add', failure='handle_action_failure')
     def handle_add(self, action, data):
-      if self.__message != data['message']:
+      if self.__inReplyTo != data['inReplyTo']:
           # --=mpj17=-- Formlib sometimes submits twice submits twice
-          self.__message = data['message']
+          self.__inReplyTo = data['inReplyTo']
           
           uploadedFiles = [self.request[k] 
                            for k in self.request.form 
@@ -98,7 +97,7 @@ class GSTopicView(PageForm):
           r = add_a_post(
             groupId=self.groupInfo.id, 
             siteId=self.siteInfo.id, 
-            replyToId=self.topic[-1]['post_id'], 
+            replyToId=data['inReplyTo'],
             topic=self.topicName, 
             message=data['message'],
             tags=[], 
@@ -222,10 +221,7 @@ class GSTopicView(PageForm):
         
     @property
     def lastPostId(self):
-        if self.__lastPostId == None:
-            self.__lastPostId = self.topic[-1]['post_id']
-        assert self.__lastPostId
-        return self.__lastPostId
+        return self.topic[-1]['post_id']
 
     @property
     def topicName(self):
