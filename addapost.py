@@ -166,11 +166,6 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                 result['message'] = errorM
                 log.error(e)
                 break
-            except SQLError, e:
-                result['error'] = True
-                result['message'] = errorM
-                log.error(e)
-                break
             result['error'] = True
             result['message'] = u'Your message has been sent to '\
               'the moderators for approval.'
@@ -191,6 +186,11 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                 # to click on the link should be fine: a race 
                 # condition :)
             except BadRequest, e:
+                result['error'] = True
+                result['message'] = errorM
+                log.error(e)
+                break
+            except SQLError, e:
                 result['error'] = True
                 result['message'] = errorM
                 log.error(e)
