@@ -9,8 +9,6 @@
     class="Products.XWFMailingListManager.XWFMailingListManager.XWFMailingListManager" />
   <five:deprecatedManageAddDelete
     class="Products.XWFMailingListManager.XWFVirtualMailingListArchive2.XWFVirtualMailingListArchive2" />
-  <five:deprecatedManageAddDelete
-    class="Products.XWFMailingListManager.XWFVirtualMailingListArchive.XWFVirtualMailingListArchive" />
   
   <!-- declare a marker interface on the Folder class to allow us 
     to add marker Interfaces, views and adaptation -->
