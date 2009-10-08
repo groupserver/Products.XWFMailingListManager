@@ -19,6 +19,8 @@ from Products.XWFCore.cache import SimpleCache
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 
+from Products.XWFMailingListManager.queries import MessageQuery, DigestQuery
+
 import os, time, logging
 from Products.CustomUserFolder.queries import UserQuery
 import sqlalchemy as sa
@@ -266,6 +268,43 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         list = self.get_list(list_id)
             
         return list.getProperty(property, default)
+
+    def processDigests(self):
+        """ Process the digests for all lists.
+
+        """
+        da = self.zsqlalchemy 
+        assert da
+        messageQuery = MessageQuery(self, da)
+        digestQuery = DigestQuery(self, da)
+
+        # get the groups which have been active in the last 24-ish hours
+        active_groups = messageQuery.active_groups() 
+        
+        # collect a dict of groups we want to digest
+        digest_dict = {}
+        for g in active_groups:
+            digest_dict[(g['site_id'],g['group_id'])] = 1
+
+        # get the groups which have *not* had a digest in the last 7-ish days
+        no_recent_digest = digestQuery.no_digest_since_groups()
+        no_recent_digest_dict = {}        
+        for g in no_recent_digest:
+            no_digest_dict[(g['site_id'],g['group_id'])] = 1
+
+        # get the groups which have been active in the last 3 months
+        active_groups_3months = messageQuery.active_groups(interval='3 months')
+        
+        # if we have had activity in the last 3 months *and* we haven't had a recent
+        # digest, send out a digest as well
+        for g in active_groups_3months:
+            key = (g['site_id'],g['group_id'])
+            if key in no_digest_dict:
+                digest_dict[key] = 1
+        
+        digests_required = digest_dict.keys()
+
+        log.info("Requesting digests for: %s" % digests_required)        
 
     def processSpool(self):
         """ Process the deferred spool files.

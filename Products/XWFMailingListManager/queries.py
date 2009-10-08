@@ -40,6 +40,31 @@ class DigestQuery(object):
             
         return result
 
+    def no_digest_since_groups(self, interval=datetime.timedelta(6.9)):
+        """ Returns a list of dicts containing site_id and group_id
+            which have not received a digest in the 'interval' time period.
+        
+        """
+        sincetime = self.now-interval
+        dt = self.digestTable
+        
+        statement = dt.select([dt.c.site_id,
+                               dt.c.group_id,
+                               sa.func.max(dt.c.sent_date).label('sent_date')],
+                              group_by=[dt.c.site_id, dt.c.group_id])
+
+        statement.append_whereclause(dt.c.site_id==site_id)
+        statement.append_whereclause(dt.c.group_id==group_id)
+        statement.append_whereclause(dt.c.sent_date <= sincetime)
+
+        r = statement.execute()
+        
+        retval = []
+        if r.rowcount:
+            retval = [ {'site_id': x['site_id'],
+                        'group_id': x['group_id']} for x in r ]
+        return retval
+    
     def update_group_digest(self, site_id, group_id):
         """ Update the group_digest table when we send out a new digest.
         
