@@ -40,24 +40,24 @@ class DigestQuery(object):
             
         return result
 
-    def no_digest_since_groups(self, interval=datetime.timedelta(6.9)):
+    def no_digest_but_active(self, interval='7 days', active_interval='3 months')):
         """ Returns a list of dicts containing site_id and group_id
             which have not received a digest in the 'interval' time period.
         
         """
         sincetime = self.now-interval
-        dt = self.digestTable
         
-        statement = dt.select([dt.c.site_id,
-                               dt.c.group_id,
-                               sa.func.max(dt.c.sent_date).label('sent_date')],
-                              group_by=[dt.c.site_id, dt.c.group_id])
+        q = sa.text("""select DISTINCT topic.site_id,topic.group_id from 
+               (select site_id, group_id, max(sent_date) as sent_date from
+                group_digest group by site_id,group_id) as latest_digest,topic
+                where (topic.site_id=latest_digest.site_id and
+                       topic.group_id=latest_digest.group_id and
+                latest_digest.sent_date < CURRENT_TIMESTAMP-interval '%(interval)s'
+                and topic.last_post_date >
+                CURRENT_TIMESTAMP-interval '%(active_interval)s');""" % locals(), 
+                   engine=self.digestTable.engine)
 
-        statement.append_whereclause(dt.c.site_id==site_id)
-        statement.append_whereclause(dt.c.group_id==group_id)
-        statement.append_whereclause(dt.c.sent_date <= sincetime)
-
-        r = statement.execute()
+        r = q.execute()
         
         retval = []
         if r.rowcount:

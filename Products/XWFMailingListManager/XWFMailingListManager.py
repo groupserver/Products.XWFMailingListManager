@@ -286,18 +286,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         for g in active_groups:
             digest_dict[(g['site_id'],g['group_id'])] = 1
 
-        # get the groups which have *not* had a digest in the last 7-ish days
-        no_recent_digest = digestQuery.no_digest_since_groups()
+        # get the groups which have *not* had a digest in the last 7-ish days,
+        # but have been active in last 3 months
+        no_recent_digest = digestQuery.no_digest_but_active()
         no_recent_digest_dict = {}        
         for g in no_recent_digest:
-            no_digest_dict[(g['site_id'],g['group_id'])] = 1
-
-        # get the groups which have been active in the last 3 months
-        active_groups_3months = messageQuery.active_groups(interval='3 months')
-        
-        # if we have had activity in the last 3 months *and* we haven't had a recent
-        # digest, send out a digest as well
-        for g in active_groups_3months:
             key = (g['site_id'],g['group_id'])
             if key in no_digest_dict:
                 digest_dict[key] = 1
