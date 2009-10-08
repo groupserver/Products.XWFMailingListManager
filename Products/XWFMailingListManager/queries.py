@@ -40,13 +40,11 @@ class DigestQuery(object):
             
         return result
 
-    def no_digest_but_active(self, interval='7 days', active_interval='3 months')):
+    def no_digest_but_active(self, interval='7 days', active_interval='3 months'):
         """ Returns a list of dicts containing site_id and group_id
             which have not received a digest in the 'interval' time period.
         
         """
-        sincetime = self.now-interval
-        
         q = sa.text("""select DISTINCT topic.site_id,topic.group_id from 
                (select site_id, group_id, max(sent_date) as sent_date from
                 group_digest group by site_id,group_id) as latest_digest,topic
