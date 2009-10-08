@@ -1,10 +1,10 @@
 from setuptools import setup, find_packages
 import os
 
-version = '0.98'
+from version import get_version
 
 setup(name='Products.XWFMailingListManager',
-      version=version,
+      version=get_version(),
       description="",
       long_description=open("README.txt").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
