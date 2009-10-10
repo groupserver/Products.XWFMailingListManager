@@ -21,7 +21,7 @@ from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 
 from Products.XWFMailingListManager.queries import MessageQuery, DigestQuery
 
-import os, time, logging
+import os, time, logging, StringIO, traceback
 from Products.CustomUserFolder.queries import UserQuery
 import sqlalchemy as sa
 import datetime
@@ -269,7 +269,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             
         return list.getProperty(property, default)
 
-    def processDigests(self):
+    def processDigests(self, REQUEST):
         """ Process the digests for all lists.
 
         """
@@ -286,25 +286,32 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         for g in active_groups:
             digest_dict[(g['site_id'],g['group_id'])] = 1
 
-        # get the groups which have *not* had a digest in the last 7-ish days
-        no_recent_digest = digestQuery.no_digest_since_groups()
+        # get the groups which have *not* had a digest in the last 7-ish days,
+        # but have been active in last 3 months
+        no_recent_digest = digestQuery.no_digest_but_active()
         no_recent_digest_dict = {}        
         for g in no_recent_digest:
-            no_digest_dict[(g['site_id'],g['group_id'])] = 1
-
-        # get the groups which have been active in the last 3 months
-        active_groups_3months = messageQuery.active_groups(interval='3 months')
-        
-        # if we have had activity in the last 3 months *and* we haven't had a recent
-        # digest, send out a digest as well
-        for g in active_groups_3months:
             key = (g['site_id'],g['group_id'])
-            if key in no_digest_dict:
-                digest_dict[key] = 1
+            digest_dict[key] = 1
         
         digests_required = digest_dict.keys()
 
-        log.info("Requesting digests for: %s" % digests_required)        
+        for site_id,group_id in digests_required:
+            log.info("Requesting digest for: %s, %s" % (site_id,group_id))
+            group = self.get_list(group_id)
+            if not group:
+                log.warn("Could not find list: %s" % group_id)
+                continue
+            try:
+                group.manage_digestBoxer(REQUEST)
+            except Exception,x:
+                fp = StringIO.StringIO()
+                traceback.print_exc(file=fp)
+                message = fp.getvalue()
+
+                log.warn("Problems processing digest for list %s: %s" % (group_id, message))
+                continue
+            
 
     def processSpool(self):
         """ Process the deferred spool files.

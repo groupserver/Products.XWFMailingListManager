@@ -521,7 +521,6 @@ class XWFMailingList(Folder):
         # not just a unicode object.
         mail_header = mail_header.encode('utf-8', 'ignore').strip()
 
-
         customHeader = EmailMessage(mail_header)
         
         # If customBody is not empty, use it as new mailBody, and we need to
@@ -1306,7 +1305,7 @@ class XWFMailingList(Folder):
             # even if we screw up, mark in the database that we've sent the digest,
             # because we don't want repeat screwups to lead to repeat digests
             digestQuery.update_group_digest(siteId, groupId)
-            
+            digest = digest.encode('utf-8', 'ignore')
             self.send_digest(digest)
         else:
             m = u'%s (%s) on %s (%s): No topics for digest' % \
