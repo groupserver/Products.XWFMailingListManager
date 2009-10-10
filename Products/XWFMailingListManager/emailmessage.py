@@ -485,7 +485,8 @@ class EmailMessage(object):
                     break
             html_body = self.html_body
             if html_body and (not self.__body):
-                plain_body = convertHTML2Text(str(html_body))
+                plain_body = convertHTML2Text(html_body.encode(self.encoding,
+                                                        'xmlcharrefreplace'))
                 self.__body = unicode(plain_body, self.encoding, 'ignore')
 
         assert self.__body != None
