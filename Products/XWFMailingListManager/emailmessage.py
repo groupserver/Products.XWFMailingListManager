@@ -14,7 +14,7 @@ from rfc822 import AddressList
 
 from zope.interface import Interface, Attribute, implements
 
-from zope.app.datetimeutils import parseDatetimetz #@UnresolvedImport
+from zope.datetime import parseDatetimetz
 
 from addapost import tagProcess
 from crop_email import crop_email
