@@ -67,11 +67,14 @@ class GSTopicView(PageForm):
 
     def setUpWidgets(self, ignore_request=True):
         self.adapters = {}
-        addrs = self.userInfo.user.get_defaultDeliveryEmailAddresses()
-        if self.userInfo.anonymous or not(addrs):
+        if self.userInfo.anonymous:
             fromAddr = ''
         else:
-            fromAddr = addrs[0]
+            addrs = self.userInfo.user.get_defaultDeliveryEmailAddresses()
+            if addrs:
+                fromAddr = addrs[0]
+            else:
+                fromAddr = ''
         data = {
           'fromAddress': fromAddr,
           'message':     u'',
