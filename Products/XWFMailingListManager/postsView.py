@@ -1,3 +1,4 @@
+# coding=utf-8
 import Products.Five, Products.GSContent, Globals
 import zope.schema
 import zope.pagetemplate.pagetemplatefile
@@ -7,7 +8,11 @@ import zope.viewlet.interfaces, zope.contentprovider.interfaces
 import DocumentTemplate, Products.XWFMailingListManager
 import Products.GSContent, Products.XWFCore.XWFUtils,  queries
 
+import logging
+log = logging.getLogger('Products.XWFMailingList.postsView')
+
 class GSPostsView(Products.Five.BrowserView):
+      topNPosts = 64
       def __init__(self, context, request):
           self.context = context
           self.request = request
@@ -22,7 +27,16 @@ class GSPostsView(Products.Five.BrowserView):
               tmp = self.end
               self.end = self.start
               self.start = tmp
-              
+          nPosts = (self.end - self.start)
+          if (nPosts >  self.topNPosts):
+              m = u'Request for %d posts (%d--%d) from %s (%s) on ' \
+                u'%s (%s) is too high; returning %d.' % \
+                (nPosts, self.start, self.end, self.groupInfo.name,
+                self.groupInfo.id, self.siteInfo.name, 
+                self.siteInfo.id, self.topNPosts)
+              log.warn(m)
+              self.end = self.start + self.topNPosts
+          
           da = context.zsqlalchemy 
           assert da
           self.messageQuery = queries.MessageQuery(context, da)
