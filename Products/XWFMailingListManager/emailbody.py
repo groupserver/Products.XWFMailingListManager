@@ -6,8 +6,25 @@ from Products.GSGroup.utils import *
 
 log = logging.getLogger('emailbody')
 
+# this is currently the hard limit on the number of word's we will process.
+# after this we insert a message. TODO: make this more flexible by using
+# AJAX to incrementally fetch large emails
+EMAIL_WORD_LIMIT = 5000
+
 email_matcher = re.compile(r".*?([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4}).*?",
                            re.I|re.M|re.U)
+uri_matcher = re.compile("""(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)""")
+youtube_matcher = re.compile("""(?i)(http://)(.*)(youtube.com/watch\?v\=)(.*)($|\s)""")
+splashcast_matcher = re.compile("""(?i)(http://www.splashcastmedia.com/web_watch/\?code\=)(.*)($|\s)""")
+bold_matcher = re.compile("""(\*.*\*)""")
+
+# The following expression is based on the one inside the
+#   TextWrapper class, but without the breaking on '-'.
+splitExp = (r'(\s+|(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')
+email_wrapper = textwrap.TextWrapper(width=width, expand_tabs=False, 
+                          replace_whitespace=False, 
+                          break_long_words=False)
+email_wrapper.wordsep_re = re.compile(splitExp)
 
 def escape_word(word):
     word = cgi.escape(word)
@@ -21,10 +38,8 @@ def markup_uri(context, word, substituted, substituted_words):
     if substituted:
         return word
 
-    word = re.sub('(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)', 
-            '<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
-            word)
-
+    word = uri_matcher.sub('<a href="\g<1>\g<2>">\g<1>\g<2></a>\g<3>', 
+                           word)
     return word    
 
 def markup_email_address(context, word, substituted, substituted_words):
@@ -55,8 +70,7 @@ def markup_youtube(context, word, substituted, substituted_words):
     if word in substituted_words:
         return word
 
-    word = re.sub('(?i)(http://)(.*)(youtube.com/watch\?v\=)(.*)($|\s)',
-                  '<div class="markup-youtube"><object width="425" height="344"><param name="movie" value="http://\g<2>youtube.com/v/\g<4>'
+    word = youtube_matcher.sub('<div class="markup-youtube"><object width="425" height="344"><param name="movie" value="http://\g<2>youtube.com/v/\g<4>'
                   '&amp;hl=en&amp;fs=1"></param><param name="allowFullScreen" value="true"></param><embed src="http://\g<2>youtube.com/v/\g<4>&amp;hl=en&amp;fs=1"'
                   ' type="application/x-shockwave-flash" allowfullscreen="true" width="425" height="344"></embed></object></div>\g<5>',
                   word)
@@ -73,9 +87,9 @@ def markup_splashcast(context, word, substituted, substituted_words):
     if word in substituted_words:
         return word
 
-    word = re.sub('(?i)(http://www.splashcastmedia.com/web_watch/\?code\=)(.*)($|\s)',
-                  '<div class="markup-splashcast"><embed src="http://web.splashcast.net/go/skin/\g<2>/sz/wide" wmode="Transparent" width="380" height="416" allowFullScreen="true" type="application/x-shockwave-flash" /></div>\g<3>',
-                  word)
+    word = splashcast_matcher.sub('<div class="markup-splashcast"><embed src="http://web.splashcast.net/go/skin/\g<2>'
+                                  '/sz/wide" wmode="Transparent" width="380" height="416" allowFullScreen="true" '
+                                  'type="application/x-shockwave-flash" /></div>\g<3>', word)
     
     return word
 
@@ -87,9 +101,8 @@ def markup_bold(context, word, substituted, substituted_words):
         # Do not substitute if the word has already been marked-up
         return word
 
-    word = re.sub('(\*.*\*)',
-                  '<strong>\g<1></strong>',
-                  word)
+    word = bold_matcher.sub('<strong>\g<1></strong>',
+                            word)
     
     return word
 
@@ -111,14 +124,7 @@ def wrap_message(messageText, width=79):
         "Presentation/Tofu/MailingListManager/lscripts".
         
     """
-    # The following expression is based on the one inside the
-    #   TextWrapper class, but without the breaking on '-'.
-    splitExp = (r'(\s+|(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')
-    t = textwrap.TextWrapper(width=width, expand_tabs=False, 
-                              replace_whitespace=False, 
-                              break_long_words=False)
-    t.wordsep_re = re.compile(splitExp)
-    retval = '\n'.join(map(lambda l: '\n'.join(t.wrap(l)), 
+    retval = '\n'.join(map(lambda l: '\n'.join(email_wrapper.wrap(l)), 
                             messageText.split('\n')))
     return retval
 
@@ -261,6 +267,7 @@ def markup_word(context, word, substituted_words):
 def markup_email(context, text):
     retval = ''
     substituted_words = []
+    word_count = 0
     if text:
         out_text = ''
         curr_word = ''
@@ -270,6 +277,10 @@ def markup_email(context, text):
                     markedUpWord = markup_word(context, curr_word, substituted_words)
                     curr_word = ''
                     out_text += markedUpWord
+                    word_count += 1
+                    if word_count > EMAIL_WORD_LIMIT:
+                        out_text.append('<strong>This email has been automatically truncated to 5000 words.</strong>')
+                        break
                 out_text += char
             else:
                 curr_word += char
