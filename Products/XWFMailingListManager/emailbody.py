@@ -20,11 +20,7 @@ bold_matcher = re.compile("""(\*.*\*)""")
 
 # The following expression is based on the one inside the
 #   TextWrapper class, but without the breaking on '-'.
-splitExp = (r'(\s+|(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')
-email_wrapper = textwrap.TextWrapper(width=width, expand_tabs=False, 
-                          replace_whitespace=False, 
-                          break_long_words=False)
-email_wrapper.wordsep_re = re.compile(splitExp)
+splitExp = re.compile(r'(\s+|(?<=[\w\!\"\'\&\.\,\?])-{2,}(?=\w))')
 
 def escape_word(word):
     word = cgi.escape(word)
@@ -124,6 +120,10 @@ def wrap_message(messageText, width=79):
         "Presentation/Tofu/MailingListManager/lscripts".
         
     """
+    email_wrapper = textwrap.TextWrapper(width=width, expand_tabs=False, 
+                          replace_whitespace=False, 
+                          break_long_words=False)
+    email_wrapper.wordsep_re = splitExp
     retval = '\n'.join(map(lambda l: '\n'.join(email_wrapper.wrap(l)), 
                             messageText.split('\n')))
     return retval
