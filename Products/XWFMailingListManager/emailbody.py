@@ -279,7 +279,7 @@ def markup_email(context, text):
                     out_text += markedUpWord
                     word_count += 1
                     if word_count > EMAIL_WORD_LIMIT:
-                        out_text == ('\n\n<strong>This email has been automatically truncated to 5000 words.</strong>')
+                        out_text += '\n\n<strong>This email has been automatically truncated to 5000 words.</strong>'
                         break
                 out_text += char
             else:
