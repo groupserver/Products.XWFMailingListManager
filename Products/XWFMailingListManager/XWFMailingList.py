@@ -756,12 +756,14 @@ class XWFMailingList(Folder):
                     'pin': pin(self.getValueFor('mailto'),
                                self.getValueFor('hashkey')),
                     'moderatedUserAddress': msg.sender,
+                    'groupId': self.id,
                     'groupName': self.title,
                     'groupEmail': self.getValueFor('mailto'),
                     'subject': msg.subject,
                     'mid': msg.post_id,
                     'body': msg.body,
                     'absolute_url': self.absolute_url(),
+                    'moderatedUserId': msg.sender_id,
                     'moderatedUserName': moderatedUser.getProperty('fn','')}
                 moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
