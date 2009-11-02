@@ -765,7 +765,7 @@ class XWFMailingList(Folder):
                     'absolute_url': self.absolute_url(),
                     'moderatedUserId': msg.sender_id,
                     'moderatedUserName': moderatedUser.getProperty('fn','')}
-                moderator.send_notification('mail_moderator', 'new',
+                moderator.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
             nDict = {'mailingList': self,
