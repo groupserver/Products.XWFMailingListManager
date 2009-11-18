@@ -6,8 +6,12 @@ from Products.GSSearch import queries
 from Products.GSGroupMember.interfaces import IGSPostingUser
 # from view import GSPostingInfo # FIX
 
+import logging
+log = logging.getLogger('Products.XWFMailingList.topicsView')
+
 class GSTopicsView(BrowserView):
       """List of latest topics in the group."""
+      topNTopics = 64
       def __init__(self, context, request):
           self.context = context
           self.request = request
@@ -36,6 +40,15 @@ class GSTopicsView(BrowserView):
               tmp = self.end
               self.end = self.start
               self.start = tmp
+          nTopics = (self.end - self.start)
+          if (nTopics >  self.topNTopics):
+              m = u'Request for %d topics (%d--%d) from %s (%s) on ' \
+                u'%s (%s) is too high; returning %d.' % \
+                (nTopics, self.start, self.end, self.groupInfo.name,
+                self.groupInfo.id, self.siteInfo.name, 
+                self.siteInfo.id, self.topNTopics)
+              log.warn(m)
+              self.end = self.start + self.topNTopics
 
           messages = self.context.messages
           lists = messages.getProperty('xwf_mailing_list_ids')
