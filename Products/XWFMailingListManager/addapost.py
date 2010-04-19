@@ -25,7 +25,7 @@ def tagProcess(tagsString):
 
     if len(tagsString) == 0:
         return retval
-
+        
     if ',' in tagsString:
         retval = tagsString.split(',')
     else:
@@ -98,7 +98,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     # TODO: Add the user's name. The Header class will be needed
     #   to ensure it is escaped properly.
     msg['From'] = str(Addressee(userInfo, email))
-    msg['Subject'] = topic #? Encode?
+    msg['Subject'] = topic # --=mpj17=-- This does not need encoding.
     tagsList = tagProcess(tags)
     tagsString = ', '.join(tagsList)
     if tagsString:
@@ -163,7 +163,7 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             except BadRequest, e:
                 result['error'] = True
                 result['message'] = errorM
-                log.error(e)
+                log.error(e.encode('ascii', 'ignore'))
                 break
             result['error'] = True
             result['message'] = u'Your message has been sent to '\
@@ -187,12 +187,12 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             except BadRequest, e:
                 result['error'] = True
                 result['message'] = errorM
-                log.error(e)
+                log.error(e.encode('ascii', 'ignore'))
                 break
             except SQLError, e:
                 result['error'] = True
                 result['message'] = errorM
-                log.error(e)
+                log.error(e.encode('ascii', 'ignore'))
                 break
             if (not r):
                 # --=mpj17=-- This could be lies.
