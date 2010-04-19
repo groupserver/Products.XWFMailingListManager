@@ -4,14 +4,13 @@ from email.MIMENonMultipart import MIMENonMultipart
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText 
 from mimetypes import MimeTypes
-
+from sqlalchemy.exceptions import SQLError
 from zope.component import createObject, getMultiAdapter
 from zExceptions import BadRequest
-from sqlalchemy.exceptions import SQLError
-
+from Products.GSGroupMember.interfaces import IGSPostingUser
+from gs.profile.notify.adressee import Addressee
 from queries import MessageQuery
 from MailBoxerTools import lowerList
-from Products.GSGroupMember.interfaces import IGSPostingUser
 
 from logging import getLogger
 log = getLogger('addapost')
@@ -98,8 +97,8 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     # msg['To'] set below
     # TODO: Add the user's name. The Header class will be needed
     #   to ensure it is escaped properly.
-    msg['From'] = email
-    msg['Subject'] = topic
+    msg['From'] = str(Addressee(userInfo, email))
+    msg['Subject'] = topic #? Encode?
     tagsList = tagProcess(tags)
     tagsString = ', '.join(tagsList)
     if tagsString:
