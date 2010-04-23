@@ -537,7 +537,7 @@ class EmailMessage(object):
         if to:
             name, to = AddressList(to)[0] #@UnusedVariable
             to = to.lower()
-        
+        # --=mpj17=-- TODO: Add the group name.
         return to
 
     @property
