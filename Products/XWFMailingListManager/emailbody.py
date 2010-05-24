@@ -16,6 +16,7 @@ email_matcher = re.compile(r".*?([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4}).*?",
 uri_matcher = re.compile("""(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)""")
 youtube_matcher = re.compile("""(?i)(http://)(.*)(youtube.com/watch\?v\=)(.*)($|\s)""")
 splashcast_matcher = re.compile("""(?i)(http://www.splashcastmedia.com/web_watch/\?code\=)(.*)($|\s)""")
+vimeo_matcher = re.compile("""(?i)(http://)(.*)/(.*)($|\s)""")
 bold_matcher = re.compile("""(\*.*\*)""")
 
 # The following expression is based on the one inside the
@@ -69,6 +70,28 @@ def markup_youtube(context, word, substituted, substituted_words):
     word = youtube_matcher.sub('<div class="markup-youtube"><object width="425" height="344"><param name="movie" value="http://\g<2>youtube.com/v/\g<4>'
                   '&amp;hl=en&amp;fs=1"></param><param name="allowFullScreen" value="true"></param><embed src="http://\g<2>youtube.com/v/\g<4>&amp;hl=en&amp;fs=1"'
                   ' type="application/x-shockwave-flash" allowfullscreen="true" width="425" height="344"></embed></object></div>\g<5>',
+                  word)
+    
+    return word
+
+def markup_vimeo(context, word, substituted, substituted_words):
+    """ Markup vimeo URIs.
+    
+    """
+    if substituted:
+        return word
+
+    if word in substituted_words:
+        return word
+
+    word = vimeo_matcher.sub('<object width="400" height="265"><param name="allowfullscreen" value="true" /><param name="allowscriptaccess" '
+                             'value="always" /><param name="movie" '
+                             'value="http://vimeo.com/moogaloop.swf?clip_id=\g<3>&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1'
+                             '&amp;show_portrait=0&amp;color=&amp;fullscreen=1" />'
+                             '<embed src="http://vimeo.com/moogaloop.swf?clip_id=\g<3>'
+                             '&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1" '
+                             'type="application/x-shockwave-flash" allowfullscreen="true" allowscriptaccess="always" width="400" height="265">'
+                             '</embed></object>\g<5>',
                   word)
     
     return word
@@ -247,7 +270,7 @@ def split_message(messageText, max_consecutive_comment=12,
     return retval
 
 standard_markup_functions = (markup_email_address, markup_youtube,
-                             markup_splashcast, markup_uri, markup_bold)
+                             markup_splashcast, markup_vimeo, markup_uri, markup_bold)
 
 def markup_word(context, word, substituted_words):
     word = escape_word(word)
