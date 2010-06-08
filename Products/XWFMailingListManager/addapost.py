@@ -192,7 +192,9 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
             except SQLError, e:
                 result['error'] = True
                 result['message'] = errorM
-                log.error(e.encode('ascii', 'ignore'))
+                m = e.statement % e.params
+                m = u'%s: %s' % (e.orig, m)
+                log.error(m.encode('ascii', 'ignore'))
                 break
             if (not r):
                 # --=mpj17=-- This could be lies.
