@@ -1,21 +1,13 @@
 # coding=utf-8
-
-from sqlalchemy.exceptions import SQLError
-import re
-import md5
+import re, md5, string, datetime, time, codecs
+from rfc822 import AddressList
 import sqlalchemy as sa
-import string
-import datetime, time
-import codecs
-
+from sqlalchemy.exceptions import SQLError
+from zope.interface import Interface, Attribute, implements
+from zope.datetime import parseDatetimetz
+from Products.XWFCore.XWFUtils import removePathsFromFilenames
 from MailBoxerTools import convertHTML2Text
 from email import Parser, Header
-from rfc822 import AddressList
-
-from zope.interface import Interface, Attribute, implements
-
-from zope.datetime import parseDatetimetz
-
 from addapost import tagProcess
 from crop_email import crop_email
 import stopwords
@@ -120,6 +112,7 @@ class RDBFileMetadataStorage(object):
             # for each file, get the metadata and insert it into our RDB table
             attachedFile = storage.get_file(fid)
             i = self.fileTable.insert()
+            title = attachedFile.getProperty('title','')
             i.execute(file_id=fid,
                       mime_type=attachedFile.getProperty('content_type',''),
                       file_name=attachedFile.getProperty('title',''),
