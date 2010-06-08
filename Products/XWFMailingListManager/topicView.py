@@ -92,7 +92,6 @@ class GSTopicView(PageForm):
       if self.__inReplyTo != data['inReplyTo']:
           # --=mpj17=-- Formlib sometimes submits twice submits twice
           self.__inReplyTo = data['inReplyTo']
-          
           uploadedFiles = [self.request[k] 
                            for k in self.request.form 
                            if (('form.uploadedFile' in k) and 

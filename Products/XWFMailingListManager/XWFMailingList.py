@@ -1712,9 +1712,9 @@ class XWFMailingList(Folder):
         storage = self.FileLibrary2.get_fileStorage()
         id = storage.add_file(data)
         file = storage.get_file(id)
-        title = removePathsFromFilenames(title)
+        fixedTitle = removePathsFromFilenames(title)
         file.manage_changeProperties(content_type=content_type,
-          title=title, tags=['attachment'], group_ids=[group_id],
+          title=fixedTitle, tags=['attachment'], group_ids=[group_id],
           dc_creator=creator, topic=topic)
         file.reindex_file()
         
@@ -1739,11 +1739,12 @@ class XWFMailingList(Folder):
         storage = self.FileLibrary2.get_fileStorage()
         id = storage.add_file(data)
         file = storage.get_file(id)
+        fixedTitle = removePathsFromFilenames(title)
         topic = archiveObject.getProperty('mailSubject', '')
         creator = archiveObject.getProperty('mailUserId', '')
-        file.manage_changeProperties(content_type=content_type, title=title, tags=['attachment'], 
-                                     group_ids=[group_id], dc_creator=creator, 
-                                     topic=topic)
+        file.manage_changeProperties(content_type=content_type, 
+            title=fixedTitle, tags=['attachment'], group_ids=[group_id],
+            dc_creator=creator, topic=topic)
         file.reindex_file()
         
         return id        
