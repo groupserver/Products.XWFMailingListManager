@@ -30,8 +30,6 @@ log = logging.getLogger('XWFMailingListManager.view')
 def process_post( context, request ):
     form = request.form
     result = {}
-    for k in form.keys():
-        print k
     if form.has_key('submitted'):
         if ((form['model'] == 'post') 
             and (form['instance'] == 'addPost_pragmatic')):
