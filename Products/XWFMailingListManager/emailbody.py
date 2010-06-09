@@ -16,7 +16,7 @@ email_matcher = re.compile(r".*?([A-Z0-9._%+-]+)@([A-Z0-9.-]+\.[A-Z]{2,4}).*?",
 uri_matcher = re.compile("""(?i)(http://|https://)(.+?)(\&lt;|\&gt;|\)|\]|\}|\"|\'|$|\s)""")
 youtube_matcher = re.compile("""(?i)(http://)(.*)(youtube.com/watch\?v\=)(.*)($|\s)""")
 splashcast_matcher = re.compile("""(?i)(http://www.splashcastmedia.com/web_watch/\?code\=)(.*)($|\s)""")
-vimeo_matcher = re.compile("""(?i)(http://)(.*)/(.*)($|\s)""")
+vimeo_matcher = re.compile("""(?i)(http://)(.*)vimeo.com/(.*)($|\s)""")
 bold_matcher = re.compile("""(\*.*\*)""")
 
 # The following expression is based on the one inside the
@@ -91,7 +91,7 @@ def markup_vimeo(context, word, substituted, substituted_words):
                              '<embed src="http://vimeo.com/moogaloop.swf?clip_id=\g<3>'
                              '&amp;server=vimeo.com&amp;show_title=1&amp;show_byline=1&amp;show_portrait=0&amp;color=&amp;fullscreen=1" '
                              'type="application/x-shockwave-flash" allowfullscreen="true" allowscriptaccess="always" width="400" height="265">'
-                             '</embed></object>\g<5>',
+                             '</embed></object>\g<4>',
                   word)
     
     return word
