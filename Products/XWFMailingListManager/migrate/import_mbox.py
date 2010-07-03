@@ -5,6 +5,11 @@ DBUSERNAME='gstest'
 DBPASSWORD=''
 DBNAME='gstestdb'
 
+PATH_TO_INSTANCE='/example/'
+GROUP_TITLE='mythtvnz'
+GROUP_ID='mythtvnz'
+SITE_ID='mythtvnz'
+
 IMPORT_DIR='/home/richard/Workspace/groupserver-1.0beta/src/Products.XWFMailingListManager/Products/XWFMailingListManager/migrate/archives/'
 LOG_FILE='/home/richard/foo.out'
 
@@ -23,6 +28,8 @@ from sqlalchemy.exceptions import SQLError
 
 import Products.Five
 import Products.XWFMailingListManager
+from Products.GSProfile.utils import create_user_from_email
+import transaction
 
 import difflib
 import sqlalchemy
@@ -44,18 +51,15 @@ try:
 except:
     dryRun = False
 
+gsInstance = app.unrestrictedTraverse(PATH_TO_INSTANCE)
+
 print "importing from: '%s'" % IMPORT_DIR
 print "logging to: '%s'" % LOG_FILE
 
 if not dryRun:
-    alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
-    alchemy_adaptor.manage_changeProperties( hostname=DBHOSTNAME,
-                                         port=DBPORT,
-                                         username=DBUSERNAME,
-                                         password=DBPASSWORD,
-                                         dbtype='postgres',
-                                         database=DBNAME)
-
+    alchemy_adaptor = app.unrestrictedTraverse(os.path.join(PATH_TO_INSTANCE,
+                                                            'zsqlalchemy'))
+    
 count = 0
 top = time.time()
 
@@ -69,7 +73,9 @@ log = file(LOG_FILE, 'a+')
 
 def import_mbox(mbox):
     frommask = ' at '
-
+    
+    createdUserEmails = {}
+    count = 0
     for message in mbox:
         header = ''
         i = 0
@@ -79,17 +85,37 @@ def import_mbox(mbox):
                 message.headers[i] = h
                 break
             i += 1
-    
+        
         email = str(message)
         email += '\n'
         email += message.fp.read()
-    
+        
         msg = emailmessage.EmailMessage( email, replace_mail_date=False )
         
-        msg = emailmessage.EmailMessage( email, msg.get('x-gsgroup-title',''),
-                                         msg.get('x-gsgroup-id',''),
-                                         msg.get('x-gssite-id', ''),
-                                         lambda x: msg.get('x-gsuser-id', ''),
+        sender = msg.sender.encode('utf-8')
+        if sender not in createdUserEmails:
+            try:
+                user = create_user_from_email(gsInstance,
+                                              sender)
+                user_id = user.getId()
+                print 'c',
+                transaction.commit()
+                createdUserEmails[sender] = user_id
+            except AssertionError:
+                user = gsInstance.acl_users.get_userByEmail(sender)
+                try:
+                    user_id = user.getId()
+                except:
+                    print sender,
+                    raise
+        else:
+            user_id = createdUserEmails[sender]
+            
+        msg = emailmessage.EmailMessage( email,
+                                         GROUP_TITLE,
+                                         GROUP_ID,
+                                         SITE_ID,
+                                         lambda x: user_id,
                                          replace_mail_date=False)
         
         msgstorage = IRDBStorageForEmailMessage( msg )
@@ -108,7 +134,7 @@ def import_mbox(mbox):
             r = postTable.select( postTable.c.post_id==msg.post_id ).execute()
             row = r.fetchone()
             if row:
-                log.write("===POSSIBLE DUPLICATE DETAILS===\n\n")
+                log.write("===POSSIBLE DUPLICATE DETAILS, POST ID %s===\n\n" % msg.post_id)
                 hdiff = '\n'.join(difflib.unified_diff(msg.headers.encode('utf-8').split('\n'), row.header.encode('utf-8').split('\n')))
                 if hdiff:
                     log.write("===HEADER DIFF FOLLOWS===\n")
@@ -119,7 +145,7 @@ def import_mbox(mbox):
                     log.write(bdiff+'\n')
                 log.write("---------END--------\n")
             else:
-                log.write("===UNKNOWN ERROR===\nn")
+                log.write("===UNKNOWN ERROR, POST ID %s===\nn" % msg.post_id)
                 log.write("%s\n\n" % msg.headers.encode('utf-8'))
                 log.write("%s\n" % msg.body.encode('utf-8'))
                 log.write("---------END--------\n")
@@ -129,9 +155,20 @@ def import_mbox(mbox):
             log.write("---------START---------\n")
             log.write(str(x).decode('utf-8')+u'\n')
             log.write("---------END--------\n")
-            
+        
+        sys.stdout.flush()
+        count += 1
 
-for mfile in os.listdir(IMPORT_DIR):
+    return count
+
+mfiles = os.listdir(IMPORT_DIR)
+mfiles.sort()
+for mfile in mfiles:
+    top = time.time()
+    print 'processing %s' % mfile
     mbox = PortableUnixMailbox(gzip.open(os.path.join(IMPORT_DIR, mfile)))
-    import_mbox(mbox)
-
+    count = import_mbox(mbox)
+    bottom = time.time()
+    print
+    print 'took %.2fs to import %s messages, %.0fms per message\n' % ((bottom-top), count, (((bottom-top)/count)*1000.0))
+    
