@@ -20,9 +20,6 @@
     class=".XWFVirtualMailingListArchive2.XWFVirtualMailingListArchive2"
     interface=".interfaces.IGSMessagesFolder" />
 
-  <!-- make it known to Five -->
-  <five:traversable class="OFS.Folder.Folder" />
-  
   <!--View of the index-pages -->
   <browser:page for=".interfaces.IGSMessagesFolder" name="post"
     class=".postView.GSPostTraversal"

@@ -1,4 +1,9 @@
 # coding=utf-8
+try:
+    from five.formlib.formbase import PageForm
+except ImportError:
+    from Products.Five.formlib.formbase import PageForm
+
 from zope.component import getMultiAdapter, createObject
 from zope.traversing.interfaces import TraversalError
 from zope.publisher.interfaces import IPublishTraverse
@@ -7,7 +12,6 @@ from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import ListSequenceWidget, FileWidget
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
-from Products.Five.formlib.formbase import PageForm
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import user_admin_of_group
 from queries import MessageQuery
