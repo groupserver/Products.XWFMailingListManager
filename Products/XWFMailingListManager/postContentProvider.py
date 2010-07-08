@@ -4,7 +4,11 @@ from zope.contentprovider.interfaces import IContentProvider, UpdateNotCalled
 from zope.interface import implements, Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.component import adapts, provideAdapter, createObject
-from zope.app.pagetemplate import ViewPageTemplateFile, metaconfigure
+from zope.app.pagetemplate import ViewPageTemplateFile
+try:
+    from zope.browserpage import metaconfigure
+except ImportError:
+    from zope.app.pagetemplate import metaconfigure
 from zope.contentprovider import tales
 from Products.XWFCore.cache import LRUCache, SimpleCache
 from Products.XWFCore.XWFUtils import getOption
@@ -138,7 +142,7 @@ class GSPostContentProvider(object):
                     metaconfigure.registerType('provider', 
                       tales.TALESProviderExpression)
                 except:
-                    pass
+                    raise
                                                 
             self.request.debug = False
             r = pageTemplate(self, 
