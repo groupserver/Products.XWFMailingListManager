@@ -12,13 +12,13 @@
   
   <!-- declare a marker interface on the Folder class to allow us 
     to add marker Interfaces, views and adaptation -->
-  <five:implements class="OFS.Folder.Folder"
-    interface="zope.app.folder.interfaces.IFolder" />
-    
-
-  <five:implements 
-    class=".XWFVirtualMailingListArchive2.XWFVirtualMailingListArchive2"
-    interface=".interfaces.IGSMessagesFolder" />
+  <class class="OFS.Folder.Folder">
+      <implements interface="zope.app.folder.interfaces.IFolder" />
+  </class>
+  <class 
+    class=".XWFVirtualMailingListArchive2.XWFVirtualMailingListArchive2">
+      <implements interface=".interfaces.IGSMessagesFolder" />
+  </class>
 
   <!--View of the index-pages -->
   <browser:page for=".interfaces.IGSMessagesFolder" name="post"
