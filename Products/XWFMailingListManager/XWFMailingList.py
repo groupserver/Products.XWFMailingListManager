@@ -882,16 +882,13 @@ class XWFMailingList(Folder):
                                         attachment['payload'], 
                                         attachment['mimetype'])
                 ids.append(id)
-        
         if archive and ids:
             mailObject.manage_addProperty('x-xwfnotification-file-id', 
                                           ' '.join(ids), 'ustring')
             mailObject.manage_addProperty('x-xwfnotification-message-length', 
                                           len(msg.body.replace('\r', '')), 'ustring')
-
         if archive:
             self.catalogMailBoxerMail(mailObject)
-
         if self.getProperty('use_rdb', False):
             msgstorage = IRDBStorageForEmailMessage(msg)
             
@@ -904,7 +901,6 @@ class XWFMailingList(Folder):
             filemetadatastorage = RDBFileMetadataStorage(self, msg, ids)
             filemetadatastorage.set_zalchemy_adaptor(da)
             filemetadatastorage.insert()
-        
         if archive:
             return (mailObject.getId(), ids)
         else:
@@ -1717,14 +1713,12 @@ class XWFMailingList(Folder):
           title=fixedTitle, tags=['attachment'], group_ids=[group_id],
           dc_creator=creator, topic=topic)
         file.reindex_file()
-        
         #
         # Commit the ZODB transaction -- this basically makes it impossible for
         # us to rollback, but since our RDB transactions won't be rolled back
         # anyway, we do this so we don't have dangling metadata.
         # 
         transaction.commit()
-
         return id
 
     def addMailBoxerFile(self, archiveObject, id, title, data, content_type):

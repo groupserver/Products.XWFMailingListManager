@@ -1,12 +1,11 @@
-import urllib
-import re
+import urllib, re, sys
 
 outdir = "archives/"
 url = 'http://lists.ourshack.com/pipermail/mythtvnz'
 page = urllib.urlopen(url)
 text = page.read()
 
-print text
+sys.stdout.write(('%s\n' % text)
 matcher = re.compile('href=\"(.*\.gz)\"')
 
 matches = matcher.findall(text)

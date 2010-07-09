@@ -57,30 +57,24 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
       'error': False,
       'message': u"Message posted.",
       'id': u''}
-
     site_root = context.site_root()
     assert site_root
     userInfo = createObject('groupserver.LoggedInUser', context)
-
     siteObj = getattr(site_root.Content, siteId)
     groupObj = getattr(siteObj.groups, groupId)
-    
     messages = getattr(groupObj, 'messages')
     assert messages
     listManager = messages.get_xwfMailingListManager()
     assert listManager
     groupList = getattr(listManager, groupObj.getId())
     assert groupList
-
     audit = WebPostAuditor(groupObj)
     audit.info(POST, topic)
-
     # Step 1, check if the user can post
     userPostingInfo = getMultiAdapter((groupObj, userInfo), 
                                        IGSPostingUser)
     if not userPostingInfo.canPost:
         raise 'Forbidden', userPostingInfo.status
-
     # --=mpj17-- Bless WebKit. It adds a file, even when no file has
     #   been specified; if the files are empty, do not add the files.
     uploadedFiles = [f for f in uploadedFiles if f]
@@ -106,7 +100,6 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     if replyToId:
         msg['In-Reply-To'] = replyToId
     # msg['Reply-To'] set by the list
-            
     # Step 2.3 Attachments
     for f in uploadedFiles:
         # --=mpj17=-- zope.formlib has already read the data, so we
@@ -124,7 +117,6 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                                'Content-Disposition')              
             encode_base64(mimePart) # Solves a lot of problems.
             msg.attach(mimePart)
-            
     # Step 3, check the moderation. 
     # --=mpj17=-- This changes *how* we send the message to the 
     #   mailing list. No, really.
@@ -141,16 +133,13 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
     elif moderated and not(moderatedlist):
         log.warn('User "%s" posted from web while moderated' % userInfo.id)
         via_mailserver = True
-    
     errorM = u'The post was not added to the topic '\
       u'<code class="topic">%s</code> because a post with the same '\
       u'body already exists in the topic.' % topic
-    
     # Step 4, send the message.
     for list_id in messages.getProperty('xwf_mailing_list_ids', []):
         curr_list = listManager.get_list(list_id)
         msg['To'] = curr_list.getValueFor('mailto')
-        
         if via_mailserver:
             # If the message is being moderated, we have to emulate
             #   a post via email so it can go through the moderation

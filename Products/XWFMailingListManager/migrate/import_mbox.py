@@ -31,11 +31,8 @@ import Products.XWFMailingListManager
 from Products.GSProfile.utils import create_user_from_email
 import transaction
 
-import difflib
-import sqlalchemy
-import time
-import gzip
-import re
+import difflib, sqlalchemy
+import time, gzip, re, sys
 
 from mailbox import PortableUnixMailbox
 
@@ -53,8 +50,8 @@ except:
 
 gsInstance = app.unrestrictedTraverse(PATH_TO_INSTANCE)
 
-print "importing from: '%s'" % IMPORT_DIR
-print "logging to: '%s'" % LOG_FILE
+sys.stdout.write("importing from: '%s'\n" % IMPORT_DIR)
+sys.stdout.write("logging to: '%s'" % LOG_FILE)
 
 if not dryRun:
     alchemy_adaptor = app.unrestrictedTraverse(os.path.join(PATH_TO_INSTANCE,
@@ -98,7 +95,7 @@ def import_mbox(mbox):
                 user = create_user_from_email(gsInstance,
                                               sender)
                 user_id = user.getId()
-                print 'c',
+                sys.stdout.write('c')
                 transaction.commit()
                 createdUserEmails[sender] = user_id
             except AssertionError:
@@ -106,7 +103,7 @@ def import_mbox(mbox):
                 try:
                     user_id = user.getId()
                 except:
-                    print sender,
+                    sys.stdout.write('%s' % sender)
                     raise
         else:
             user_id = createdUserEmails[sender]
@@ -126,9 +123,9 @@ def import_mbox(mbox):
             if not dryRun:
                 msgstorage.insert()
                 msgstorage.insert_keyword_count()
-            print '.',
+            sys.stdout.write('.')
         except SQLError, x:
-            print 'e',
+            sys.stdout.write('e')
             log.write("---------START---------\n")
             log.write('%s: %s\n' % (msg.get('x-gsoriginal-id'), str(x.orig)))
             r = postTable.select( postTable.c.post_id==msg.post_id ).execute()
@@ -151,7 +148,7 @@ def import_mbox(mbox):
                 log.write("---------END--------\n")
             log.flush()
         except Exception, x:
-            print 'e',
+            sys.stdout.write('e')
             log.write("---------START---------\n")
             log.write(str(x).decode('utf-8')+u'\n')
             log.write("---------END--------\n")
@@ -165,10 +162,9 @@ mfiles = os.listdir(IMPORT_DIR)
 mfiles.sort()
 for mfile in mfiles:
     top = time.time()
-    print 'processing %s' % mfile
+    sys.stdout.write('processing %s\n' % mfile)
     mbox = PortableUnixMailbox(gzip.open(os.path.join(IMPORT_DIR, mfile)))
     count = import_mbox(mbox)
     bottom = time.time()
-    print
-    print 'took %.2fs to import %s messages, %.0fms per message\n' % ((bottom-top), count, (((bottom-top)/count)*1000.0))
-    
+    sys.stdout.write('\ntook %.2fs to import %s messages, %.0fms per message\n\n' % ((bottom-top), count, (((bottom-top)/count)*1000.0)))
+

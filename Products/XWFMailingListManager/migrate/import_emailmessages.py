@@ -54,8 +54,8 @@ try:
 except:
     dryRun = False
 
-print "importing from: '%s'" % importDir
-print "logging to: '%s'" % fileName
+sys.stdout.write("importing from: '%s'\n" % importDir)
+sys.stdout.write("logging to: '%s'\n" % fileName)
 
 if not dryRun:
     alchemy_adaptor = manage_addZSQLAlchemy(app, 'zalchemy')
@@ -82,7 +82,7 @@ if startPos:
 else:
     position = 0
 
-print "starting at position: %s" % startPos
+sys.stdout.write("starting at position: %s\n" % startPos)
 
 for fname in os.listdir( importDir )[position:]:
      email = file( os.path.join( importDir, fname ) ).read()
@@ -96,9 +96,9 @@ for fname in os.listdir( importDir )[position:]:
              msgstorage.insert()
              msgstorage.insert_keyword_count()
              msgstorage.insert_legacy_id()
-         print '.',
+         sys.stdout.write('.')
      except SQLError, x:
-         print 'e',
+         sys.stdout.write('e')
          log.write("---------START---------\n")
          log.write('%s: %s\n' % (msg.get('x-gsoriginal-id'), str(x.orig)))
          r = postTable.select( postTable.c.post_id==msg.post_id ).execute()
@@ -123,10 +123,7 @@ for fname in os.listdir( importDir )[position:]:
          
      count += 1
      if not count % 500:
-         print
-         print 'iters: %s, %s per iter' % (count, (time.time()-top)/float(count))
+         sys.stdout.write('\niters: %s, %s per iter\n' % (count, (time.time()-top)/float(count)))
 
-print
-print 'took %s' % (time.time()-top)
-         
-     
+sys.stdout.write('\ntook %s\n' % (time.time()-top))         
+

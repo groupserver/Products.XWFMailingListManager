@@ -71,7 +71,7 @@ for items in csv.reader(filegroup_csv):
             mdata = fmetadata[fid]
             fmetadata_out.append((fid, topic_id, post_id, mdata[0], mdata[1], mdata[2], mdata[3]))
         except:
-            print 'no such file %s' % fid
+            sys.err.write('no such file %s\n' % fid)
 
 session = alchemy_adaptor.getSession()
 metadata = session.getMetaData()

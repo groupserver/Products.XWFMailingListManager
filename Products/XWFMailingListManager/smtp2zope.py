@@ -386,9 +386,9 @@ def eventNotification(url, event_codes, mailString):
     
 def getListInfo(url, mailto):
     url = getAuthorizedURL(url, AUTHORIZATION)
-    print url
+    sys.stdout.write('%s\n' % url)
     server = xmlrpclib.ServerProxy(url)
-    print server
+    sys.stdout.write('%s\n' % server)
     try:
         properties = server.get_listPropertiesFromMailto(mailto)
     except Exception, e:
