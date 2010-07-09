@@ -6,7 +6,7 @@
 # You MUST follow the rules in README_STYLE before checking in code
 # to the head. Code which does not follow the rules will be rejected.  
 #
-from AccessControl.class_init import InitializeClass
+from App.class_init import InitializeClass
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFIdFactory.XWFIdFactoryMixin import XWFIdFactoryMixin
