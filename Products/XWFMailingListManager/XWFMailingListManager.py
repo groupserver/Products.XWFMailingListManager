@@ -9,7 +9,7 @@
 from AccessControl import ClassSecurityInfo
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Globals import InitializeClass
+from AccessControl.class_init import InitializeClass
 from OFS.Folder import Folder
 
 from Products.XWFCore.XWFUtils import getOption, get_support_email

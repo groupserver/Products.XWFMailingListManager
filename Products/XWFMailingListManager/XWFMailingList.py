@@ -14,7 +14,7 @@ from cgi import escape
     
 from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
-from Globals import InitializeClass
+from AccessControl.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
 from zope.component import createObject, getMultiAdapter
 

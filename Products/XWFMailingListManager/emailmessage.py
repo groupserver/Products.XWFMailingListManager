@@ -1,5 +1,9 @@
 # coding=utf-8
-import re, md5, string, datetime, time, codecs
+try:
+    from hashlib import md5
+except:
+    import md5
+import re, string, datetime, time, codecs
 from rfc822 import AddressList
 import sqlalchemy as sa
 from sqlalchemy.exceptions import SQLError
