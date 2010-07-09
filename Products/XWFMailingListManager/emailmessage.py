@@ -2,7 +2,7 @@
 try:
     from hashlib import md5
 except:
-    import md5
+    from md5 import md5
 import re, string, datetime, time, codecs
 from rfc822 import AddressList
 import sqlalchemy as sa

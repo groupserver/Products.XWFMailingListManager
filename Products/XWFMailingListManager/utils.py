@@ -2,7 +2,7 @@ import re
 try:
     from hashlib import md5
 except:
-    import md5
+    from md5 import md5
 
 def filter_command_string(s):
     parts = filter(None, map(lambda x: re.sub('\W', '', x), s.split()))
