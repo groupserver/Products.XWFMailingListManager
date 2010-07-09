@@ -21,22 +21,19 @@ class GSTopicTraversal(BrowserView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-        self.postId = None
-        self.post = None
         
     def publishTraverse(self, request, name):
         #
         # TODO: this would probably be a good spot to check if the
         # postId is valid, and if not redirect to a helpful message
         #
-        if not self.postId:
-            self.postId = name
+        if not self.request.has_key('postId'):
+            self.request['postId'] = name
         else:
             raise TraversalError, "Post ID was already specified"
         
         return self
-          
+        
     def __call__(self):
       return getMultiAdapter((self.context, self.request), name="gstopic")()
 
@@ -51,8 +48,8 @@ class GSTopicView(PageForm):
     
     def __init__(self, context, request):
         PageForm.__init__(self, context, request)
-        assert hasattr(self.context, 'postId')
-        self.postId = self.context.postId
+        assert self.request.has_key('postId')
+        self.postId = self.request['postId']
         assert self.postId, 'self.postID set to %s' % self.postId
         
         self.siteInfo = createObject('groupserver.SiteInfo', context )

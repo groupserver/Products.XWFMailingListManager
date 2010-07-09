@@ -14,17 +14,14 @@ class GSPostTraversal(BrowserView):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-        self.postId = None
-        self.post = None
         
         da = self.context.zsqlalchemy 
         assert da, 'No data-adaptor found'
         self.messageQuery = queries.MessageQuery(self.context, da)
         
     def publishTraverse(self, request, name):
-        if not self.postId:
-            self.postId = name
+        if not request.has_key('postId'):
+            self.request['postId'] = name
             
         return self
     
@@ -52,7 +49,7 @@ class GSPostView(BrowserView):
         assert da, 'No data-adaptor found'
         self.messageQuery = queries.MessageQuery(self.context, da)
           
-        self.postId = self.context.postId
+        self.postId = self.request['postId']
         self.post = self.messageQuery.post(self.postId)
           
         if self.post:
