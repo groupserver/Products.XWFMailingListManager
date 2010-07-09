@@ -86,7 +86,7 @@ def calculate_file_id(file_body, mime_type):
     #
     length = len(file_body)
     
-    md5_sum = md5.new()
+    md5_sum = md5()
     for c in file_body:
         md5_sum.update(c)
     
@@ -561,7 +561,7 @@ class EmailMessage(object):
 
     @property
     def md5_body(self):
-        return md5.new(self.body.encode('utf-8')).hexdigest()
+        return md5(self.body.encode('utf-8')).hexdigest()
     
     @property
     def topic_id(self):
@@ -570,7 +570,7 @@ class EmailMessage(object):
         # A topic_id for two posts will clash if
         #   - The compressedsubject, group ID and site ID are all identical
         items = self.compressed_subject + ':' + self.group_id + ':' + self.site_id
-        tid = md5.new(items.encode('utf-8')).hexdigest()
+        tid = md5(items.encode('utf-8')).hexdigest()
         
         return unicode(convert_int2b62(long(tid, 16)))
     
@@ -601,6 +601,6 @@ class EmailMessage(object):
         items = (self.topic_id + ':' + self.subject + ':' +
                   self.md5_body + ':' + self.sender + ':' + 
                   self.inreplyto + ':' + str(len_payloads))
-        pid = md5.new(items.encode('utf-8')).hexdigest()
+        pid = md5(items.encode('utf-8')).hexdigest()
         
         return unicode(convert_int2b62(long(pid, 16)))

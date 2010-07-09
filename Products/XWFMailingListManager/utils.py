@@ -30,7 +30,7 @@ def check_for_commands(msg, commands):
     
 def pin(email, hashkey):
     # returns the hex-digits for a randomized md5 of sender.
-    res = md5.new(email.lower() + hashkey).hexdigest()
+    res = md5(email.lower() + hashkey).hexdigest()
     
     return res[:8]
 
