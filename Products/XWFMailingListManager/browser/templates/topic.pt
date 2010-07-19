@@ -178,12 +178,14 @@
         src="/++resource++gsfileupload-20090622.js">&#160;</script>
       <script type="text/javascript"
         src="/++resource++popup_help-20071218.js">&#160;</script>
+      <script type="text/javascript"
+        src="/++resource++share-20100720.js">&#160;</script>
       <script type="text/javascript">
-          jQuery.noConflict();
-          jQuery(document).ready( function () {
-              GSPopupFormHelp.init('#add-to-topic');
-              GSFileUpload.init();
-          });
+        jQuery.noConflict();
+        jQuery(document).ready( function () {
+          GSPopupFormHelp.init('#add-to-topic');
+          GSFileUpload.init();
+        });
       </script>
     </tal:block>
   </body>
