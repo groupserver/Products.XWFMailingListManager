@@ -5,11 +5,6 @@ from zope.interface import implements, Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 from zope.component import adapts, provideAdapter, createObject
 from zope.app.pagetemplate import ViewPageTemplateFile
-try:
-    from zope.browserpage import metaconfigure
-except ImportError:
-    from zope.app.pagetemplate import metaconfigure
-from zope.contentprovider import tales
 from Products.XWFCore.cache import LRUCache, SimpleCache
 from Products.XWFCore.XWFUtils import getOption
 from emailbody import get_email_intro_and_remainder
@@ -134,16 +129,6 @@ class GSPostContentProvider(object):
                 pageTemplate = ViewPageTemplateFile(self.pageTemplateFileName)    
                 self.cookedTemplates.add(self.pageTemplateFileName, pageTemplate)
               
-                # --=mpj17=-- All explanations as to why I have to load
-                #   the "provider" TAL expression can be made to
-                #       Michael JasonSmith <mpj17@onlinegroups.net>
-                #   as I have /absolutely/ no clue.
-                try:
-                    metaconfigure.registerType('provider', 
-                      tales.TALESProviderExpression)
-                except:
-                    raise
-                                                
             self.request.debug = False
             r = pageTemplate(self, 
                              authorInfo=self.authorInfo,
