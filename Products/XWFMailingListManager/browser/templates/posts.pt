@@ -145,6 +145,11 @@
         </p>
       </tal:block>
     </div><!--hatom-->
+    
+    <tal:block metal:fill-slot="javascript">
+        <script type="text/javascript"
+                src="/++resource++sharebox-20100721.js">&#160;</script>
+    </tal:block>
   </body>
 </html>
 

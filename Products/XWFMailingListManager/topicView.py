@@ -15,6 +15,7 @@ from Products.GSGroupMember.groupmembership import user_admin_of_group
 from queries import MessageQuery
 from interfaces import IGSTopicView, IGSAddToTopicFields
 from addapost import add_a_post
+from Products.GSGroup.utils import is_public
     
 class GSTopicTraversal(BrowserView):
     implements(IPublishTraverse)
@@ -51,7 +52,7 @@ class GSTopicView(PageForm):
         assert self.request.has_key('postId')
         self.postId = self.request['postId']
         assert self.postId, 'self.postID set to %s' % self.postId
-        
+        self.isPublic = is_public(context)
         self.siteInfo = createObject('groupserver.SiteInfo', context )
         self.groupInfo = createObject('groupserver.GroupInfo', context)
         self.__userInfo = None

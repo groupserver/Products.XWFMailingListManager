@@ -53,12 +53,6 @@
       tal:condition="topicList">
       <h1>All posts in the topic
         <cite tal:content="view/topicName">This Topic</cite>
-        <a href="#" title="A short link to this topic" 
-          tal:define="topicName view/topicName;
-          lastPostId python:topicList[-1]['post_id']"
-          tal:attributes="href string:/r/topic/${lastPostId};
-          title string:A short link to all posts in ${topicName}"
-          class="shortLink rel-bookmark">(Short link)</a>
       </h1>
       <form tal:condition="view/userIsAdmin"
         class="adminTasks" id="toggleStickyTopic"
@@ -103,14 +97,21 @@
         <li class="topics">
           <a href="../topics.html">Topics in 
             <span tal:replace="view/groupInfo/name"/></a> 
-          </li>
-        </ul>
+        </li>
+      </ul>
       </div>
+
       <div tal:condition="python:len(topic) &gt; 1"
         tal:define="topic topicList"
         tal:replace="structure provider:groupserver.TopicSummary"/>
       <p tal:define="topic topicList"
         tal:replace="structure provider:groupserver.TopicIndex"/>
+      <div class="share-bar" tal:define="topicName view/topicName;
+                                         lastPostId python:topicList[-1]['post_id']"
+                             tal:attributes="title string:topicName;
+                                             public python:view.isPublic and 1 or 0;
+                                             href string:${view/siteInfo/url}/r/topic/${lastPostId}">&#160;</div>
+
       <div class="postList">
         <tal:block repeat="post topicList">
           <p tal:define="position repeat/post/number;
@@ -179,7 +180,7 @@
       <script type="text/javascript"
         src="/++resource++popup_help-20071218.js">&#160;</script>
       <script type="text/javascript"
-        src="/++resource++share-20100720.js">&#160;</script>
+        src="/++resource++sharebox-20100721.js">&#160;</script>
       <script type="text/javascript">
         jQuery.noConflict();
         jQuery(document).ready( function () {

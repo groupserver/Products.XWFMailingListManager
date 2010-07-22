@@ -1,5 +1,6 @@
 <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
   change_tz python:modules['Products.XWFCore.XWFUtils'].change_timezone;
+  isPublic python:modules['Products.GSGroup.utils'].is_public(context);
   post options/post;
   authorInfo options/authorInfo;
   authored python:options['authored'];
@@ -9,7 +10,7 @@
   filesMetadata options/filesMetadata">
   <div tal:attributes="class string:hentry ${options/cssClass}; 
     id string:post-${post/post_id};">
-    <p class="email-metadata">
+    <div class="email-metadata">
       <a class="topic entry-title" tal:condition="options/topicName"
         tal:attributes="href string:/r/topic/${post/post_id};"
         tal:content="options/topicName">A Topic</a>
@@ -32,21 +33,10 @@
           tal:attributes="title string:${d/isoformat}Z"
           tal:content="date">Today, Tomorrow, Timaru</abbr>
       </span>
-
-      <span class="share-links">
-          <span class="share-bar">
-              <strong>Share:</strong>
-              <a class="fb-link" title="Share on Facebook" 
-href="http://www.facebook.com/sharer.php?u=http://blarg.com/r/post/3PJgIKwgwKGOc3Jwtzx52P">&nbsp;</a>
-              <span class="email-link" title="A short link to this post">&nbsp;</span>
-          </span>
-          <span class="full-link">
-              <span class="full-link-box-help">You may copy and paste the link below into an email to link to this post:</span>
-              <input type="text" value="3PJgIKwgwKGOc3Jwtzx52P" readonly="0"/>
-          </span>
-      </span>
-
-    </p><!--email-metadata-->
+      <div class="share-bar" tal:attributes="href string:${view/siteInfo/url}/r/post/${post/post_id};
+                                             title string:${post/subject};
+                                             public python:isPublic and 1 or 0">&#160</div>
+    </div><!--email-metadata-->
     <div tal:condition="showPhoto"
       tal:define="user authorInfo/user"
       tal:replace="structure provider:groupserver.UserImage"/>

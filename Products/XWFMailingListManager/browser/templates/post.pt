@@ -121,6 +121,11 @@
         not by this page.
       </p>
     </tal:block>
+    
+    <tal:block metal:fill-slot="javascript">
+        <script type="text/javascript"
+                src="/++resource++sharebox-20100721.js">&#160;</script>
+    </tal:block>
   </body>
 </html>
 
