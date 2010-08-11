@@ -1,0 +1,285 @@
+.. sectnum
+
+========================
+Posting Acceptance Tests
+========================
+
+:Authors: Michael JasonSmith
+:Contact: Michael JasonSmith <mpj17@onlinegroups.net>
+:Date: 2010-08-11
+:Organization: `GroupServer.org`_
+:Copyright: This document is licensed under a
+  `Creative Commons Attribution-Share Alike 3.0 New Zealand License`_
+  by `OnlineGroups.Net`_.
+
+.. an acceptance test document for posting.
+..  2 group types
+.. × 4 user types
+.. × 2 moderation settings
+.. × 2 rate levels
+.. × 2 posting-member setting
+.. × 2 required attribute settings (site)
+.. × 2 required attribute settings (group)
+.. × 2 posting interfaces
+.. = 512 tests
+
+The posting acceptance tests are different for `discussion groups`_,
+`announcement groups`_ and `support groups`_. However, the `post
+appearance`_ is the same in all groups.
+
+Discussion Groups
+=================
+
+The posting behaviour is different for `the anonymous user`_, a `logged
+in non-member`_ and a `normal member`_.
+
+The Anonymous User
+------------------
+
+* When an anonymous user views the group:
+
+  + The link to start a new topic (on the *Topics* page) is hidden.
+
+    - The user is told that he or she cannot start a topic.
+    - A link to *Sign up* is presented.
+
+  +  The *Add to Topic* form on the *Topic* page is hidden from the
+     anonymous user.
+
+    - The user is told that he or she cannot add to the topic.
+    - A link to *Sign up* is presented.
+  
+* When an anonymous user sends an email to the group:
+
+  + A reply is sent, stating that there was an error.
+  + The message does not appear in the group.
+  + The rejection is logged (see `Ticket 453`_).
+
+Logged In Non-Member
+--------------------
+
+* When a logged in non-member views the group views the group:
+
+  + The link to start a new topic (on the *Topics* page) is hidden.
+
+    - The user is told that he or she cannot start a topic.
+    - A link to *Join* is presented.
+
+  + The *Add to Topic* form on the *Topic* page is hidden from the
+    anonymous user.
+
+    - The user is told that he or she cannot add to the topic.
+    - A link to *Join* is presented.
+  
+* When a non-member sends an email to the group:
+
+  + A reply is sent, stating that there was an error.
+  + The message does not appear in the group.
+  + The rejection is logged (see `Ticket 453`_).
+
+
+Normal Member
+-------------
+
+* The user can `post from the web`_ if the `reasons to block posting`_ 
+  are not met.
+  
+* When a member sends an email to the group:
+
+  + All group members receive the post, including the member who posted.
+  
+    - The ``Reply-to`` header is set to the email address of the group.
+    - If there were attachments, they are are stripped and replaced
+      with links to the group.
+    - All other information is unchanged.
+  
+  + People who are not members of the group do not get the post.
+  + The `post appearance`_ is correct.
+
+Post from the Web
+~~~~~~~~~~~~~~~~~
+
+* A link to the *Start a New Topic* page is shown from the *Topics* 
+  page. The form lists
+  
+  + The subject entry for the new topic
+  + The email address for the author (providing a selector if multiple
+    addresses are associated with the profile of the author)
+  + A message entry.
+  + A file entry. If a file is added 
+  
+    - The name of the added file appears where the entry was, and
+    - The file entry is blank.
+  
+* The *Add to Topic* form is shown at the bottom of every *Topic*
+  page. The form is the same as for *Start a New Topic* except that
+  there is no subject entry.
+  
+* When either form is submitted
+  
+  + The `post appearance`_ is correct. In addition the following
+    should hold.
+    
+    - A new topic should be started if a new subject line was added
+      to the *Start a New Topic* page.
+    - The post should be added to an existing topic if an existing
+      subject is added to the *Start a New Topic* page.
+    - The post should appear on same topic as the *Add to Topic* form 
+      appears on.    
+  
+  + An email is sent to all group members. 
+
+Reasons to Block Posting
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Below are the six reasons to block posting to a discussion group.
+
+* The group is closed
+* The posting member has no preferred email addresses
+* The posting member has hit the posting limit **and** the posting member
+  is a normal member. (*Administrators* are not subject to the rate 
+  limit.)
+* The posting member is explicitly blocked from posting
+* The posting member lacks the required_properties for the
+  
+  + Site
+  + Group
+
+Announcement Groups
+===================
+
+Announcement groups are similar to `discussion groups`_ except they
+have `posting members`_ as well as `non-posting members`_. The `post
+appearance`_ is the same.
+
+Posting Members
+---------------
+
+A posting member of an announcement group should see the same behaviour
+as a `normal member`_ of a discussion group.
+
+Non-Posting Members
+-------------------
+
+* The link to start a new topic (on the *Topics* page) is hidden.
+
+  + The user is told that he or she cannot start a topic.
+
+* The *Add to Topic* form on the *Topic* page is hidden.
+
+  + The user is told that he or she cannot add to the topic.
+
+* If the non-posting member sends an email to the announcement group
+  he or she is sent a message saying the message was not added to the
+  group.
+
+Support Groups
+==============
+
+There are fewer posting restrictions to a support group. 
+
+* For members support groups behave like `discussion groups`_.
+* Non-members
+  
+  + Can post to a support group using email, but
+  + *Cannot* post to a support group using the web (see `Ticket 171`_).
+
+* Blocked members can post to a support group (see `Ticket 459`_).
+* The `post appearance`_ should be the same as all other groups.
+
+Post Appearance
+===============
+
+For most pages the `basic appearance`_ of posts is the same. However the
+`Topic page`_, `Posts page`_, `Summary of Posts page`_, `Single Post
+page`_ and `Web feed`_ have differences.
+
+Basic Appearance
+----------------
+
+* The subject line of the post is stripped of all 
+
+  + ``Re:``
+  + ``Fwd:``
+  + ``Fw:`` and
+  + ``[]`` sequences.
+
+* The post metadata shows
+
+  + When the post was made
+  + Who made the post
+  + A profile photo of the person who made the post is shown if the 
+    person has one.
+    
+* The post text is split in two.
+
+  #. The first half shows all the text before the signature and bottom
+     quoting. The first half is shown by default.
+  #. The second half is hidden by default. When open it shows the
+     signature and bottom quoting (see `Ticket 456`_).
+
+* The post links to all the files that were attached to it.
+  
+Topic Page
+----------
+  
+* A post appears on the *Topic* page with the same subject line.
+* If there is only one post in the topic the *Summary* is hidden.
+* If there are multiple posts:
+
+  - The posts are arranged from oldest to newest.
+  - The *Summary* lists the number of posts, the number of authors, and
+    links to the latest post.
+
+Posts Page
+----------
+
+* The post appears on the *Posts* page.
+* The post has its subject line included in its metadata.
+* The post has the same subject line as the `Topic page` that it 
+  appears on.
+* The post links to the Topic page.
+
+Summary of Posts Page
+---------------------
+
+* The post appears on the *Summary of Posts* page.
+* The following meatadata appears:
+  
+  + Author (which links to the profile page of the author)
+  + Subject (which links to the `single post page`_)
+  + Files (which has an icon for every file) and
+  + Date.
+
+Single Post Page
+----------------
+
+* The *Single Post* page links to 
+
+  + The topic
+  + The first post in the topic
+  + The last post in the topic
+  + The previous post in the topic
+  + The next post in the topic
+
+Web Feed
+--------
+
+* The web feed shows the same posts as the `Posts page`.
+* Each post links to the `Single Post page` for the post.
+* Each post has a single-line summary.
+* Each post shows only the first half of the message (see 
+  `Basic Appearance`_.)
+* Each post links to the attached files.
+
+.. Resources
+.. ---------
+..
+.. _GroupServer.org: http://groupserver.org
+.. _Creative Commons Attribution-Share Alike 3.0 New Zealand License:
+   http://creativecommons.org/licenses/by-sa/3.0/nz/
+.. _OnlineGroups.Net: http://onlinegroups.net
+.. _Ticket 453: https://projects.iopen.net/groupserver/ticket/453
+.. _Ticket 459: https://projects.iopen.net/groupserver/ticket/459
+.. _Ticket 456: https://projects.iopen.net/groupserver/ticket/456
+.. _Ticket 171: https://projects.iopen.net/groupserver/ticket/171
