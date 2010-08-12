@@ -272,6 +272,23 @@ Web Feed
   `Basic Appearance`_.)
 * Each post links to the attached files.
 
+Todo
+====
+
+Script this test case up using `Selenium`_. Random post content is
+needed, but the ``fortune`` programme is good for this::
+  
+  $ fortune -n 80 -s # A short quote for the subject line.
+  $ fortune -n 80 -l # A long quote for the body.
+
+Useful packages?
+----------------
+
+* `collective.recipe.seleniumrc <http://pypi.python.org/pypi/collective.recipe.seleniumrc>`_
+* `the selenium package <http://pypi.python.org/pypi/selenium>`_
+* `gocept.selenium 0.6 <http://pypi.python.org/pypi/gocept.selenium>`_
+* `zc.selenium <http://pypi.python.org/pypi/zc.selenium>`_
+
 .. Resources
 .. ---------
 ..
@@ -283,3 +300,5 @@ Web Feed
 .. _Ticket 459: https://projects.iopen.net/groupserver/ticket/459
 .. _Ticket 456: https://projects.iopen.net/groupserver/ticket/456
 .. _Ticket 171: https://projects.iopen.net/groupserver/ticket/171
+.. _Selenium: http://seleniumhq.org/
+
