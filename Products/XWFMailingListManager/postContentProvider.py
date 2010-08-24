@@ -143,7 +143,8 @@ class GSPostContentProvider(object):
                                 context=self.context, 
                                 siteName = self.siteInfo.get_name(), 
                                 siteURL = self.siteInfo.get_url(), 
-                                groupId = self.groupInfo.get_id())
+                                groupId = self.groupInfo.get_id(),
+                                isPublic = self.isPublic)
             self.cookedResult.add(self.cacheKey, r)
           
         return r

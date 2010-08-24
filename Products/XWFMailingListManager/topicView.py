@@ -52,9 +52,12 @@ class GSTopicView(PageForm):
         assert self.request.has_key('postId')
         self.postId = self.request['postId']
         assert self.postId, 'self.postID set to %s' % self.postId
-        self.isPublic = is_public(context)
+        
         self.siteInfo = createObject('groupserver.SiteInfo', context )
         self.groupInfo = createObject('groupserver.GroupInfo', context)
+        
+        self.isPublic = is_public(self.groupInfo.groupObj)
+        
         self.__userInfo = None
         self.__userPostingInfo = None
         self.__messageQuery = None

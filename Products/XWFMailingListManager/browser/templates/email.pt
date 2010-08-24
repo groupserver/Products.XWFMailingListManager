@@ -1,7 +1,7 @@
 <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
   change_tz python:modules['Products.XWFCore.XWFUtils'].change_timezone;
-  isPublic python:modules['Products.GSGroup.utils'].is_public(context);
   post options/post;
+  isPublic options/isPublic;
   authorInfo options/authorInfo;
   authored python:options['authored'];
   showPhoto options/showPhoto;
