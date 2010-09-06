@@ -7,6 +7,7 @@ from zope.component import createObject
 import zope.viewlet.interfaces, zope.contentprovider.interfaces 
 import DocumentTemplate, Products.XWFMailingListManager
 import Products.GSContent, Products.XWFCore.XWFUtils,  queries
+from Products.GSGroup.utils import is_public
 
 import logging
 log = logging.getLogger('Products.XWFMailingList.postsView')
@@ -20,6 +21,8 @@ class GSPostsView(Products.Five.BrowserView):
           self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
           self.groupInfo = createObject('groupserver.GroupInfo', context)
            
+          self.isPublic = is_public(self.groupInfo.groupObj)
+          
           self.start = int(self.request.form.get('start', 0))
           self.end = int(self.request.form.get('end', 20))
           # Swap the start and end, if necessary

@@ -29,7 +29,8 @@
       <link rel="help" 
         tal:attributes="title string:${view/siteInfo/name} Help;
         href string:${view/siteInfo/url}/help" />
-      <meta name="description" tal:attributes="content python:view.topic[0]['summary']" />
+      <meta name="description"
+            tal:attributes="content python:view.topic[0]['summary']" />
     </tal:block>
   </head>
   

@@ -46,8 +46,8 @@ class IGSPostContentProvider(Interface):
     isPublic = Bool(title=u"Is the group public?",
                     description=u"""Whether or not the group in which this
                       post is displayed is public""",
-                    default=False)
-
+                    required=True)
+    
     pageTemplateFileName = Text(title=u"Page Template File Name",
                                   description=u"""The name of the ZPT file
                                   that is used to render the post.""",

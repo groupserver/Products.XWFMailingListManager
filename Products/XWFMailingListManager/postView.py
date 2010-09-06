@@ -8,6 +8,7 @@ from zope.publisher.interfaces import IPublishTraverse
 from zope.component import getMultiAdapter
 
 import queries
+from Products.GSGroup.utils import is_public
 
 class GSPostTraversal(BrowserView):
     implements(IPublishTraverse)
@@ -42,6 +43,8 @@ class GSPostView(BrowserView):
 
         self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
         self.groupInfo = createObject('groupserver.GroupInfo', context)
+        
+        self.isPublic = is_public(self.groupInfo.groupObj)
          
         self.archive = context.messages
             

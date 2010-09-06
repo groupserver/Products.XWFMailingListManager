@@ -110,7 +110,8 @@
         </ul>
       </div>
       
-      <p tal:define="post python:view.get_post()"
+      <p tal:define="post view/get_post;
+                     isPublic view/isPublic"
         tal:replace="structure provider:groupserver.Post">
         The email message is rendered by the Post content provider,
         not by this page.
