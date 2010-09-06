@@ -13,12 +13,6 @@
       <span tal:replace="python:view.siteInfo.get_name()"/>
     </title>
     
-    <meta name="title" content="Standard Template for a Single Post"/>
-    <meta name="author" content="Michael JasonSmith" />
-    <meta name="description" 
-      content="This template is used to render a single post to GroupServer" />
-    <meta name="date" content="2006-10-25"/>
-    
     <tal:block metal:fill-slot="metadata">
       <!-- The documents related to this post -->
       <link rel="next" 
@@ -52,6 +46,7 @@
       <link rel="help" 
         tal:attributes="title python:u'%s Help' % view.siteInfo.get_name();
         href python:u'%s/help' % view.siteInfo.get_url()" />
+      <meta name="description" tal:attributes="content python:view.get_post()['summary']"/>
       </tal:block>
       
       <link rel="bookmark" title="Group Homepage" href="#"

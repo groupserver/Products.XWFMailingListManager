@@ -12,6 +12,12 @@ def to_unicode(s):
 
     return retval    
 
+def summary(s):
+    if not isinstance(s, unicode):
+        s = unicode(s, 'utf-8')
+    
+    return s[:160]
+
 class DigestQuery(object):
     def __init__(self, context, da):
         self.context = context
@@ -329,7 +335,8 @@ class MessageQuery(object):
                         'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'], 
-                        'body': to_unicode(x['body']), 
+                        'body': to_unicode(x['body']),
+                        'summary': summary(x['body']), 
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
                         'has_attachments': x['has_attachments']} for x in r ]
@@ -571,7 +578,8 @@ class MessageQuery(object):
                         'author_id': x['user_id'],
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
-                        'body': to_unicode(x['body'])} for x in r ]
+                        'body': to_unicode(x['body']),
+                        'summary': summary(x['body'])} for x in r ]
         return retval
 
     
@@ -606,7 +614,8 @@ class MessageQuery(object):
                     'author_id': row['user_id'],
                     'files_metadata': row['has_attachments'] and 
                                       self.files_metadata(row['post_id']) or [],
-                    'body': to_unicode(row['body'])}
+                    'body': to_unicode(row['body']),
+                    'summary': summary(row['body'])}
         
         return None
 

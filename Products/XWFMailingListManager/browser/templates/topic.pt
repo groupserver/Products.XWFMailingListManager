@@ -29,6 +29,7 @@
       <link rel="help" 
         tal:attributes="title string:${view/siteInfo/name} Help;
         href string:${view/siteInfo/url}/help" />
+      <meta name="description" tal:attributes="content python:view.topic[0]['summary']" />
     </tal:block>
   </head>
   
@@ -108,7 +109,7 @@
         tal:replace="structure provider:groupserver.TopicIndex"/>
       <div class="share-bar" tal:define="topicName view/topicName;
                                          lastPostId python:topicList[-1]['post_id']"
-                             tal:attributes="title string:topicName;
+                             tal:attributes="title string:${topicName};
                                              public python:view.isPublic and 1 or 0;
                                              href string:${view/siteInfo/url}/r/topic/${lastPostId}">&#160;</div>
 

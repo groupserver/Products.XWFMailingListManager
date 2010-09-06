@@ -496,7 +496,7 @@ class EmailMessage(object):
             if item['filename'] == '' and item['subtype'] == 'html':
                 return unicode(item['payload'], self.encoding, 'ignore')
         return ''
-
+    
     @property
     def subject(self):
         if self.__subject == None:
