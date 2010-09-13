@@ -11,7 +11,6 @@
 #
 import random, smtplib, os, re, time, transaction
 from cgi import escape
-    
 from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
 from App.class_init import InitializeClass
@@ -26,6 +25,7 @@ from Products.GSSearch.topicdigestview import TopicDigestView
 from Products.GSProfile.utils import create_user_from_email, \
   send_verification_message
 from Products.GSGroup.joining import GSGroupJoining
+from gs.group.member.leave.leaver import GroupLeaver
 
 import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
@@ -1395,21 +1395,14 @@ class XWFMailingList(Folder):
         retval = 0    
         user = self.acl_users.get_userByEmail(email)
         if user:
+            site = getattr(self.site_root().Content, siteId)
+            groupId = self.getId()
+            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
             userInfo = createObject('groupserver.UserFromId', 
                                 self.site_root(), user.getId())
-            siteId = self.getProperty('siteId', '')
-            groupId = self.getId()
-            site = getattr(self.site_root().Content, siteId)
-            siteInfo  = createObject('groupserver.SiteInfo', site)
-            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-
-            m = u'%s (%s) on %s (%s) unsubscribing %s (%s) <%s>'%\
-              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
-               userInfo.name, userInfo.id, email)
-            log.info(m)
-
-            user.del_groupWithNotification('%s_member' % self.getId())
-            retval = 1
+            leaver = GroupLeaver(groupInfo, userInfo)
+            leaver.removeMember()
+            retval = int(not(leaver.isMember))
         return retval
     
     def get_mailUserId(self, addr):
