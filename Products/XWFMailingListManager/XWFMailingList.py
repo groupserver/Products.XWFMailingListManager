@@ -1395,11 +1395,12 @@ class XWFMailingList(Folder):
         retval = 0    
         user = self.acl_users.get_userByEmail(email)
         if user:
+            siteId = self.getProperty('siteId', '')
             site = getattr(self.site_root().Content, siteId)
             groupId = self.getId()
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-            userInfo = createObject('groupserver.UserFromId', 
-                                self.site_root(), user.getId())
+            userInfo = \
+              createObject('groupserver.UserFromId', self.site_root(), user.getId())
             leaver = GroupLeaver(groupInfo, userInfo)
             leaver.removeMember()
             retval = int(not(leaver.isMember))
