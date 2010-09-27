@@ -359,8 +359,9 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         try:
             mlist = self.get_list(groupId)
         except AttributeError:
-            mlist = None
-            return False
+            m = 'Bounce detection failure: no list for group id %s' % groupId
+            log.warn(m)
+            return m
         
         siteId = mlist.getProperty('siteId', '')
         group = get_group_by_siteId_and_groupId(mlist, siteId, groupId)
@@ -381,7 +382,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         bq.addBounce(userInfo.id, groupInfo.id, siteInfo.id, email)
         auditor = BounceHandlingAuditor(context, userInfo, groupInfo, siteInfo)
         auditor.info(BOUNCE, email)
-        
 
         doNotification = False
         now = datetime.datetime.now()
@@ -423,8 +423,13 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
               'groupInfo'     : groupInfo,
               'siteInfo'      : siteInfo
             }
-            notifyUser = NotifyUser(userInfo.user, siteInfo)
-            notifyUser.send_notification(nType, groupInfo.id, nDict, addresses)
+            try:
+                notifyUser = NotifyUser(userInfo.user, siteInfo)
+                notifyUser.send_notification(nType, groupInfo.id, nDict, addresses)
+            except:
+                m = 'Failed to send %s notification to %s' %\
+                  (nType, addresses)
+                log.warn(m)
         return True
                 
     security.declareProtected('Upgrade objects', 'upgrade')
