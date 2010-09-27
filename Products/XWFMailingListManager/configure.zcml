@@ -105,4 +105,9 @@
   <utility component=".emailbody.wrap_message"
            provides=".interfaces.IWrapEmail" />
 
+  <utility 
+    factory=".bounceaudit.BounceHandlingAuditEventFactory"
+    name="groupserver.BounceHandling"
+    permission="zope.Public" />
+
 </configure>

@@ -5,6 +5,8 @@ import datetime
 import logging
 log = logging.getLogger("XMLMailingListManager.queries") #@UndefinedVariable
 
+LAST_NUM_DAYS = 60
+
 def to_unicode(s):
     retval = s
     if not isinstance(s, unicode):
@@ -762,3 +764,35 @@ class MessageQuery(object):
         assert type(retval) == long, 'retval is %s' % type(retval)
         return retval
         
+class BounceQuery(object):
+    
+    def __init__(self, context, da):
+        self.bounceTable = da.createTable('bounce')
+
+    def addBounce(self, groupId, siteId, userId, email):
+        bt = self.bounceTable
+        i = bt.insert()
+        now = datetime.datetime.now()
+        i.execute(date=now, user_id=userId, group_id=groupId, 
+                  site_id=siteId, email=email)
+        
+    def previousBounces(self, email):
+        """ Checks for the number of bounces from this email address
+            in the past LAST_NUM_DAYS. 
+        """
+        bt = self.bounceTable
+        now = datetime.datetime.now()
+        s = bt.select()
+        s.append_whereclause(bt.c.email==email)
+        s.append_whereclause(bt.c.date > (now-datetime.timedelta(LAST_NUM_DAYS)))
+        s.order_by(sa.desc(bt.c.date))
+        
+        r = s.execute()
+        bounces = []
+        if r.rowcount:
+            for row in r:
+                bounceDate = row['date'].strftime("%Y%m%d")
+                if bounceDate not in bounces:
+                    bounces.append(bounceDate)
+        return bounces
+

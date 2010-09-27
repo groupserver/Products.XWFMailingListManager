@@ -6,6 +6,7 @@
 # You MUST follow the rules in README_STYLE before checking in code
 # to the head. Code which does not follow the rules will be rejected.  
 #
+from zope.component import createObject
 from AccessControl import ClassSecurityInfo
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
@@ -19,10 +20,16 @@ from Products.XWFCore.cache import SimpleCache
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 
-from Products.XWFMailingListManager.queries import MessageQuery, DigestQuery
+from Products.XWFMailingListManager.queries import MessageQuery, DigestQuery 
+from Products.XWFMailingListManager.queries import BounceQuery, LAST_NUM_DAYS
+from bounceaudit import BounceHandlingAuditor, BOUNCE, DISABLE
 
 import os, time, logging, StringIO, traceback
 from Products.CustomUserFolder.queries import UserQuery
+from Products.CustomUserFolder.userinfo import IGSUserInfo
+from Products.GSGroup.groupInfo import IGSGroupInfo
+from gs.profile.notify.interfaces import IGSNotifyUser
+from gs.profile.notify.notifyuser import NotifyUser
 import sqlalchemy as sa
 import datetime
 
@@ -346,95 +353,78 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             except:
                 pass
 
-    def processBounce(self, group_id, email):
+    def processBounce(self, groupId, email):
         """ Process a bounce for a particular list.
-        
         """
-        da = self.site_root().zsqlalchemy
-        bounceTable = da.createTable('bounce')
-        bt_insert = bounceTable.insert()
-        bt_select = bounceTable.select()
+        try:
+            mlist = self.get_list(groupId)
+        except AttributeError:
+            mlist = None
+            return False
         
-        now = datetime.datetime.now()        
+        siteId = mlist.getProperty('siteId', '')
+        group = get_group_by_siteId_and_groupId(mlist, siteId, groupId)
+        groupInfo = IGSGroupInfo(group)
+        siteInfo = createObject('groupserver.SiteInfo', group)
+        context = groupInfo.groupObj
 
-        bt_select.append_whereclause(bounceTable.c.email==email)
-        bt_select.append_whereclause(bounceTable.c.date > (now-datetime.timedelta(60)))
-        bt_select.order_by(sa.desc(bounceTable.c.date))
-        
-        r = bt_select.execute()
-        previous_bounces = []
-        if r.rowcount:
-            for row in r:
-                bounce_date = row['date'].strftime("%Y%m%d")
-                if bounce_date not in previous_bounces:
-                    previous_bounces.append(bounce_date)
-        
         user = self.acl_users.get_userByEmail(email)
         if not user:
             m = 'Bounce detection failure: no user with email %s' % email
-            log.info(m)
+            log.warn(m)
             return m
+        userInfo = IGSUserInfo(user)
 
-        user_id = user.getId()
-        log.info('Bounce detected for %s (%s) in group %s' % (user_id, email, group_id))
+        da = context.zsqlalchemy
+        bq = BounceQuery(context, da)
+        previousBounces = bq.previousBounces(email)
+        bq.addBounce(userInfo.id, groupInfo.id, siteInfo.id, email)
+        auditor = BounceHandlingAuditor(context, userInfo, groupInfo, siteInfo)
+        auditor.info(BOUNCE, email)
         
-        # insert into the bounce table
-        bt_insert.execute(date=now, group_id=group_id,
-                          site_id='', email=email, user_id=user_id)
 
-        do_notification = False
-        bounce_date = now.strftime("%Y%m%d")
-        if bounce_date not in previous_bounces:
-            previous_bounces.append(bounce_date)
-            do_notification=True
+        doNotification = False
+        now = datetime.datetime.now()
+        bounceDate = now.strftime("%Y%m%d")
+        if bounceDate not in previousBounces:
+            previousBounces.append(bounceDate)
+            doNotification = True
 
-        log.info("Detected %s bounces on unique days in last 60 days" % len(previous_bounces))
-
-        addresses = map(lambda e: e.lower(), user.get_verifiedEmailAddresses())
+        addresses = map(lambda e: e.lower(), userInfo.user.get_verifiedEmailAddresses())
         try:
             addresses.remove(email.lower())
         except ValueError:
-            log.info('%s (%s) was already unverified' % (user_id, email))
-            do_notification = False
-        
-        notification_type = 'bounce_detection'
-        # disable address by unverifying after 5 bounces
-        if len(previous_bounces) >= 5:
-            # TODO: might want to clear the bounce table at this point perhaps
-            uq = UserQuery(user, da)
-            uq.unverify_userEmail(email)
-            log.info('Unverifying %s (%s)' % (user_id, email))
-            notification_type = 'disabled_email'            
-        
-        if do_notification:
-            if addresses:
-                n_dict = {}
-                try:
-                    list_object = self.get_list(group_id)
-                except AttributeError:
-                    list_object = None
+            log.info('%s (%s) was already unverified' % (userInfo.id, email))
+            doNotification = False
+            # Why not return here?
 
-                if list_object:
-                    site_id = list_object.getProperty('siteId', '')
-                    site = get_site_by_id(list_object, site_id)
-                    group = get_group_by_siteId_and_groupId(list_object, site_id, group_id)
-                    support_email = get_support_email(group, site_id)
-                    
-                    n_dict =  {
-                                  'bounced_email' : email,
-                                  'memberId'      : user.getId(),
-                                  'groupId'       : group_id,
-                                  'groupName'     : group.title_or_id(),
-                                  'siteId'        : site_id,
-                                  'siteName'      : site.title_or_id(),
-                                  'canonical'     : getOption(group, 'canonicalHost'),
-                                  'supportEmail'  : support_email
-                              }
-                try:
-                    user.send_notification(notification_type, group_id, n_dict=n_dict, email_only=addresses)
-                except:
-                    pass
-                
+        nType = 'bounce_detection'        
+        numBounces = len(previousBounces)
+        # After 5 bounces, disable address by unverifying
+        if numBounces >= 5:
+            # TODO: might want to clear the bounce table at this point perhaps
+            uq = UserQuery(userInfo.user, da)
+            uq.unverify_userEmail(email)
+            stats = '%d;%d' % (numBounces, LAST_NUM_DAYS)
+            auditor.info(DISABLE, email, stats)
+            nType = 'disabled_email'
+        
+        if doNotification and addresses:
+            nDict =  {
+              'bounced_email' : email,
+              'memberId'      : userInfo.id,
+              'groupId'       : groupInfo.id,
+              'groupName'     : groupInfo.name,
+              'siteId'        : siteInfo.id,
+              'siteName'      : siteInfo.name,
+              'canonical'     : getOption(groupInfo.groupObj, 'canonicalHost'),
+              'supportEmail'  : get_support_email(groupInfo.groupObj, siteInfo.id),
+              'userInfo'      : userInfo,
+              'groupInfo'     : groupInfo,
+              'siteInfo'      : siteInfo
+            }
+            notifyUser = NotifyUser(userInfo.user, siteInfo)
+            notifyUser.send_notification(nType, groupInfo.id, nDict, addresses)
         return True
                 
     security.declareProtected('Upgrade objects', 'upgrade')
