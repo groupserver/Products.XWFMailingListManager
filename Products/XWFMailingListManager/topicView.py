@@ -3,6 +3,7 @@ try:
     from five.formlib.formbase import PageForm
 except ImportError:
     from Products.Five.formlib.formbase import PageForm
+from zope.security.interfaces import Unauthorized
 from zope.component import getMultiAdapter, createObject
 from zope.interface import implements
 from zope.traversing.interfaces import TraversalError
@@ -221,6 +222,9 @@ class GSTopicView(PageForm):
     def topic(self):
         if ((self.__topic == None) or self.status):
             self.__topic = self.messageQuery.topic_posts(self.topicId)
+            if self.__topic[0]['group_id'] != self.groupInfo.id:
+                raise Unauthorized('You are not authorized to access '\
+                    'this topic in the group %s' % self.groupInfo.name)
         assert type(self.__topic) == list
         assert len(self.__topic) >= 1, \
           "No posts in the topic %s" % self.topicId
