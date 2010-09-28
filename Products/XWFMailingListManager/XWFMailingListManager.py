@@ -21,7 +21,7 @@ from Products.XWFCore.cache import SimpleCache
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
 
 from Products.XWFMailingListManager.queries import MessageQuery, DigestQuery 
-from Products.XWFMailingListManager.queries import BounceQuery, LAST_NUM_DAYS
+from Products.XWFMailingListManager.queries import BounceQuery
 from bounceaudit import BounceHandlingAuditor, BOUNCE, DISABLE
 
 import os, time, logging, StringIO, traceback
@@ -371,14 +371,14 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
 
         user = self.acl_users.get_userByEmail(email)
         if not user:
-            m = 'Bounce detection failure: no user with email %s' % email
+            m = 'Bounce detection failure: no user with email <%s>' % email
             log.warn(m)
             return m
         userInfo = IGSUserInfo(user)
 
         da = context.zsqlalchemy
         bq = BounceQuery(context, da)
-        previousBounces = bq.previousBounces(email)
+        previousBounceDates, daysChecked = bq.previousBounceDates(email)
         bq.addBounce(userInfo.id, groupInfo.id, siteInfo.id, email)
         auditor = BounceHandlingAuditor(context, userInfo, groupInfo, siteInfo)
         auditor.info(BOUNCE, email)
@@ -386,26 +386,27 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         doNotification = False
         now = datetime.datetime.now()
         bounceDate = now.strftime("%Y%m%d")
-        if bounceDate not in previousBounces:
-            previousBounces.append(bounceDate)
+        if bounceDate not in previousBounceDates:
+            previousBounceDates.append(bounceDate)
             doNotification = True
 
         addresses = map(lambda e: e.lower(), userInfo.user.get_verifiedEmailAddresses())
         try:
             addresses.remove(email.lower())
         except ValueError:
-            log.info('%s (%s) was already unverified' % (userInfo.id, email))
-            doNotification = False
-            # Why not return here?
+            m = u'%s (%s) <%s> was already unverified' %\
+                 (userInfo.name, userInfo.id, email)
+            m.encode('ascii', 'ignore')
+            log.info(m)
+            return True
 
         nType = 'bounce_detection'        
-        numBounces = len(previousBounces)
-        # After 5 bounces, disable address by unverifying
-        if numBounces >= 5:
-            # TODO: might want to clear the bounce table at this point perhaps
+        numBounceDays = len(previousBounceDates)
+        # After 5 bounces on unique days, disable address by unverifying
+        if numBounceDays >= 5:
             uq = UserQuery(userInfo.user, da)
             uq.unverify_userEmail(email)
-            stats = '%d;%d' % (numBounces, LAST_NUM_DAYS)
+            stats = '%d;%d' % (numBounceDays, daysChecked)
             auditor.info(DISABLE, email, stats)
             nType = 'disabled_email'
         

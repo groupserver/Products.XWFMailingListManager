@@ -111,21 +111,21 @@ class DisableEvent(BasicAuditEvent):
         BasicAuditEvent.__init__(self, context, id, DISABLE, d, 
           None, userInfo, siteInfo, groupInfo, instanceDatum, 
           supplementaryDatum, SUBSYSTEM)
-        self.__numBounces = self.__numDays = None
+        self.__numBounceDays = self.__numDaysChecked = None
     
     @property
-    def numBounces(self):
-        if self.__numBounces == None:
-            self.__numBounces = \
+    def numBounceDays(self):
+        if self.__numBounceDays == None:
+            self.__numBounceDays = \
               int(self.supplementaryDatum.split(';')[0])
-        return self.__numBounces
+        return self.__numBounceDays
     
     @property
-    def numDays(self):
-        if self.__numDays == None:
-            self.__numDays = \
+    def numDaysChecked(self):
+        if self.__numDaysChecked == None:
+            self.__numDaysChecked = \
               int(self.supplementaryDatum.split(';')[1])
-        return self.__numDays
+        return self.__numDaysChecked
         
     def __str__(self):
         """ Display the event as a string, in such a way that it
@@ -134,7 +134,7 @@ class DisableEvent(BasicAuditEvent):
         retval = u'Disabled address <%s> for %s (%s). (Detected '\
           u'%d bounces on unique days in the last %d days.)' %\
           (self.instanceDatum, self.instanceUserInfo.name, 
-           self.instanceUserInfo.id, self.numBounces, self.numDays)
+           self.instanceUserInfo.id, self.numBounceDays, self.numDaysChecked)
         return retval.encode('ascii', 'ignore')
     
     @property
@@ -145,8 +145,8 @@ class DisableEvent(BasicAuditEvent):
         cssClass = u'audit-event groupserver-bounce-event-%s' % \
           self.code
         retval = u'<span class="%s">Email address <code class="email">%s</code> '\
-          u'disabled after %d failed deliveries in the last %d days.' %\
-          (cssClass, self.instanceDatum, self.numBounces, self.numDays)
+          u'disabled after deliveries failed on %d different days in the last %d days.' %\
+          (cssClass, self.instanceDatum, self.numBounceDays, self.numDaysChecked)
         retval = u'%s (%s)' % \
           (retval, munge_date(self.context, self.date))
         return retval

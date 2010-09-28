@@ -1,6 +1,9 @@
 from sqlalchemy.exceptions import NoSuchTableError
 import sqlalchemy as sa
 import datetime
+from pytz import UTC
+from bounceaudit import SUBSYSTEM, DISABLE
+from Products.XWFCore.XWFUtils import change_timezone
 
 import logging
 log = logging.getLogger("XMLMailingListManager.queries") #@UndefinedVariable
@@ -768,23 +771,30 @@ class BounceQuery(object):
     
     def __init__(self, context, da):
         self.bounceTable = da.createTable('bounce')
+        self.auditEventTable = da.createTable('audit_event')
 
-    def addBounce(self, groupId, siteId, userId, email):
+    def addBounce(self, userId, groupId, siteId, email):
         bt = self.bounceTable
         i = bt.insert()
         now = datetime.datetime.now()
         i.execute(date=now, user_id=userId, group_id=groupId, 
                   site_id=siteId, email=email)
         
-    def previousBounces(self, email):
+    def previousBounceDates(self, email):
         """ Checks for the number of bounces from this email address
-            in the past LAST_NUM_DAYS. 
+            in the past LAST_NUM_DAYS, or since the address was last disabled. 
         """
+        now = datetime.datetime.now(UTC)
+        dateToCheck = (now-datetime.timedelta(LAST_NUM_DAYS))
+        lastDisabledDate = self.lastDisabledDate(email).replace(tzinfo=UTC)
+        if lastDisabledDate and (lastDisabledDate > dateToCheck):
+            dateToCheck = lastDisabledDate
+        daysChecked = (now.date() - dateToCheck.date()).days
+        
         bt = self.bounceTable
-        now = datetime.datetime.now()
         s = bt.select()
         s.append_whereclause(bt.c.email==email)
-        s.append_whereclause(bt.c.date > (now-datetime.timedelta(LAST_NUM_DAYS)))
+        s.append_whereclause(bt.c.date > dateToCheck)
         s.order_by(sa.desc(bt.c.date))
         
         r = s.execute()
@@ -794,5 +804,26 @@ class BounceQuery(object):
                 bounceDate = row['date'].strftime("%Y%m%d")
                 if bounceDate not in bounces:
                     bounces.append(bounceDate)
-        return bounces
+        return (bounces, daysChecked)
 
+    def lastDisabledDate(self, email):
+        """ Checks for the last time this address was disabled, if ever.
+        """
+        at = self.auditEventTable
+#        SELECT event_date
+#        FROM audit_event 
+#        WHERE subsystem = 'groupserver.BounceHandling' AND event_code = '2'
+#          AND instance_user_id = userId  # Opted to leave this out for reasons of efficiency.
+#          AND instance_datum = email
+#        ORDER BY event_date DESC;
+        s = sa.select([at.c.event_date])
+        s.append_whereclause(at.c.subsystem==SUBSYSTEM)
+        s.append_whereclause(at.c.event_code==DISABLE)
+        s.append_whereclause(at.c.instance_datum==email)
+        s.order_by(sa.desc(at.c.event_date))
+        
+        retval = None        
+        r = s.execute().fetchone()
+        if r:
+            retval = r['event_date']
+        return retval
