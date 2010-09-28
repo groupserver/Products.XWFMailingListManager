@@ -573,6 +573,8 @@ class MessageQuery(object):
         retval = []
         if r.rowcount:
             retval = [ {'post_id': x['post_id'], 
+                        'site_id': x['site_id'],
+                        'group_id': x['group_id'],
                         'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'],
@@ -761,4 +763,4 @@ class MessageQuery(object):
         retval = r.scalar()
         assert type(retval) == long, 'retval is %s' % type(retval)
         return retval
-        
+

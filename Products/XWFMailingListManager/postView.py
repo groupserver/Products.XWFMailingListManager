@@ -1,12 +1,12 @@
-from interfaces import IGSPostView
+# coding=utf-8
+from zope.security.interfaces import Unauthorized
 from zope.interface import implements
 from zope.component import createObject
-from Products.Five import BrowserView
-import Products.GSContent
-
 from zope.publisher.interfaces import IPublishTraverse
 from zope.component import getMultiAdapter
-
+from Products.Five import BrowserView
+from Products.GSContent.view import GSSiteInfo
+from interfaces import IGSPostView
 import queries
 from Products.GSGroup.utils import is_public
 
@@ -41,7 +41,7 @@ class GSPostView(BrowserView):
         self.context = context
         self.request = request
 
-        self.siteInfo = Products.GSContent.view.GSSiteInfo( context )
+        self.siteInfo = GSSiteInfo( context )
         self.groupInfo = createObject('groupserver.GroupInfo', context)
         
         self.isPublic = is_public(self.groupInfo.groupObj)
@@ -54,11 +54,15 @@ class GSPostView(BrowserView):
           
         self.postId = self.request['postId']
         self.post = self.messageQuery.post(self.postId)
-          
+        
         if self.post:
-            self.relatedPosts = self.messageQuery.topic_post_navigation(self.postId)
+            self.relatedPosts = self.messageQuery.topic_post_navigation(self.postId)            
         else:
-            self.do_error_redirect()
+            return self.do_error_redirect()
+
+        if self.post and (self.post['group_id'] != self.groupInfo.id):
+            raise Unauthorized('You are not authorized to access '\
+                'this post from the group %s' % self.groupInfo.name)
               
     def do_error_redirect(self):
         if not self.postId:
