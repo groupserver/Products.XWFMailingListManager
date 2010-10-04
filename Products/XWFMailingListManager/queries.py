@@ -788,9 +788,11 @@ class BounceQuery(object):
         """
         now = datetime.datetime.now(UTC)
         dateToCheck = (now-datetime.timedelta(LAST_NUM_DAYS))
-        lastDisabledDate = self.lastDisabledDate(email).replace(tzinfo=UTC)
-        if lastDisabledDate and (lastDisabledDate > dateToCheck):
-            dateToCheck = lastDisabledDate
+        lastDisabledDate = self.lastDisabledDate(email)
+        if lastDisabledDate: 
+            lastDisabledDate = lastDisabledDate.replace(tzinfo=UTC)
+            if lastDisabledDate > dateToCheck:
+                dateToCheck = lastDisabledDate
         daysChecked = (now.date() - dateToCheck.date()).days
         
         bt = self.bounceTable
