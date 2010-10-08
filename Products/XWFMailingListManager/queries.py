@@ -118,7 +118,6 @@ class MemberQuery(object):
 
     def get_member_addresses(self, site_id, group_id, id_getter, preferred_only=True, process_settings=True, verified_only=True):
         # TODO: We currently can't use site_id
-        # TODO: Should only get verified addresses
         site_id = ''
 
         user_ids = id_getter(ids_only=True)
@@ -190,7 +189,6 @@ class MemberQuery(object):
 
     def get_digest_addresses(self, site_id, group_id, id_getter):
         # TODO: We currently can't use site_id
-        # TODO: Should only get verified addresses
         site_id = ''
         
         user_ids = id_getter(ids_only=True)
@@ -230,6 +228,7 @@ class MemberQuery(object):
         email_user = uet.select()
         email_user.append_whereclause(uet.c.is_preferred==True)      
         email_user.append_whereclause(uet.c.user_id.in_(*digest_ids))
+        email_user.append_whereclause(uet.c.verified_date != None)
         
         r = email_user.execute()        
         if r.rowcount:
