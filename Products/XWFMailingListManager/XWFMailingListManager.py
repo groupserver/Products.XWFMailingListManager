@@ -13,8 +13,8 @@ from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from App.class_init import InitializeClass
 from OFS.Folder import Folder
 
-from Products.XWFCore.XWFUtils import getOption, get_support_email
-from Products.XWFCore.XWFUtils import get_site_by_id, get_group_by_siteId_and_groupId
+from Products.XWFCore.XWFUtils import get_support_email
+from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
 from Products.XWFCore.cache import SimpleCache
 
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
@@ -28,7 +28,6 @@ import os, time, logging, StringIO, traceback
 from Products.CustomUserFolder.queries import UserQuery
 from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroup.groupInfo import IGSGroupInfo
-from gs.profile.notify.interfaces import IGSNotifyUser
 from gs.profile.notify.notifyuser import NotifyUser
 import sqlalchemy as sa
 import datetime
@@ -412,17 +411,11 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         
         if doNotification and addresses:
             nDict =  {
-              'bounced_email' : email,
-              'memberId'      : userInfo.id,
-              'groupId'       : groupInfo.id,
-              'groupName'     : groupInfo.name,
-              'siteId'        : siteInfo.id,
-              'siteName'      : siteInfo.name,
-              'canonical'     : getOption(groupInfo.groupObj, 'canonicalHost'),
-              'supportEmail'  : get_support_email(groupInfo.groupObj, siteInfo.id),
               'userInfo'      : userInfo,
               'groupInfo'     : groupInfo,
-              'siteInfo'      : siteInfo
+              'siteInfo'      : siteInfo,
+              'supportEmail'  : get_support_email(groupInfo.groupObj, siteInfo.id),
+              'bounced_email' : email
             }
             try:
                 notifyUser = NotifyUser(userInfo.user, siteInfo)
