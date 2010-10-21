@@ -18,13 +18,16 @@ from OFS.Folder import Folder, manage_addFolder
 from zope.component import createObject, getMultiAdapter
 
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.XWFCore.XWFUtils import removePathsFromFilenames
+from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption
+from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
+from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
 from Products.GSProfile.utils import create_user_from_email, \
   send_verification_message
 from Products.GSGroup.joining import GSGroupJoining
+from Products.GSGroup.groupInfo import IGSGroupInfo
 from gs.group.member.leave.leaver import GroupLeaver
 
 import MailBoxerTools
@@ -1487,20 +1490,25 @@ class XWFMailingList(Folder):
         """
         userInfo = createObject('groupserver.UserFromId', 
                             self.site_root(), msg.sender_id)
-        assert not userInfo.anonymous, \
-          'User (%s) does not exist' % msg.sender_id
+        if userInfo.anonymous:
+            m = u'subscribe: Cannot subscribe user %s because they '\
+              u'do not exist. We shouldn\'t have gotten this far.' % msg.sender_id
+            m.encode('ascii','ignore')
+            log.error(m)
+            return
+
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-        
         thepin = pin( msg.sender, self.getValueFor('hashkey') )
 
         m = u'%s (%s) on %s (%s) sending subscribe key (%s) to '\
           u'existing user %s (%s)' %\
           (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
            thepin, userInfo.name, userInfo.id)
+        m.encode('ascii','ignore')
         log.info(m)
 
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
@@ -1513,13 +1521,17 @@ class XWFMailingList(Folder):
         reply = getattr(self, 'email_subscribe_key', None)
 
         if reply:
-            reply_text = reply(REQUEST, list_object=context, 
+            reply_text = reply(REQUEST, listId=self.listId(), 
                                    getValueFor=self.getValueFor, 
                                    pin=thepin,
                                    email=msg.sender,
-                                   sender_id=msg.sender_id,
-                                   member_name=userInfo.name)
-            
+                                   listMailTo=self.getValueFor('mailto'),
+                                   subject=self.getValueFor('subscribe'),
+                                   xmailer=self.getValueFor('xmailer'),
+                                   returnpath=returnpath,
+                                   siteInfo=siteInfo,
+                                   groupInfo=groupInfo,
+                                   userInfo=userInfo)
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         smtpserver.quit()
     
@@ -1624,6 +1636,17 @@ class XWFMailingList(Folder):
         a clean default.
         
         """
+        siteId = self.getProperty('siteId', '')
+        group = get_group_by_siteId_and_groupId(self, siteId, self.getId())
+        supportEmail = getOption(group, 'support_email')
+        siteInfo = createObject('groupserver.SiteInfo', group)
+        groupInfo = IGSGroupInfo(group)
+        email_address = headers.get('from', '')
+        user = self.site_root().acl_users.get_userByEmail(email_address)
+        userInfo = None
+        if user:
+            userInfo = IGSUserInfo(user)
+        
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1631,14 +1654,14 @@ class XWFMailingList(Folder):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
         
-        email_address = headers.get('from', '')
         seen = []
         for code in event_codes:
             if code in seen: continue
             reply = getattr(self, 'xwf_email_event', None)
             
             if reply:
-                reply_text = reply(list_object=context, event_code=code, headers=headers)
+                reply_text = reply(context, code, headers, supportEmail, 
+                                   siteInfo, groupInfo, userInfo)
                 if reply_text and email_address:
                     smtpserver.sendmail(returnpath, [email_address], reply_text)
             else:

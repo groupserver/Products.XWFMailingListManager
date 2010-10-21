@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python
 
 """
  smtp2zope.py - Read a email from stdin and forward it to a url
