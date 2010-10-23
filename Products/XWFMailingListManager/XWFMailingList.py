@@ -10,6 +10,7 @@
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
 import random, smtplib, os, re, time, transaction
+from rfc822 import AddressList
 from cgi import escape
 from AccessControl import ClassSecurityInfo
 from DateTime.DateTime import DateTime
@@ -664,12 +665,12 @@ class XWFMailingList(Folder):
                 self.listMail(REQUEST)
                 
             return email
+
+        # if all previous tests fail, it must be an unknown sender.
         m = 'processMail %s (%s): Mail received from unknown sender <%s>'%\
           (self.getProperty('title', ''), self.getId(), email)
         log.info(m)
         log.info( 'memberlist was: %s' % memberlist)
-
-        # if all previous tests fail, it must be an unknown sender.
         self.mail_reply(self, REQUEST, mail=header, body=body)
         
     def processModeration(self, REQUEST):
@@ -1160,6 +1161,8 @@ class XWFMailingList(Folder):
                     else: # otherwise handle subscription as part of registration
                         self.register_newUser(REQUEST, msg)
             else:
+                # TODO: Send a "cannot subscribe cos you already are" msg instead
+                #user = self.acl_users.get_userByEmail(email)
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
             return email
@@ -1173,6 +1176,8 @@ class XWFMailingList(Folder):
                 else:
                     self.mail_unsubscribe_key(self, REQUEST, msg)
             else:
+                # TODO: Send a "cannot unsubscribe cos you already are" msg instead
+                #user = self.acl_users.get_userByEmail(email)
                 self.mail_reply(self, REQUEST, mail=header, body=body)
 
             return email
@@ -1462,23 +1467,33 @@ class XWFMailingList(Folder):
         a clean default.
         
         """
-        #TODO: Use a standard notification for this (cannot_post)
-        # even if we do not use a user.send_notificaion to send it.
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        group = get_group_by_siteId_and_groupId(self, siteId, groupId)
+        supportEmail = getOption(group, 'supportEmail')
+        siteInfo = createObject('groupserver.SiteInfo', group)
+        groupInfo = IGSGroupInfo(group)
+        sender = mail['from']
+        name, email_address = AddressList(mail['from'])[0]
+        
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
-            
-        reply = getattr(self, 'xwf_email_reply', None)
         
-        email_address = mail['from']
-        
+        reply = getattr(self, 'email_reply', None)
         if reply:
-            reply_text = reply(REQUEST, list_object=context, 
-                               mail=mail, body=body)
-            smtpserver.sendmail(returnpath, [email_address], reply_text)
+            reply_text = reply(REQUEST, sender=sender, 
+                                   email=email_address,
+                                   supportEmail=supportEmail,
+                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
+                                   siteInfo=siteInfo,
+                                   groupInfo=groupInfo,
+                                   mail=mail,
+                                   body=body)
+            smtpserver.sendmail(returnpath, [mail['from']], reply_text)
         smtpserver.quit()            
 
     security.declarePrivate('mail_subscribe_key')
@@ -1522,7 +1537,6 @@ class XWFMailingList(Folder):
 
         if reply:
             reply_text = reply(REQUEST, listId=self.listId(), 
-                                   getValueFor=self.getValueFor, 
                                    pin=thepin,
                                    email=msg.sender,
                                    listMailTo=self.getValueFor('mailto'),
@@ -1540,19 +1554,26 @@ class XWFMailingList(Folder):
         """ Email out an unsubscription authentication notification.
         
         """
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), msg.sender_id)
+        if userInfo.anonymous:
+            m = u'unsubscribe: Cannot unsubscribe user %s because they '\
+              u'do not exist. We shouldn\'t have gotten this far.' % msg.sender_id
+            m.encode('ascii','ignore')
+            log.error(m)
+            return
+        
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-        userInfo = createObject('groupserver.UserFromId', 
-                            self.site_root(), msg.sender_id)
-        
         thepin = pin( msg.sender, self.getValueFor('hashkey') )
 
         m = u'%s (%s) on %s (%s) sending unsubscribe key (%s) to %s (%s)'%\
           (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
            thepin, userInfo.name, userInfo.id)
+        m.encode('ascii','ignore')
         log.info(m)
 
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
@@ -1561,21 +1582,20 @@ class XWFMailingList(Folder):
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
-
+            
         reply = getattr(self, 'email_unsubscribe_key', None)
-
         if reply:
-            reply_text = reply(REQUEST, list_object=context, 
-                                   getValueFor=self.getValueFor, 
+            reply_text = reply(REQUEST, listId=self.listId(), 
                                    pin=thepin,
                                    email=msg.sender,
-                                   sender_id=msg.sender_id,
-                                   member_name=userInfo.name)
-            
+                                   listMailTo=self.getValueFor('mailto'),
+                                   subject=self.getValueFor('unsubscribe'),
+                                   xmailer=self.getValueFor('xmailer'),
+                                   returnpath=returnpath,
+                                   siteInfo=siteInfo,
+                                   groupInfo=groupInfo,
+                                   userInfo=userInfo)
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
-        else:
-            pass
-            
         smtpserver.quit()
 
     security.declarePrivate('mail_digest_on')
@@ -1583,6 +1603,29 @@ class XWFMailingList(Folder):
         """ Send out a message that the digest feature has been turned on.
         
         """
+        mailString = getMailFromRequest(REQUEST)
+        msg = EmailMessage(mailString, 
+                list_title=self.getProperty('title', ''), 
+                group_id=self.getId(), 
+                site_id=self.getProperty('siteId', ''), 
+                sender_id_cb=self.get_mailUserId)
+        userInfo = createObject('groupserver.UserFromId', 
+                        self.site_root(), msg.sender_id)
+        assert not userInfo.anonymous
+        siteId = self.getProperty('siteId', '')
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupId = self.getId()
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        m = u'%s (%s) on %s (%s) sending digest on '\
+          u'notification to %s (%s)' %\
+          (groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id, 
+           userInfo.name, userInfo.id)
+        m.encode('ascii','ignore')
+        log.info(m)
+        
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1590,18 +1633,19 @@ class XWFMailingList(Folder):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
             
-        reply = getattr(self, 'xwf_email_digest_on', None)
-        
-        email_address = mail['from']
-        
+        reply = getattr(self, 'email_digest_on', None)
         if reply:
-            reply_text = reply(REQUEST, list_object=context, 
+            reply_text = reply(REQUEST, listId=self.listId(), 
                                    getValueFor=self.getValueFor, 
-                                   mail=mail, body=body)
-            smtpserver.sendmail(returnpath, [email_address], reply_text)
-        else:
-            pass
-            
+                                   email=msg.sender,
+                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
+                                   listMailTo=self.getValueFor('mailto'),
+                                   xmailer=self.getValueFor('xmailer'),
+                                   returnpath=returnpath,
+                                   siteInfo=siteInfo,
+                                   groupInfo=groupInfo,
+                                   userInfo=userInfo)
+            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         smtpserver.quit()
 
     security.declarePrivate('mail_digest_off')
@@ -1609,6 +1653,29 @@ class XWFMailingList(Folder):
         """ Send out a message that the digest feature has been turned off.
         
         """
+        mailString = getMailFromRequest(REQUEST)
+        msg = EmailMessage(mailString, 
+                list_title=self.getProperty('title', ''), 
+                group_id=self.getId(), 
+                site_id=self.getProperty('siteId', ''), 
+                sender_id_cb=self.get_mailUserId)
+        userInfo = createObject('groupserver.UserFromId', 
+                        self.site_root(), msg.sender_id)
+        assert not userInfo.anonymous
+        siteId = self.getProperty('siteId', '')
+        site = getattr(self.site_root().Content, siteId)
+        siteInfo  = createObject('groupserver.SiteInfo', site)
+        groupId = self.getId()
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        m = u'%s (%s) on %s (%s) sending digest on '\
+          u'notification to %s (%s)' %\
+          (groupInfo.name, groupInfo.id, 
+           siteInfo.name, siteInfo.id, 
+           userInfo.name, userInfo.id)
+        m.encode('ascii','ignore')
+        log.info(m)
+        
         smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
                               int(self.MailHost.smtp_port))
                 
@@ -1616,18 +1683,19 @@ class XWFMailingList(Folder):
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
             
-        reply = getattr(self, 'xwf_email_digest_off', None)
-        
-        email_address = mail['from']
-        
+        reply = getattr(self, 'email_digest_off', None)
         if reply:
-            reply_text = reply(REQUEST, list_object=context, 
+            reply_text = reply(REQUEST, listId=self.listId(), 
                                    getValueFor=self.getValueFor, 
-                                   mail=mail, body=body)
-            smtpserver.sendmail(returnpath, [email_address], reply_text)
-        else:
-            pass
-            
+                                   email=msg.sender,
+                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
+                                   listMailTo=self.getValueFor('mailto'),
+                                   xmailer=self.getValueFor('xmailer'),
+                                   returnpath=returnpath,
+                                   siteInfo=siteInfo,
+                                   groupInfo=groupInfo,
+                                   userInfo=userInfo)
+            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         smtpserver.quit()
 
     security.declarePrivate('mail_event_default')
@@ -1638,10 +1706,11 @@ class XWFMailingList(Folder):
         """
         siteId = self.getProperty('siteId', '')
         group = get_group_by_siteId_and_groupId(self, siteId, self.getId())
-        supportEmail = getOption(group, 'support_email')
+        supportEmail = getOption(group, 'supportEmail')
         siteInfo = createObject('groupserver.SiteInfo', group)
         groupInfo = IGSGroupInfo(group)
-        email_address = headers.get('from', '')
+        sender = headers['from']
+        name, email_address = AddressList(headers['from'])[0]
         user = self.site_root().acl_users.get_userByEmail(email_address)
         userInfo = None
         if user:
@@ -1658,16 +1727,12 @@ class XWFMailingList(Folder):
         for code in event_codes:
             if code in seen: continue
             reply = getattr(self, 'xwf_email_event', None)
-            
             if reply:
                 reply_text = reply(context, code, headers, supportEmail, 
                                    siteInfo, groupInfo, userInfo)
                 if reply_text and email_address:
                     smtpserver.sendmail(returnpath, [email_address], reply_text)
-            else:
-                pass
             seen.append(code)
-            
         smtpserver.quit()
     
     security.declarePrivate('mail_header')
