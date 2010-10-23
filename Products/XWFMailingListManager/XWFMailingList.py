@@ -1668,7 +1668,7 @@ class XWFMailingList(Folder):
         groupId = self.getId()
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
-        m = u'%s (%s) on %s (%s) sending digest on '\
+        m = u'%s (%s) on %s (%s) sending digest off '\
           u'notification to %s (%s)' %\
           (groupInfo.name, groupInfo.id, 
            siteInfo.name, siteInfo.id, 
