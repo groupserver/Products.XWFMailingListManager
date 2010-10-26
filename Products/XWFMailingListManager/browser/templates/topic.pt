@@ -125,6 +125,31 @@
           </p>
         </tal:block>
       </div><!--postList-->
+
+      <div class="messages-nl below-nl" id="topicNavigation">
+        <p class="label">Topic Navigation</p>
+        <ul>
+          <li class="prev">
+            <span tal:condition="not:view/previousTopic/topicId">No later 
+              topic</span>
+          <a href="#" tal:condition="view/previousTopic/topicId"
+              tal:attributes="href view/previousTopic/topicId;
+                title string:The topic with more recent posts: view/previousTopic/subject;">
+              Later topic: <cite tal:content="view/previousTopic/subject">Topic Name</cite>
+            </a>
+          </li>
+          <li class="next">
+            <span tal:condition="not:view/nextTopic/topicId">No 
+              earlier topic</span>
+            <a tal:condition="view/nextTopic/topicId" href="#"
+              tal:attributes="href view/nextTopic/topicId;
+              title string:The topic with earlier posts: ${view/nextTopic/subject};">Earlier
+              topic: <cite tal:content="view/nextTopic/subject">Topic 
+                Name</cite></a>
+          </li>
+        </ul>
+      </div>
+
       <form tal:condition="view/userPostingInfo/canPost"
         enctype="multipart/form-data"  method="post" action="."
         id="add-to-topic" tal:attributes="action request/URL">

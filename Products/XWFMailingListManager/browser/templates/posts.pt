@@ -75,15 +75,17 @@
       - from the messages, grabbed from the XWFVirtualMailingList
       - instance.
     -->
-    <div class="hatom" metal:fill-slot="body">
+    <div class="hatom" metal:fill-slot="body"
+         tal:define="postList view/get_posts;
+                     post_count python:len(postList)">
       <h1>Posts in
         <span class="group"
           tal:content="view/groupInfo/name"/></h1>
 
       <div class="messages-nl" id="postsNavigation"
-        tal:define="len view/get_chunk_length">
+        tal:condition="python:post_count > 0">
         <p class="label">Posts Navigation</p>
-        <ul>
+        <ul tal:define="len view/get_chunk_length">
           <li class="prev">
             <a href="#" tal:condition="laterURL"
               tal:attributes="href laterURL;
@@ -127,24 +129,48 @@
         </ul>
       </div>
       
-      <tal:block tal:define="postList view/get_posts">
-        <div class="postList" 
-          tal:condition="python:(len(postList)>0)">
-          <tal:block repeat="post postList">
-            <p tal:define="position repeat/post/number; 
-              topicName post/subject;
-              showPhoto python:(position==1) or (postList[position-1]['author_id'] != postList[position-2]['author_id']);
-              isPublic view/isPublic"
-              tal:replace="structure provider:groupserver.Post">
-              The email message is rendered by the Post content provider,
-              not by this page.
-            </p>
-          </tal:block>
-        </div><!--postList-->
-        <p tal:condition="python:not(len(postList)>0)">
-          There are no posts in this group.
-        </p>
-      </tal:block>
+      <div class="postList" 
+        tal:condition="python:post_count > 0">
+        <tal:block repeat="post postList">
+          <p tal:define="position repeat/post/number; 
+            topicName post/subject;
+            showPhoto python:(position==1) or (postList[position-1]['author_id'] != postList[position-2]['author_id']);
+            isPublic view/isPublic"
+            tal:replace="structure provider:groupserver.Post">
+            The email message is rendered by the Post content provider,
+            not by this page.
+          </p>
+        </tal:block>
+      </div><!--postList-->
+      <p tal:condition="python:not(post_count > 0)">
+        There are no posts in this group.
+      </p>
+
+      <div class="messages-nl below-nl" id="postsNavigation"
+        tal:condition="python:post_count > 0">
+        <p class="label">Posts Navigation</p>
+        <ul tal:define="len view/get_chunk_length">
+          <li class="prev">
+            <a href="#" tal:condition="laterURL"
+              tal:attributes="href laterURL;
+              title string:The ${len} more recent posts;">Later 
+              <span tal:replace="len">-1</span> posts</a>
+            <span tal:condition="not:laterURL">Later
+              <span tal:replace="len">-1</span> posts
+            </span>
+          </li>
+          <li class="next">
+            <a href="#" tal:condition="earlierURL"
+              tal:attributes="href earlierURL;
+              title string:The ${len} older posts;">Earlier
+              <span tal:replace="len">-1</span> posts</a>
+            <span tal:condition="not:earlierURL">Earlier
+              <span tal:replace="len">-1</span> posts
+            </span>
+          </li>
+        </ul>
+      </div>
+
     </div><!--hatom-->
     
     <tal:block metal:fill-slot="javascript">
