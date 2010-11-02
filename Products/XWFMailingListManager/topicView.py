@@ -106,7 +106,7 @@ class GSTopicView(PageForm):
             groupId=self.groupInfo.id, 
             siteId=self.siteInfo.id, 
             replyToId=data['inReplyTo'],
-            topic=self.topicName, 
+            topic='Re: %s' % self.topicName, 
             message=data['message'],
             tags=[], 
             email=data['fromAddress'], 
