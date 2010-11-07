@@ -93,7 +93,7 @@ class XWFMailingList(Folder):
     mailinglist_properties = ('title', 
                               'mailto', 
                               'hashkey')
-    
+        
     _properties = (
         {'id':'title', 'type':'string', 'mode':'w'}, 
         {'id':'mailto', 'type':'string', 'mode':'wd'}, 
@@ -146,8 +146,7 @@ class XWFMailingList(Folder):
         self._p_changed = 1
         
         return True
-
-
+    
     ###
     # Public methods to be called via smtp2zope-gateway
     ##
@@ -950,14 +949,20 @@ class XWFMailingList(Folder):
         if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
             message = u'%s (%s): Host is not allowed' %\
               (self.getProperty('title', ''), self.getId())
-            log.error(message)
+            log.warning(message)
             return message
 
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo  = createObject('groupserver.SiteInfo', site)
-        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        try:
+            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        except:
+            message = u'%s (%s): No group found to match listId. This should not happen.' % \
+                               (self.getProperty('title', ''), self.getId())
+            log.error(message)        
+            return message    
         
         mailString = getMailFromRequest(REQUEST)
         msg = EmailMessage(mailString, 
@@ -989,7 +994,7 @@ class XWFMailingList(Folder):
         
         if message:
             assert type(message) == unicode
-            log.error(message)
+            log.warning(message)
             return message
         
         # Check for hosed denial-of-service-vacation mailers
@@ -1016,7 +1021,7 @@ class XWFMailingList(Folder):
             postingInfo = getMultiAdapter(insts, IGSPostingUser)
             if not(postingInfo.canPost) and not(userInfo.anonymous):
                 message = postingInfo.status
-                log.error(message)
+                log.warning(message)
                 siteInfo = groupInfo.siteInfo
                 joiningInfo = GSGroupJoining(groupInfo.groupObj).joinability
                 ndict = {
@@ -1036,8 +1041,8 @@ class XWFMailingList(Folder):
                 }
                 userInfo.user.send_notification('cannot_post', 'default', 
                                                 ndict)
-                
                 return message
+
         self._v_last_email_checksum = msg.post_id
     
         # look to see if we have a custom_mailcheck hook. If so, call it.
