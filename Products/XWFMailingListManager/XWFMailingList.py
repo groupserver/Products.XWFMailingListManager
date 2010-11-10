@@ -42,6 +42,8 @@ from utils import check_for_commands, pin, getMailFromRequest
 import logging
 log = logging.getLogger('XWFMailingList')
 
+DIGEST = 3
+
 null_convert = lambda x: x
 
 try:
@@ -1145,12 +1147,22 @@ class XWFMailingList(Folder):
         
         # process digest commands
         if email in memberlist and msg.sender_id:
-            user = self.acl_users.getUser(msg.sender_id)
+            userInfo = createObject('groupserver.UserFromId', 
+                         self.site_root(), msg.sender_id)
+            deliverySettings = userInfo.user.get_deliverySettingsByKey(self.getId())
             if check_for_commands(msg, 'digest on'):
-                self.digest_on(REQUEST, user, header, body)
+                if deliverySettings != DIGEST:
+                    self.digest_on(REQUEST, userInfo.user, header, body)
+                else:
+                    self.mail_cannot_change_subscription(self, REQUEST, 
+                                                         msg, 'digest on')
                 return email
             elif check_for_commands(msg, 'digest off'):
-                self.digest_off(REQUEST, user, header, body)
+                if deliverySettings == DIGEST:
+                    self.digest_off(REQUEST, userInfo.user, header, body)
+                else:
+                    self.mail_cannot_change_subscription(self, REQUEST, 
+                                                         msg, 'digest off')
                 return email 
         
         # subscription? only subscribe if subscription is enabled.
@@ -1162,14 +1174,11 @@ class XWFMailingList(Folder):
                 else:
                     user = self.acl_users.get_userByEmail(email)
                     if user: # if the user exists, send out a subscription email
-                        self.mail_subscribe_key(self, REQUEST, msg )
+                        self.mail_subscribe_key(self, REQUEST, msg)
                     else: # otherwise handle subscription as part of registration
                         self.register_newUser(REQUEST, msg)
             else:
-                # TODO: Send a "cannot subscribe cos you already are" msg instead
-                #user = self.acl_users.get_userByEmail(email)
-                self.mail_reply(self, REQUEST, mail=header, body=body)
-
+                self.mail_cannot_change_subscription(self, REQUEST, msg, 'subscribe')
             return email
 
         # unsubscription? only unsubscribe if unsubscription is enabled...
@@ -1181,10 +1190,7 @@ class XWFMailingList(Folder):
                 else:
                     self.mail_unsubscribe_key(self, REQUEST, msg)
             else:
-                # TODO: Send a "cannot unsubscribe cos you already are" msg instead
-                #user = self.acl_users.get_userByEmail(email)
-                self.mail_reply(self, REQUEST, mail=header, body=body)
-
+                self.mail_cannot_change_subscription(self, REQUEST, msg, 'unsubscribe')
             return email
 
     def register_newUser(self, REQUEST, msg):
@@ -1603,6 +1609,67 @@ class XWFMailingList(Folder):
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         smtpserver.quit()
 
+    security.declarePrivate('mail_cannot_change_subscription')
+    def mail_cannot_change_subscription(self, context, REQUEST, msg, change):
+        """ Explain that the user:
+              * cannot subscribe because they are already a member,
+              * cannot unsubscribe because they're not a member,
+              * cannot turn the digest on because it already is, or
+              * cannot turn the digest off because it already is.
+        """
+        assert change in ['subscribe','unsubscribe','digest on','digest off'], \
+          'Subscription change request %s was not one of subscribe, unsubscribe, '\
+          'digest on, or digest off.' % change
+        userInfo = createObject('groupserver.UserFromId', 
+                            self.site_root(), msg.sender_id)
+        if userInfo.anonymous:
+            m = u'cannot_change_subscription: Cannot notify user %s because they '\
+              u'do not exist. We shouldn\'t have gotten this far.' % msg.sender_id
+            m.encode('ascii','ignore')
+            log.error(m)
+            return
+
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        group = get_group_by_siteId_and_groupId(self, siteId, groupId)
+        supportEmail = getOption(group, 'supportEmail')
+        siteInfo = createObject('groupserver.SiteInfo', group)
+        groupInfo = IGSGroupInfo(group)
+
+        notification = 'email_already_subscribed'
+        if change == 'unsubscribe':
+            notification = 'email_already_unsubscribed'
+        elif change == 'digest on':
+            notification = 'email_digest_already_on'
+        elif change == 'digest off':
+            notification = 'email_digest_already_off'
+        m = u'%s (%s) on %s (%s) sending notification %s to '\
+          u'existing user %s (%s)' %\
+          (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
+           notification, userInfo.name, userInfo.id)
+        m.encode('ascii','ignore')
+        log.info(m)
+
+        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                              int(self.MailHost.smtp_port))
+                
+        returnpath=self.getValueFor('returnpath')
+        if not returnpath:
+            returnpath = self.getValueFor('moderator')[0]
+            
+        reply = getattr(self, notification, None)
+        if reply:
+            reply_text = reply(REQUEST, sender=msg.sender,
+                                   listMailTo=self.getValueFor('mailto'),
+                                   supportEmail=supportEmail,
+                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
+                                   siteInfo=siteInfo,
+                                   groupInfo=groupInfo,
+                                   userInfo=userInfo)
+            print reply_text
+            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
+        smtpserver.quit()
+    
     security.declarePrivate('mail_digest_on')
     def mail_digest_on(self, context, REQUEST, mail=None, body=''):
         """ Send out a message that the digest feature has been turned on.
