@@ -1,8 +1,9 @@
+# coding=utf-8
 from zope.component import createObject, adapts, provideAdapter
 from zope.interface import implements, Interface
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 import Products.Five, Products.GSContent 
-from zope.pagetemplate.pagetemplatefile import PageTemplateFile
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.contentprovider.interfaces import IContentProvider
 from interfaces import IGSTopicSummaryContentProvider
 
@@ -69,9 +70,9 @@ class GSTopicSummaryContentProvider(object):
           if not self.__updated:
               raise interfaces.UpdateNotCalled
       
-          pageTemplate = PageTemplateFile(self.pageTemplateFileName)          
+          pageTemplate = ViewPageTemplateFile(self.pageTemplateFileName)          
 
-          return pageTemplate(length=len(self.topic),
+          return pageTemplate(self, length=len(self.topic),
                               lenAuthors=self.lenAuthors,
                               lastPostId = self.lastPost['post_id'],
                               lastPostDate = self.lastPost['date'],
