@@ -6,6 +6,19 @@
 # You MUST follow the rules in README_STYLE before checking in code
 # to the head. Code which does not follow the rules will be rejected.  
 #
+try:
+    from zope.browserpage import metaconfigure
+except ImportError:
+    from zope.app.pagetemplate import metaconfigure
+from zope.contentprovider import tales
+from zope.tales.tales import RegistrationError
+try:
+    metaconfigure.registerType('provider',
+                               tales.TALESProviderExpression)
+except RegistrationError:
+    # almost certainly been registered somewhere else already.
+    pass
+
 import XWFMailingListManager, XWFMailingList
 import XWFVirtualMailingListArchive2
 
@@ -15,13 +28,6 @@ import stickyTopicToggleContentProvider, postprivacy
 
 from AccessControl import ModuleSecurityInfo
 from AccessControl import allow_class, allow_module, allow_type
-
-from zope.tales.tales import RegistrationError
-from zope.contentprovider import tales
-try:
-    from zope.browserpage import metaconfigure
-except ImportError:
-    from zope.app.pagetemplate import metaconfigure
 
 from queries import MessageQuery
 
@@ -34,13 +40,6 @@ allow_type(datetime)
 
 import time
 allow_class(time)
-
-try:
-    metaconfigure.registerType('provider',
-                               tales.TALESProviderExpression)
-except RegistrationError:
-    # almost certainly been registered somewhere else already.
-    pass
 
 def initialize(context):
     # import lazily and defer initialization to the module
