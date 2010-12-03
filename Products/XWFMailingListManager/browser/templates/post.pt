@@ -64,60 +64,48 @@
       - from the message, grabbed from the XWFVirtualMailingList
       - instance.
     -->
-    <tal:block metal:fill-slot="body">
+    <div metal:fill-slot="body" id="single-post-page">
       <h1>Post in
         <cite tal:content="topicName">Topic</cite></h1>
-    
-      <div class="messages-nl" id="singlePostTopicNavigation">
-        <p class="label">Topic Navigation</p>
-        <ul>
-          <li class="first">
-            <a tal:condition="prev"
-              tal:attributes="href string:${first};
-              title string:First post in ${topicName};">First post</a>
-            <span tal:condition="not:prev">First post</span>
-          </li>
-          <li class="prev">
-            <a tal:condition="prev"
-              tal:attributes="href string:${prev};
-              title string:Previous post in ${topicName};">Previous post</a>
-            <span tal:condition="not:prev">Previous post</span>
-          </li>
-          <li class="next">
-            <a tal:condition="next"
-              tal:attributes="href string:${next};
-              title string:Next post in ${topicName};">Next post</a>
-            <span tal:condition="not:next">Next post</span>
-          </li>
-          <li class="last">
-            <a tal:condition="next"
-              tal:attributes="href string:${last};
-              title string:Most recent post in ${topicName};">Last post</a>
-            <span tal:condition="not:next">Last post</span>                
-          </li>
-        </ul>
-      </div>
-      <div class="messages-nl" id="usefulLinks">
-        <p class="label">Useful Links</p>
-        <ul>
-          <li class="topicLink">
-            <a href="#" 
-              tal:attributes="href string:../topic/${last}">
-              All posts in
+      <ul class="inline-list">
+        <li class="first">
+          <a tal:condition="prev"
+            tal:attributes="href string:${first};
+            title string:First post in ${topicName};">First post</a>
+          <span tal:condition="not:prev">First post</span>
+        </li>
+        <li class="prev">
+          <a tal:condition="prev"
+            tal:attributes="href string:${prev};
+            title string:Previous post in ${topicName};">Previous post</a>
+          <span tal:condition="not:prev">Previous post</span>
+        </li>
+        <li class="topicLink">
+          <a href="#" 
+            tal:attributes="href string:../topic/${last}">All posts in
             <cite class="topic" 
                 tal:content="topicName">topic name</cite></a>
-          </li>
-        </ul>
-      </div>
-      
+        </li>
+        <li class="next">
+          <a tal:condition="next"
+            tal:attributes="href string:${next};
+            title string:Next post in ${topicName};">Next post</a>
+          <span tal:condition="not:next">Next post</span>
+        </li>
+        <li class="last">
+          <a tal:condition="next"
+            tal:attributes="href string:${last};
+            title string:Most recent post in ${topicName};">Last post</a>
+          <span tal:condition="not:next">Last post</span>                
+        </li>
+      </ul>
       <p tal:define="post view/get_post;
                      isPublic view/isPublic"
         tal:replace="structure provider:groupserver.Post">
         The email message is rendered by the Post content provider,
         not by this page.
       </p>
-    </tal:block>
-    
+    </div>
     <tal:block metal:fill-slot="javascript">
         <script type="text/javascript"
                 src="/++resource++sharebox-20100721.js">&#160;</script>
