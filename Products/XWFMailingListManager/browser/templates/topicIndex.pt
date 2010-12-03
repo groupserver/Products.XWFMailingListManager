@@ -2,13 +2,13 @@
   tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
     entries options/entries;">
   <div class="disclosureWidget">
-    <p tal:define="nf view/nFiles; np view/nPosts;">
+    <div tal:define="nf view/nFiles; np view/nPosts;">
       <a class="disclosureButton"><strong><span class="val" tal:content="nf">some</span>
         file<tal:block condition="python:nf!=1">s</tal:block></strong>
         in
         <span class="val" tal:content="np">Some</span>
         post<tal:block condition="python:np!=1">s</tal:block></a>
-    </p>
+    </div>
     <div class="disclosureShowHide" style="display:none;">
       <table>
         <caption>Posts with files</caption>
