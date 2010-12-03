@@ -72,7 +72,7 @@
           </div>
         </div><!--buttons-->
       </form><!--toggleStickyTopic-->
-      <ul id="topicNav">
+      <ul id="topicNav" class="inline-list">
         <li class="prev">
           <span tal:condition="not:view/previousTopic/topicId">No 
             later topic</span>
