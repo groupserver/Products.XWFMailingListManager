@@ -72,22 +72,22 @@
           </div>
         </div><!--buttons-->
       </form><!--toggleStickyTopic-->
-      <ul id="topicNav" class="inline-list">
-        <li class="prev">
-          <span tal:condition="not:view/previousTopic/topicId">No 
-            later topic</span>
-          <a href="#"
+      <ul id="topicNav" class="navlinks inline-list">
+        <li>
+          <span tal:condition="not:view/previousTopic/topicId"
+             class="prev">No later topic</span>
+          <a href="#" class="prev"
             tal:condition="view/previousTopic/topicId"
             tal:attributes="href view/previousTopic/topicId;
               title view/previousTopic/subject;">Later topic</a></li>
-        <li class="topics">
-          <a 
+        <li>
+          <a class="topics up"
             tal:attributes="title string:Topics in ${view/groupInfo/name}"
             href="../topics.html">All Topics</a></li>
-        <li class="next">
-          <span tal:condition="not:view/nextTopic/topicId">No 
-            earlier topic</span>
-          <a href="#"
+        <li>
+          <span tal:condition="not:view/nextTopic/topicId"
+            class="next">No earlier topic</span>
+          <a href="#" class="next"
             tal:condition="view/nextTopic/topicId" 
             tal:attributes="href view/nextTopic/topicId;
               title view/nextTopic/subject;">Earlier topic</a></li>
@@ -118,26 +118,26 @@
         </tal:block>
       </div><!--postList-->
 
-      <ul id="bottom-topic-nav" class="inline-list">
-        <li class="prev">
-          <span tal:condition="not:view/previousTopic/topicId">No 
-            later topic</span>
-          <a href="#"
+      <ul id="bottom-topic-nav" class="navlinks inline-list">
+        <li>
+          <span tal:condition="not:view/previousTopic/topicId"
+             class="prev">No later topic</span>
+          <a href="#" class="prev"
             tal:condition="view/previousTopic/topicId"
             tal:attributes="href view/previousTopic/topicId;
               title view/previousTopic/subject;">Later topic</a></li>
-        <li class="topics">
-          <a 
+        <li>
+          <a class="topics up"
             tal:attributes="title string:Topics in ${view/groupInfo/name}"
             href="../topics.html">All Topics</a></li>
-        <li class="next">
-          <span tal:condition="not:view/nextTopic/topicId">No 
-            earlier topic</span>
-          <a href="#"
+        <li>
+          <span tal:condition="not:view/nextTopic/topicId"
+            class="next">No earlier topic</span>
+          <a href="#" class="next"
             tal:condition="view/nextTopic/topicId" 
             tal:attributes="href view/nextTopic/topicId;
               title view/nextTopic/subject;">Earlier topic</a></li>
-      </ul><!--topicNav-->
+      </ul><!--bottom-topic-nav-->
 
       <form tal:condition="view/userPostingInfo/canPost"
         enctype="multipart/form-data"  method="post" action="."

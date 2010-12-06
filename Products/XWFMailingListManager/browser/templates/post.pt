@@ -67,33 +67,33 @@
     <div metal:fill-slot="body" id="single-post-page">
       <h1>Post in
         <cite tal:content="topicName">Topic</cite></h1>
-      <ul class="inline-list">
-        <li class="first">
-          <a tal:condition="prev"
+      <ul class="navlinks inline-list">
+        <li>
+          <a tal:condition="prev" class="first"
             tal:attributes="href string:${first};
             title string:First post in ${topicName};">First post</a>
-          <span tal:condition="not:prev">First post</span>
+          <span tal:condition="not:prev" class="first">First post</span>
         </li>
-        <li class="prev">
-          <a tal:condition="prev"
+        <li>
+          <a tal:condition="prev" class="prev"
             tal:attributes="href string:${prev};
             title string:Previous post in ${topicName};">Previous post</a>
-          <span tal:condition="not:prev">Previous post</span>
+          <span tal:condition="not:prev" class="prev">Previous post</span>
         </li>
-        <li class="topicLink">
-          <a href="#" 
+        <li>
+          <a href="#" class="up"
             tal:attributes="href string:../topic/${last}">All posts in
             <cite class="topic" 
                 tal:content="topicName">topic name</cite></a>
         </li>
-        <li class="next">
-          <a tal:condition="next"
+        <li>
+          <a tal:condition="next" class="next"
             tal:attributes="href string:${next};
             title string:Next post in ${topicName};">Next post</a>
           <span tal:condition="not:next">Next post</span>
         </li>
-        <li class="last">
-          <a tal:condition="next"
+        <li>
+          <a tal:condition="next" class="last"
             tal:attributes="href string:${last};
             title string:Most recent post in ${topicName};">Last post</a>
           <span tal:condition="not:next">Last post</span>                
@@ -105,6 +105,38 @@
         The email message is rendered by the Post content provider,
         not by this page.
       </p>
+      <ul class="navlinks inline-list">
+        <li>
+          <a tal:condition="prev" class="first"
+            tal:attributes="href string:${first};
+            title string:First post in ${topicName};">First post</a>
+          <span tal:condition="not:prev" class="first">First post</span>
+        </li>
+        <li>
+          <a tal:condition="prev" class="prev"
+            tal:attributes="href string:${prev};
+            title string:Previous post in ${topicName};">Previous post</a>
+          <span tal:condition="not:prev" class="prev">Previous post</span>
+        </li>
+        <li>
+          <a href="#" class="up"
+            tal:attributes="href string:../topic/${last}">All posts in
+            <cite class="topic" 
+                tal:content="topicName">topic name</cite></a>
+        </li>
+        <li>
+          <a tal:condition="next" class="next"
+            tal:attributes="href string:${next};
+            title string:Next post in ${topicName};">Next post</a>
+          <span tal:condition="not:next">Next post</span>
+        </li>
+        <li>
+          <a tal:condition="next" class="last"
+            tal:attributes="href string:${last};
+            title string:Most recent post in ${topicName};">Last post</a>
+          <span tal:condition="not:next">Last post</span>                
+        </li>
+      </ul>
     </div>
     <tal:block metal:fill-slot="javascript">
         <script type="text/javascript"
