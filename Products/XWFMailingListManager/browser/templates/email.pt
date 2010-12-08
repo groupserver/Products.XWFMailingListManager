@@ -86,9 +86,7 @@
                   type fm/mime_type;
                   class string:fileName ${iconName};"
                   tal:content="fm/file_name">Filename</a>
-              (<span class="mime"
-                tal:content="fm/mime_type">application/octet-stream</span>,
-               <span class="size"
+              (<span class="size"
                 tal:content="python:u'%.0fKB' % (fm['file_size']/1024.0)">-1B</span>)
           </div>
       </div><!--fileMetadata-->
