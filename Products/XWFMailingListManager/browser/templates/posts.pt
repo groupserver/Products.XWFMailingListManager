@@ -110,16 +110,16 @@
               content="view/groupInfo/name">This Group</tal:block>
           </a>
         </li>
-        <li class="alternateATOM">
-          <a title="Web Feed" 
+        <li>
+          <a tal:attributes="title string:Summary of posts in ${view/groupInfo/name}"
+            href="postsSummary.html?l=60">Summary of Posts</a>
+        </li>
+        <li>
+          <a title="Web Feed"  class="alternateATOM"
             type="application/atom+xml"
             tal:attributes="title string:Web Feed of the Latest Posts to ${view/groupInfo/name};
             href view/web_feed_uri"
             href="#">Web feed of the latest posts.</a>
-        </li>
-        <li>
-          <a tal:attributes="title string:Summary of posts in ${view/groupInfo/name}"
-            href="postsSummary.html?l=60">Summary of Posts</a>
         </li>
       </ul>
       <div class="postList" 
