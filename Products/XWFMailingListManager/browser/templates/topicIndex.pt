@@ -21,7 +21,9 @@
         </thead>
         <tbody>
           <tal:block repeat="entry entries">
-            <tr tal:condition="python:len(entry['files']) > 0">
+            <tr tal:condition="python:len(entry['files']) > 0"
+              tal:define="n repeat/entry/number; odd python:n%2"
+              tal:attributes="class python:odd and 'odd' or 'even'">
               <td class="author">
                 <a tal:condition="not:entry/user" 
                   tal:attributes="href entry/href" 
