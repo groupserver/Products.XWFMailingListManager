@@ -157,9 +157,9 @@ class GSPostContentProvider(object):
         retval = ''
         even = (self.position % 2) == 0
         if even:
-            retval = 'emaildetails-even'
+            retval = 'even'
         else:
-            retval = 'emaildetails-odd'
+            retval = 'odd'
                   
         assert retval
         return retval
