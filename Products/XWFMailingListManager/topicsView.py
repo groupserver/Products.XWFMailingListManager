@@ -172,7 +172,7 @@ class GSTopicsView(BrowserView):
                        } for f in self.topicFiles 
                        if f['topic_id'] == t['topic_id']]
                        
-              t['files'] = files
+              t['files'] = files[-7:]
               if t['topic_id'] not in stickyTopicIds:
                   retval.append(t)
           return retval
