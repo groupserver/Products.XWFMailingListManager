@@ -88,9 +88,8 @@
           </li>
         </ul>
       </tal:block>
-      <div class="inline-list" id="usefulLinks">
-        <p class="label">Useful Links</p>
-        <ul>
+      <div id="usefulLinks">
+        <ul class="inline-list">
           <li tal:condition="python:topic_count>0" class="posts"><a href="posts.html">Posts in
               <span tal:replace="python:view.groupInfo.get_name()" />
             </a>
@@ -162,7 +161,7 @@
                       <a href="#" title="foo"
                         tal:attributes="title file/name;
                           href file/url;
-                          class string:fileName ${file/icon}">&#160;</a>
+                          class string:fileIcon ${file/icon}">&#160;</a>
                     </tal:block>
                   </span>
                 </td>
