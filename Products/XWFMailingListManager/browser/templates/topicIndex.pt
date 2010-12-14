@@ -34,17 +34,23 @@
                     tal:content="structure entry/name">Me!</span></a>
               </td>
               <td class="file" tal:define="files entry/files">
-                <tal:block tal:repeat="fm files">
-                  <a class="file" href="/favicon.ico" 
-                    type="application/octet-stream"
-                    tal:define="t fm/mime_type;
-                      iconName python:t.replace('/','-').replace('.','-').strip()"
-                    tal:attributes="href entry/href;
-                      type fm/mime_type;
-                      class string:fileName ${iconName};
-                      title fm/file_name;" 
-                      tal:content="python:fm['file_name'][:50]">&#160;</a>
-                </tal:block>
+                <ul class="inline-list">
+                  <li tal:repeat="fm files">
+                    <a href="#" 
+                      tal:define="t fm/mime_type;
+                        icon python:t.replace('/','-').replace('.','-').strip()"
+                      tal:attributes="class string:fileIcon ${icon};
+                        href entry/href">&#160;</a>
+                    <a href="/favicon.ico" 
+                      type="application/octet-stream"
+                      tal:attributes="href entry/href;
+                        type fm/mime_type;
+                        title fm/file_name;">
+                        <code class="fileName" 
+                          tal:define="n python:fm['file_name'][:50]"
+                          tal:content="n">&#160;</code></a>
+                  </li>
+                </ul><!--inline-list-->
               </td>
               <td tal:define="date python:munge_date(options['context'], entry['date'])"
                 class="date">
