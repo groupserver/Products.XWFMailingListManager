@@ -44,15 +44,14 @@
   </head>
   
   <body>
-    <tal:block metal:fill-slot="body"
-               tal:define="topics view/get_topics;
-                           topic_count python:len(topics)">
+    <tal:block metal:fill-slot="body" 
+      define="topics view/get_topics; 
+        topic_count python:len(topics);">
       <h1>Topics in 
         <span class="group" 
           tal:content="python:view.groupInfo.get_name()">a Group</span></h1>
       <tal:block define="len python:view.get_summary_length()">
-        <ul class="inline-list navlinks" 
-          tal:condition="python:topic_count &gt; len">
+        <ul class="inline-list navlinks" >
           <li>
             <a href="#" tal:condition="laterURL" class="prev"
               tal:attributes="href laterURL;
@@ -75,7 +74,7 @@
       </tal:block>
       <div id="usefulLinks">
         <ul class="inline-list">
-          <li tal:condition="python:topic_count>0" class="posts"><a href="posts.html">Posts in
+          <li tal:condition="python:topic_count&gt;0" class="posts"><a href="posts.html">Posts in
               <span tal:replace="python:view.groupInfo.get_name()" />
             </a>
           </li>
@@ -96,7 +95,7 @@
         stickyTopics view/get_sticky_topics;
         nonStickyTopics view/get_non_sticky_topics">
         <table id="topicsSummary" 
-          tal:condition="python:topic_count>0">
+          tal:condition="python:topic_count&gt;0">
           <caption>Topics in
             <span class="group" 
               tal:content="python:view.groupInfo.get_name()">a Group</span>
@@ -113,7 +112,7 @@
               <tal:block tal:repeat="stickyTopic stickyTopics">
                 <tr tal:define="position repeat/stickyTopic/number;"
                   tal:attributes="id string:sticky-${stickyTopic/topic_id};
-                  class python:((((position) % 2) == 0) and 'evenStickyTopic') or 'oddStickyTopic';">
+                  class python:position%2 and 'odd' or 'even';">
                   <td class="topic" title="Topic name">
                     <strong>Sticky:</strong>
                     <a href="#"
@@ -135,7 +134,7 @@
             <tal:block tal:repeat="topic nonStickyTopics">
               <tr id="abc123" 
                 tal:define="position repeat/topic/number;
-                class python:((((position + lenSticky) % 2) == 0) and 'even') or 'odd';"
+                class python:(((position + lenSticky) % 2) and 'odd') or 'even';"
                 tal:attributes="id topic/topic_id; class class;">
                 <td class="topic">
                   <a class="topic" href="#"
@@ -166,12 +165,11 @@
             </tal:block>
           </tbody>
         </table>
-        <p tal:condition="python:not(topic_count>0)">
+        <p tal:condition="python:not(topic_count&gt;0)">
           There are no topics in this group.
         </p>
         <tal:block define="len python:view.get_summary_length()">
-          <ul class="inline-list navlinks" 
-            tal:condition="python:topic_count &gt; len">
+          <ul class="inline-list navlinks" >
             <li>
               <a href="#" tal:condition="laterURL" class="prev"
                 tal:attributes="href laterURL;
