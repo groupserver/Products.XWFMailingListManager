@@ -5,7 +5,7 @@ url = 'http://lists.ourshack.com/pipermail/mythtvnz'
 page = urllib.urlopen(url)
 text = page.read()
 
-sys.stdout.write(('%s\n' % text)
+sys.stdout.write(('%s\n' % text))
 matcher = re.compile('href=\"(.*\.gz)\"')
 
 matches = matcher.findall(text)

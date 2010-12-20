@@ -3,7 +3,6 @@ import sqlalchemy as sa
 import datetime
 from pytz import UTC
 from bounceaudit import SUBSYSTEM, DISABLE
-from Products.XWFCore.XWFUtils import change_timezone
 
 import logging
 log = logging.getLogger("XMLMailingListManager.queries") #@UndefinedVariable

@@ -39,4 +39,4 @@ for fname in os.listdir( importDir ):
             for fid in msg.get('x-xwfnotification-file-id', '').split():
                 sys.stdout.write('%s\n'%fid)
         else:
-            sys.stdout.write(('%s,%s,%s\n' % (msg.topic_id, msg.post_id, ','.join(msg.get('x-xwfnotification-file-id','').split())))
+            sys.stdout.write(('%s,%s,%s\n' % (msg.topic_id, msg.post_id, ','.join(msg.get('x-xwfnotification-file-id','').split()))))
