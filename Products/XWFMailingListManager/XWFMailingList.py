@@ -25,8 +25,7 @@ from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
-from Products.GSProfile.utils import create_user_from_email, \
-  send_verification_message
+from Products.GSProfile.utils import create_user_from_email
 from Products.GSGroup.joining import GSGroupJoining
 from Products.GSGroup.groupInfo import IGSGroupInfo
 from gs.group.member.leave.leaver import GroupLeaver
@@ -1206,7 +1205,9 @@ class XWFMailingList(Folder):
         log.info(m)
         email = str(msg.sender)
         user = create_user_from_email(groupInfo.groupObj, email)
-        send_verification_message(groupInfo.groupObj, user, email)
+        eu = createObject('groupserver.EmailVerificationUserFromEmail', 
+                           groupInfo.groupObj, email)
+        eu.send_verification_message()
         join_group(user, groupInfo)
         
         assert user
