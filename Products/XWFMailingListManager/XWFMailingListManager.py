@@ -28,6 +28,7 @@ import os, time, logging, StringIO, traceback
 from Products.CustomUserFolder.queries import UserQuery
 from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroup.groupInfo import IGSGroupInfo
+from gs.profile.email.base.emailuser import EmailUser
 from gs.profile.notify.notifyuser import NotifyUser
 import sqlalchemy as sa
 import datetime
@@ -389,7 +390,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             previousBounceDates.append(bounceDate)
             doNotification = True
 
-        addresses = map(lambda e: e.lower(), userInfo.user.get_verifiedEmailAddresses())
+        emailUser = EmailUser(context, userInfo)
+        addresses = [e.lower() for e in emailUser.get_verified_addresses()]
         try:
             addresses.remove(email.lower())
         except ValueError:

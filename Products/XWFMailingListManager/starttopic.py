@@ -1,17 +1,12 @@
 # coding=utf-8
-try:
-    from five.formlib.formbase import PageForm
-except ImportError:
-    from Products.Five.formlib.formbase import PageForm
-
+from five.formlib.formbase import PageForm
 from zope.component import getMultiAdapter, createObject
 from zope.formlib import form
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import ListSequenceWidget, FileWidget
 from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
 from Products.GSGroupMember.interfaces import IGSPostingUser
-from Products.GSGroupMember.groupmembership import user_admin_of_group
-from queries import MessageQuery
+from gs.profile.email.base.emailuser import EmailUser
 from interfaces import IGSPostMessageNewTopic
 from addapost import add_a_post
 
@@ -42,7 +37,12 @@ class GSStartANewTopicView(PageForm):
         if self.userInfo.anonymous:
             fromAddr = ''
         else:
-            fromAddr = self.userInfo.user.get_defaultDeliveryEmailAddresses()[0]
+            emailUser = EmailUser(self.context, self.userInfo)
+            addrs = emailUser.get_delivery_addresses()
+            if addrs:
+                fromAddr = addrs[0]
+            else:
+                fromAddr = ''
         data = {
           'fromAddress': fromAddr,
           'message':     u'',

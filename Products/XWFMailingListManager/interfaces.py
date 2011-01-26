@@ -1,5 +1,5 @@
 from zope.interface import Interface
-from zope.schema import *
+from zope.schema import Bool, Bytes, Choice, Field, Int, Text, TextLine 
 
 class IMarkupEmail(Interface):
     pass

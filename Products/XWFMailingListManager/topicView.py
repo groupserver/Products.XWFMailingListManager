@@ -13,6 +13,7 @@ from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
 from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import user_admin_of_group
+from gs.profile.email.base.emailuser import EmailUser
 from queries import MessageQuery
 from interfaces import IGSTopicView, IGSAddToTopicFields
 from addapost import add_a_post
@@ -75,7 +76,8 @@ class GSTopicView(PageForm):
         if self.userInfo.anonymous:
             fromAddr = ''
         else:
-            addrs = self.userInfo.user.get_defaultDeliveryEmailAddresses()
+            emailUser = EmailUser(self.context, self.userInfo)
+            addrs = emailUser.get_delivery_addresses()
             if addrs:
                 fromAddr = addrs[0]
             else:
