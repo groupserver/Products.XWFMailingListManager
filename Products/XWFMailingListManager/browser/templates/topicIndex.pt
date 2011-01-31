@@ -19,10 +19,10 @@
             <th class="date">Date</th>
           </tr>
         </thead>
-        <tbody>
-          <tal:block repeat="entry entries">
-            <tr tal:condition="python:len(entry['files']) > 0"
-              tal:define="n repeat/entry/number; odd python:n%2"
+        <tbody 
+          tal:define="e python:[e for e in entries if len(e['files']) > 0]">
+          <tal:block repeat="entry e">
+            <tr tal:define="n repeat/entry/number; odd python:n%2"
               tal:attributes="class python:odd and 'odd' or 'even'">
               <td class="author">
                 <a tal:condition="not:entry/user" 
