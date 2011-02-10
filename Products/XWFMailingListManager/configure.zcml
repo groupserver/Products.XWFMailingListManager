@@ -21,14 +21,6 @@
   </class>
 
   <!--View of the index-pages -->
-  <browser:page for=".interfaces.IGSMessagesFolder" name="post"
-    class=".postView.GSPostTraversal"
-    permission="zope2.View" />
-    
-  <browser:page for=".interfaces.IGSMessagesFolder" name="gspost"
-    class=".postView.GSPostView"
-    template="browser/templates/post.pt" permission="zope2.Public" />
-
   <class class=".topicView.GSTopicTraversal">
     <implements interface="zope.publisher.interfaces.IPublishTraverse"/>
   </class>
