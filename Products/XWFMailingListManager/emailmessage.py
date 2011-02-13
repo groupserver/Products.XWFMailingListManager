@@ -176,16 +176,20 @@ class RDBEmailMessageStorage(object):
         topic = self._get_topic()
         if not topic:
             i = self.topicTable.insert()
-            i.execute(topic_id=self.email_message.topic_id, 
+            i.execute(topic_id=self.email_message.topic_id,
                        group_id=self.email_message.group_id, 
                        site_id=self.email_message.site_id, 
                        original_subject=self.email_message.subject, 
-                       first_post_id=self.email_message.post_id, 
+                       first_post_id=self.email_message.post_id,
                        last_post_id=self.email_message.post_id, 
                        last_post_date=self.email_message.date, 
                        num_posts=1)
         else:
             num_posts = topic['num_posts']
+            # --=mpj17=-- Hypothesis: the following condition is
+            # screwing up, and causing the Last Author to be bung.
+            # Test: check the Last Post in topics where the last 
+            # author is bung.
             if (time.mktime(topic['last_post_date'].timetuple()) > 
                 time.mktime(self.email_message.date.timetuple())):
                 last_post_date = topic['last_post_date']
@@ -193,7 +197,7 @@ class RDBEmailMessageStorage(object):
             else:
                 last_post_date = self.email_message.date
                 last_post_id = self.email_message.post_id
-                
+            
             self.topicTable.update(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
                                          self.topicTable.c.group_id == self.email_message.group_id, 
                                          self.topicTable.c.site_id == self.email_message.site_id)

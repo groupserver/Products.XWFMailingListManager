@@ -551,9 +551,11 @@ class MessageQuery(object):
             if r:
                 assert r['topic_id'] == topic_id, "Topic ID should always match"
                 previous_post_id = r['post_id']
-        
-        return {'first_post_id': first_post_id, 'last_post_id': last_post_id, 
-                'previous_post_id': previous_post_id, 'next_post_id': next_post_id}
+        retval = {'first_post_id': first_post_id, 
+                  'next_post_id': next_post_id,
+                  'previous_post_id': previous_post_id, 
+                  'last_post_id': last_post_id,}
+        return retval
         
     def topic_posts(self, topic_id):
         """ Retrieve all the posts in a topic.

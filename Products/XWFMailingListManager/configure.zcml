@@ -21,33 +21,14 @@
   </class>
 
   <!--View of the index-pages -->
-  <class class=".topicView.GSTopicTraversal">
-    <implements interface="zope.publisher.interfaces.IPublishTraverse"/>
-  </class>
-  <browser:page for=".interfaces.IGSMessagesFolder" name="topic"
-    class=".topicView.GSTopicTraversal"
-    permission="zope2.View" />
-    
-  <class class=".topicView.GSTopicView">
-    <implements interface=".interfaces.IGSTopicView"/>
-  </class>
-  <browser:page 
-    for=".interfaces.IGSMessagesFolder" 
-    name="gstopic"
-    class=".topicView.GSTopicView"
-    permission="zope2.Public" />
-  
   <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"
     class=".topicsView.GSTopicsView"
     template="browser/templates/topics.pt" permission="zope2.View" />
-
   <browser:page for=".interfaces.IGSMessagesFolder" name="posts.html"
     class=".postsView.GSPostsView"
     template="browser/templates/posts.pt" permission="zope2.View" />
-
   <browser:page for=".interfaces.IGSMessagesFolder" name="posts.atom"
     class=".postsView.GSPostsViewWebFeed" permission="zope2.View" />
-
   <browser:page for=".interfaces.IGSMessagesFolder" name="newTopic.html"
     class=".starttopic.GSStartANewTopicView" permission="zope2.View" />
 
