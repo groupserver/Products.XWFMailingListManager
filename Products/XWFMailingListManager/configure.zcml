@@ -32,7 +32,13 @@
   <browser:page for=".interfaces.IGSMessagesFolder" name="newTopic.html"
     class=".starttopic.GSStartANewTopicView" permission="zope2.View" />
 
-  
+
+  <browser:page
+    for=".interfaces.IGSMessagesFolder"
+    name="index.html"
+    class=".messagesredirect.GSMessagesRedirect"
+    permission="zope2.View" />
+    
   <!-- A marker interface -->
   <interface interface=".interfaces.IGSMessagesFolder"
     type="zope.app.content.interfaces.IContentType" />
