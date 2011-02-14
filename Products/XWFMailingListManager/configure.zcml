@@ -60,12 +60,6 @@
     file="browser/javascript/gsfileupload.js" 
     permission="zope2.Public" />
 
-  <utility component=".emailbody.markup_email"
-           provides=".interfaces.IMarkupEmail" />
-  
-  <utility component=".emailbody.wrap_message"
-           provides=".interfaces.IWrapEmail" />
-
   <utility 
     factory=".bounceaudit.BounceHandlingAuditEventFactory"
     name="groupserver.BounceHandling"

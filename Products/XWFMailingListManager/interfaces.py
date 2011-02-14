@@ -2,12 +2,6 @@
 from zope.interface import Interface
 from zope.schema import Bool, Bytes, Choice, Field, Int, Text, TextLine 
 
-class IMarkupEmail(Interface):
-    pass
-
-class IWrapEmail(Interface):
-    pass
-
 class IGSMessagesFolder(Interface):
     pass
 
@@ -17,51 +11,6 @@ class IGSTopicView(Interface):
 class IGSPostView(Interface):
     pass
 
-class IGSPostContentProvider(Interface):
-    """The Groupserver Post Content Provider Interface
-      
-      This interface defines the fields that must be set up, normally using
-      TAL, before creating a "GSPostContentProvider" instance. See the
-      latter for an example."""
-    post = Field(title=u"Email Message Instance",
-                   description=u"The email instance to display",
-                   required=True, 
-                   readonly=False)
-    position = Int(title=u"Position of the Post",
-                     description=u"""The position of the post in the topic.
-                     This is mostly used for determining the background 
-                     colour of the post.""",
-                     required=False,
-                     min=1, default=1)
-    topicName = Text(title=u"Title of the Topic",
-                       description=u"""The title of the topic.""",
-                       required=False,
-                       default=u'')
-    # Should really be called "same author" or similar.
-    showPhoto = Bool(title=u'Whether to show the photo',
-                       description=u"""Determines if the author's photo
-                       should be shown.""",
-                       required=False,
-                       default=True)
-
-    isPublic = Bool(title=u"Is the group public?",
-                    description=u"""Whether or not the group in which this
-                      post is displayed is public""",
-                    required=True)
-    
-    pageTemplateFileName = Text(title=u"Page Template File Name",
-                                  description=u"""The name of the ZPT file
-                                  that is used to render the post.""",
-                                  required=False,
-                                  default=u"browser/templates/email.pt")
-    groupInfo = Field(title=u"Group Information",
-                        description=u"Information about the group",
-                        required=True,
-                        default=None)
-    siteInfo = Field(title=u"Site Information",
-                       description=u"Information about the site",
-                       required=True, 
-                       default=None)
                               
 class IGSPostMessageContentProvider(Interface):
     """A content provider for the "Add to Topic" and "Start Topic" forms"""
