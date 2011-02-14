@@ -63,34 +63,6 @@ class IGSPostContentProvider(Interface):
                        required=True, 
                        default=None)
                               
-class IGSTopicSummaryContentProvider(Interface):
-    """The Groupserver Topic Summary Content Provider Interface
-      
-      This interface defines the fields that must be set up, normally using
-      TAL, before creating a "GSTopicSummaryContentProvider" instance. 
-      See the latter for an example."""
-    
-    topic = Field(title=u"Topic",
-                    description=u"The topic to display",
-                    required=True, 
-                    readonly=False)
-
-    pageTemplateFileName = Text(title=u"Page Template File Name",
-                                  description=u"""The name of the ZPT file
-                                  that is used to render the post.""",
-                                  required=False,
-                                  default=u"browser/templates/topicSummary.pt")
-
-    groupInfo = Field(title=u"Group Information",
-                        description=u"Information about the group",
-                        required=True,
-                        default=None)
-
-    siteInfo = Field(title=u"Site Information",
-                       description=u"Information about the site",
-                       required=True, 
-                       default=None)
-
 class IGSPostMessageContentProvider(Interface):
     """A content provider for the "Add to Topic" and "Start Topic" forms"""
     startNew = Bool(title=u'Start a New Topic',

@@ -41,9 +41,6 @@
   <interface interface=".interfaces.IGSPostContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
   
-  <interface interface=".interfaces.IGSTopicSummaryContentProvider"
-    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
-
   <interface interface=".interfaces.IGSPostMessageContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
 
