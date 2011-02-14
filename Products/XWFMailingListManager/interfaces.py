@@ -91,18 +91,6 @@ class IGSTopicSummaryContentProvider(Interface):
                        required=True, 
                        default=None)
 
-
-class IGSTopicIndexContentProvider(Interface):
-    """A content provider for the index of posts in a topic"""
-    topic = Field(title=u"Topic",
-                  description=u"The topic to display",
-                  required=True, 
-                  readonly=False)
-                  
-    def get_user_can_post(): #@NoSelf
-        """ """
-        pass
-
 class IGSPostMessageContentProvider(Interface):
     """A content provider for the "Add to Topic" and "Start Topic" forms"""
     startNew = Bool(title=u'Start a New Topic',

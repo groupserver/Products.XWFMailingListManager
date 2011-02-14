@@ -23,7 +23,7 @@ import XWFMailingListManager, XWFMailingList
 import XWFVirtualMailingListArchive2
 
 import postContentProvider, postMessageContentProvider
-import topicIndexContentProvider, topicSummaryContentProvider
+import topicSummaryContentProvider
 import stickyTopicToggleContentProvider, postprivacy
 
 from AccessControl import ModuleSecurityInfo
