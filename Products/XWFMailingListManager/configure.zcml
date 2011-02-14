@@ -44,9 +44,6 @@
   <interface interface=".interfaces.IGSPostMessageContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
 
-  <interface interface=".interfaces.IGSStickyTopicToggleContentProvider"
-    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
-
   <interface interface=".interfaces.IGSPostPrivacyContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
 

@@ -13,7 +13,6 @@ from sqlalchemy.exceptions import SQLError
 from zope.component import createObject, getMultiAdapter
 
 import DocumentTemplate
-import Products.XWFMailingListManager.stickyTopicToggleContentProvider
 import queries
 
 from Products.GSGroupMember.interfaces import IGSPostingUser
