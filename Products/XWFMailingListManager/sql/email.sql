@@ -2,24 +2,6 @@ SET CLIENT_ENCODING = 'UTF8';
 SET CHECK_FUNCTION_BODIES = FALSE;
 SET CLIENT_MIN_MESSAGES = WARNING;
 
-CREATE TABLE POST (
-    POST_ID           TEXT                     PRIMARY KEY,
-    TOPIC_ID          TEXT                     NOT NULL,
-    GROUP_ID          TEXT                     NOT NULL,
-    SITE_ID           TEXT                     NOT NULL,
-    USER_ID           TEXT                     NOT NULL,
-    IN_REPLY_TO       TEXT                     NOT NULL DEFAULT ''::TEXT,
-    SUBJECT           TEXT                     NOT NULL DEFAULT ''::TEXT,
-    DATE              TIMESTAMP WITH TIME ZONE NOT NULL,
-    BODY              TEXT                     NOT NULL DEFAULT ''::TEXT,
-    HTMLBODY          TEXT                     NOT NULL DEFAULT ''::TEXT,
-    HEADER            TEXT                     NOT NULL,
-    HAS_ATTACHMENTS   BOOLEAN		           NOT NULL
-);
-
-CREATE INDEX SITE_GROUP_IDX ON POST USING BTREE (SITE_ID, GROUP_ID);
-CREATE INDEX TOPIC_IDX ON POST USING BTREE (TOPIC_ID);
-
 CREATE TABLE BOUNCE (
     DATE	      TIMESTAMP WITH TIME ZONE	NOT NULL,
     USER_ID	      TEXT			NOT NULL,	
