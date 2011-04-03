@@ -111,25 +111,6 @@ BEGIN;
 
 COMMIT;
 
---
--- Initialise the trigger and rowcount for the post table
---
-
-BEGIN;
-   -- Make sure no rows can be added to post until we have finished
-   LOCK TABLE post IN SHARE ROW EXCLUSIVE MODE;
-
-   create TRIGGER count_post_rows
-      AFTER INSERT OR DELETE on post
-      FOR EACH ROW EXECUTE PROCEDURE count_rows();
-   
-   -- Initialise the row count record
-   DELETE FROM rowcount WHERE table_name = 'post';
-
-   INSERT INTO rowcount (table_name, total_rows)
-   VALUES  ('post',  (SELECT COUNT(*) FROM post));
-
-COMMIT;
 
 --
 -- Initialise the trigger and rowcount for the word_count table
