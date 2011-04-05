@@ -583,6 +583,7 @@ class MessageQuery(object):
                         'subject': to_unicode(x['subject']), 
                         'date': x['date'], 
                         'author_id': x['user_id'],
+                        'hidden': x['hidden'],
                         'files_metadata': x['has_attachments'] 
                                   and self.files_metadata(x['post_id']) or [],
                         'body': to_unicode(x['body']),
@@ -619,6 +620,7 @@ class MessageQuery(object):
                     'subject': to_unicode(row['subject']),
                     'date': row['date'],
                     'author_id': row['user_id'],
+                    'hidden': row['hidden'],
                     'files_metadata': row['has_attachments'] and 
                                       self.files_metadata(row['post_id']) or [],
                     'body': to_unicode(row['body']),
