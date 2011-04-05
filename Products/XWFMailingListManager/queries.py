@@ -333,17 +333,8 @@ class MessageQuery(object):
         
         retval = []
         if r.rowcount:
-            retval = [ {'post_id': x['post_id'], 
-                        'topic_id': x['topic_id'], 
-                        'subject': to_unicode(x['subject']), 
-                        'date': x['date'], 
-                        'author_id': x['user_id'], 
-                        'body': to_unicode(x['body']),
-                        'summary': summary(x['body']), 
-                        'files_metadata': x['has_attachments'] 
-                                  and self.files_metadata(x['post_id']) or [],
-                        'has_attachments': x['has_attachments']} for x in r ]
-            
+            retval = [self.marshall_post(x) for x in r ]
+
         return retval
     
     def post_count(self, site_id, group_ids=[]):
@@ -600,7 +591,7 @@ class MessageQuery(object):
                 {'post_id': ID, 'group_id': ID, 'site_id': ID,
                  'subject': String,
                  'date': Date, 'author_id': ID,
-                 'body': Text,
+                 'body': Text, 'hidden': DateOrNull,
                  'files_metadata': [Metadata]
                  }
              or
