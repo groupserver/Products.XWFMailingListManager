@@ -5,27 +5,23 @@ DBUSERNAME='gstest'
 DBPASSWORD=''
 DBNAME='gstestdb'
 
-PATH_TO_INSTANCE='/example/'
-GROUP_TITLE='mythtvnz'
-GROUP_ID='mythtvnz'
-SITE_ID='mythtvnz'
+PATH_TO_INSTANCE='/path/in/zope/to/root/of/groupserver/instance'
+GROUP_TITLE='Some Group Title That Appears In Subject'
+GROUP_ID='TheGroupID'
+SITE_ID='TheSiteId'
 
-IMPORT_DIR='/home/richard/Workspace/groupserver-1.0beta/src/Products.XWFMailingListManager/Products/XWFMailingListManager/migrate/archives/'
-LOG_FILE='/home/richard/foo.out'
+IMPORT_DIR='/path/to/directory/with/archives'
+LOG_FILE='/path/to/log.file'
 
 # You shouldn't need to change below here
 import os, sys
 
-if __name__ == '__main__':
-    execfile('framework.py')
-
-from Products.Five import zcml
+from Zope2.App import zcml
 from Products.XWFMailingListManager import emailmessage
 from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
 from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
 from Testing.ZopeTestCase import base
 from sqlalchemy.exceptions import SQLError
-
 import Products.Five
 import Products.XWFMailingListManager
 from Products.GSProfile.utils import create_user_from_email
@@ -35,12 +31,6 @@ import difflib, sqlalchemy
 import time, gzip, re, sys
 
 from mailbox import PortableUnixMailbox
-
-app = base.app()
-
-zcml.load_config('meta.zcml', Products.Five)
-zcml.load_config('permissions.zcml', Products.Five)
-zcml.load_config('configure.zcml', Products.XWFMailingListManager)
 
 startPos = os.environ.get('START_POS', '')
 try:
@@ -132,19 +122,19 @@ def import_mbox(mbox):
             row = r.fetchone()
             if row:
                 log.write("===POSSIBLE DUPLICATE DETAILS, POST ID %s===\n\n" % msg.post_id)
-                hdiff = '\n'.join(difflib.unified_diff(msg.headers.encode('utf-8').split('\n'), row.header.encode('utf-8').split('\n')))
+                hdiff = '\n'.join(difflib.unified_diff(msg.headers.decode('utf-8').split('\n'), row.header.decode('utf-8').split('\n')))
                 if hdiff:
                     log.write("===HEADER DIFF FOLLOWS===\n")
                     log.write(hdiff+'\n')
-                bdiff = '\n'.join(difflib.unified_diff(msg.body.encode('utf-8').split('\n'), row.body.encode('utf-8').split('\n')))
+                bdiff = '\n'.join(difflib.unified_diff(msg.body.decode('utf-8').split('\n'), row.body.decode('utf-8').split('\n')))
                 if bdiff:
                     log.write("===BODY DIFF FOLLOWS===\n\n")
                     log.write(bdiff+'\n')
                 log.write("---------END--------\n")
             else:
                 log.write("===UNKNOWN ERROR, POST ID %s===\nn" % msg.post_id)
-                log.write("%s\n\n" % msg.headers.encode('utf-8'))
-                log.write("%s\n" % msg.body.encode('utf-8'))
+                log.write("%s\n\n" % msg.headers.decode('utf-8'))
+                log.write("%s\n" % msg.body.decode('utf-8'))
                 log.write("---------END--------\n")
             log.flush()
         except Exception, x:
