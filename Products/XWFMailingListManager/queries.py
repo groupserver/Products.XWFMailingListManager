@@ -577,20 +577,22 @@ class MessageQuery(object):
         r = statement.execute()
         retval = []
         if r.rowcount:
-            retval = [ {'post_id': x['post_id'], 
-                        'site_id': x['site_id'],
-                        'group_id': x['group_id'],
-                        'subject': to_unicode(x['subject']), 
-                        'date': x['date'], 
-                        'author_id': x['user_id'],
-                        'hidden': x['hidden'],
-                        'files_metadata': x['has_attachments'] 
-                                  and self.files_metadata(x['post_id']) or [],
-                        'body': to_unicode(x['body']),
-                        'summary': summary(x['body'])} for x in r ]
+            retval = [self.marshall_post(x) for x in r ]
         return retval
 
-    
+    def marshall_post(self, x):
+        return {'post_id': x['post_id'], 
+                'site_id': x['site_id'],
+                'group_id': x['group_id'],
+                'subject': to_unicode(x['subject']), 
+                'date': x['date'], 
+                'author_id': x['user_id'],
+                'hidden': x['hidden'],
+                'files_metadata': x['has_attachments'] 
+                          and self.files_metadata(x['post_id']) or [],
+                'body': to_unicode(x['body']),
+                'summary': summary(x['body'])}
+                
     def post(self, post_id):
         """ Retrieve a particular post.
             
@@ -614,17 +616,7 @@ class MessageQuery(object):
             assert r.rowcount == 1, "Posts should always be unique"
             row = r.fetchone()
             
-            return {'post_id': row['post_id'],
-                    'group_id': row['group_id'],
-                    'site_id': row['site_id'],
-                    'subject': to_unicode(row['subject']),
-                    'date': row['date'],
-                    'author_id': row['user_id'],
-                    'hidden': row['hidden'],
-                    'files_metadata': row['has_attachments'] and 
-                                      self.files_metadata(row['post_id']) or [],
-                    'body': to_unicode(row['body']),
-                    'summary': summary(row['body'])}
+            return self.marshall_post(row)
         
         return None
 
