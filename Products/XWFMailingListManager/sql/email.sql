@@ -15,34 +15,6 @@ CREATE TABLE POST_TAG (
 	TAG				  TEXT					   NOT NULL
 );
 
-CREATE TABLE TOPIC (
-    TOPIC_ID          TEXT                     PRIMARY KEY,
-    GROUP_ID          TEXT                     NOT NULL,
-    SITE_ID           TEXT                     NOT NULL,
-    ORIGINAL_SUBJECT  TEXT                     NOT NULL,
-    FIRST_POST_ID     TEXT                     NOT NULL REFERENCES POST (POST_ID),
-    LAST_POST_ID      TEXT                     NOT NULL REFERENCES POST (POST_ID),
-    LAST_POST_DATE    TIMESTAMP WITH TIME ZONE NOT NULL,
-    NUM_POSTS         INTEGER                  NOT NULL CHECK (NUM_POSTS > 0)
-);  
-
-CREATE INDEX GROUP_ID_SITE_ID_IDX ON TOPIC USING BTREE (GROUP_ID, SITE_ID);
-
-CREATE TABLE TOPIC_WORD_COUNT (
-    TOPIC_ID          TEXT                     NOT NULL REFERENCES TOPIC (TOPIC_ID),
-    WORD              TEXT                     NOT NULL,
-    COUNT             INTEGER                  NOT NULL CHECK (COUNT > 0)
-);
-
-CREATE UNIQUE INDEX TOPIC_WORD_PKEY ON TOPIC_WORD_COUNT USING BTREE (TOPIC_ID, WORD);
-
-CREATE TABLE word_count (
-    word text NOT NULL,
-    count integer NOT NULL
-);
-
-CREATE UNIQUE INDEX WORD_COUNT_PKEY ON WORD_COUNT USING BTREE (word);
-
 CREATE TABLE group_digest (
     site_id text not null,
     group_id text not null,
