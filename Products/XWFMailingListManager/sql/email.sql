@@ -40,29 +40,6 @@ CREATE TABLE POST_ID_MAP (
 
 CREATE UNIQUE INDEX OLD_POST_ID_PKEY ON POST_ID_MAP USING BTREE (OLD_POST_ID);
 
-CREATE TABLE rowcount (
-    table_name  text NOT NULL,
-    total_rows  bigint,
-    PRIMARY KEY (table_name)
-);
-
-CREATE OR REPLACE FUNCTION count_rows()
-RETURNS TRIGGER AS
-'
-   BEGIN
-      IF TG_OP = ''INSERT'' THEN
-         UPDATE rowcount
-            SET total_rows = total_rows + 1
-            WHERE table_name = TG_RELNAME;
-      ELSIF TG_OP = ''DELETE'' THEN
-         UPDATE rowcount
-            SET total_rows = total_rows - 1
-            WHERE table_name = TG_RELNAME;
-      END IF;
-      RETURN NULL;
-   END;
-' LANGUAGE plpgsql;
-
 --
 -- Initialise trigger and rowcount for the topic table
 --
