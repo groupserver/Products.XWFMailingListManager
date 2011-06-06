@@ -1,27 +1,20 @@
 # coding=utf-8
-from Products.Five import BrowserView
+from zope.cachedescriptors.property import Lazy
 from zope.component import getMultiAdapter, createObject
-import Products.GSContent
 from Products.GSSearch import queries
-from Products.GSGroupMember.interfaces import IGSPostingUser
-# from view import GSPostingInfo # FIX
+from gs.group.base.page import GroupPage
+from gs.group.member.canpost.interfaces import IGSPostingUser
 
 import logging
 log = logging.getLogger('Products.XWFMailingList.topicsView')
 
-class GSTopicsView(BrowserView):
+class GSTopicsView(GroupPage):
       """List of latest topics in the group."""
       topNTopics = 64
       def __init__(self, context, request):
-          self.context = context
-          self.request = request
+          GroupPage.__init__(self, context, request)
 
           self.__author_cache = {}
-
-          self.siteInfo = createObject('groupserver.SiteInfo', 
-            context)
-          self.groupInfo = createObject('groupserver.GroupInfo', context)
-
           da = context.zsqlalchemy 
           assert da
           self.messageQuery = queries.MessageQuery(context, da)
@@ -66,9 +59,8 @@ class GSTopicsView(BrowserView):
 
           tIds = [t['topic_id'] for t in self.topics]
           self.topicFiles = self.messageQuery.files_metadata_topic(tIds)
-          self.__userPostingInfo = None
           
-      @property
+      @Lazy
       def userPostingInfo(self):
           '''Get the User Posting Info
           
@@ -76,12 +68,9 @@ class GSTopicsView(BrowserView):
           variable is that self.context is a bit weird until *after* 
           "__init__" has run. Ask me not questions I tell you no lies.
           '''
-          if self.__userPostingInfo == None:
-              g = self.groupInfo.groupObj
-              ui = createObject('groupserver.LoggedInUser', self.context)
-              upi = getMultiAdapter((g, ui), IGSPostingUser)
-              self.__userPostingInfo = upi
-          retval = self.__userPostingInfo
+          g = self.groupInfo.groupObj
+          ui = createObject('groupserver.LoggedInUser', self.context)
+          retval = getMultiAdapter((g, ui), IGSPostingUser)
           assert IGSPostingUser.providedBy(retval)
           return retval
 

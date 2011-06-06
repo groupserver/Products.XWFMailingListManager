@@ -22,13 +22,13 @@ from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption
 from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
 from Products.CustomUserFolder.userinfo import IGSUserInfo
-from Products.GSGroupMember.interfaces import IGSPostingUser
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSSearch.topicdigestview import TopicDigestView
 from Products.GSProfile.utils import create_user_from_email
 from Products.GSGroup.joining import GSGroupJoining
 from Products.GSGroup.groupInfo import IGSGroupInfo
 from gs.group.member.leave.leaver import GroupLeaver
+from gs.group.member.canpost.interfaces import IGSPostingUser
 
 import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \

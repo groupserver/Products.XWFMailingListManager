@@ -7,7 +7,7 @@ from mimetypes import MimeTypes
 from sqlalchemy.exceptions import SQLError
 from zope.component import createObject, getMultiAdapter
 from zExceptions import BadRequest
-from Products.GSGroupMember.interfaces import IGSPostingUser
+from gs.group.member.canpost.interfaces import IGSPostingUser
 from gs.profile.notify.adressee import Addressee
 from queries import MessageQuery
 from MailBoxerTools import lowerList

@@ -22,7 +22,6 @@ except RegistrationError:
 import XWFMailingListManager, XWFMailingList
 import XWFVirtualMailingListArchive2
 
-import postMessageContentProvider
 import postprivacy
 
 from AccessControl import ModuleSecurityInfo

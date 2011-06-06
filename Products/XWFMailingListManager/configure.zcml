@@ -20,18 +20,25 @@
       <implements interface=".interfaces.IGSMessagesFolder" />
   </class>
 
-  <!--View of the index-pages -->
-  <browser:page for=".interfaces.IGSMessagesFolder" name="topics.html"
+  <!--The list of topics-->
+  <browser:page for=".interfaces.IGSMessagesFolder" 
+    name="topics.html"
     class=".topicsView.GSTopicsView"
-    template="browser/templates/topics.pt" permission="zope2.View" />
-  <browser:page for=".interfaces.IGSMessagesFolder" name="posts.html"
+    template="browser/templates/topics.pt" 
+    permission="zope2.View" />
+  
+  <!-- The list of posts -->
+  <browser:page for=".interfaces.IGSMessagesFolder" 
+    name="posts.html"
     class=".postsView.GSPostsView"
-    template="browser/templates/posts.pt" permission="zope2.View" />
-  <browser:page for=".interfaces.IGSMessagesFolder" name="posts.atom"
-    class=".postsView.GSPostsViewWebFeed" permission="zope2.View" />
-  <browser:page for=".interfaces.IGSMessagesFolder" name="newTopic.html"
-    class=".starttopic.GSStartANewTopicView" permission="zope2.View" />
+    template="browser/templates/posts.pt" 
+    permission="zope2.View" />
 
+  <!-- New Topic form -->
+  <browser:page for=".interfaces.IGSMessagesFolder" 
+    name="newTopic.html"
+    class=".starttopic.GSStartANewTopicView" 
+    permission="zope2.View" />
 
   <browser:page
     for=".interfaces.IGSMessagesFolder"
@@ -44,9 +51,6 @@
     type="zope.app.content.interfaces.IContentType" />
   
   <!--Interfaces-->
-  <interface interface=".interfaces.IGSPostMessageContentProvider"
-    type="zope.contentprovider.interfaces.ITALNamespaceData"/>
-
   <interface interface=".interfaces.IGSPostPrivacyContentProvider"
     type="zope.contentprovider.interfaces.ITALNamespaceData"/>
 

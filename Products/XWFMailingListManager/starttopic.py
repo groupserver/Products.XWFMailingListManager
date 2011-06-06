@@ -1,22 +1,22 @@
 # coding=utf-8
-from five.formlib.formbase import PageForm
+from zope.cachedescriptors.property import Lazy
 from zope.component import getMultiAdapter, createObject
 from zope.formlib import form
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import ListSequenceWidget, FileWidget
+from zope.app.form.browser import FileWidget
 from Products.Five.browser.pagetemplatefile import ZopeTwoPageTemplateFile
-from Products.GSGroupMember.interfaces import IGSPostingUser
+from gs.group.member.canpost.interfaces import IGSPostingUser
+from gs.group.base.form import GroupForm
 from gs.profile.email.base.emailuser import EmailUser
 from interfaces import IGSPostMessageNewTopic
 from addapost import add_a_post
-
 
 class MyFileWidget(FileWidget):
     def _toFieldValue(self, input):
         #--=mpj17=-- Lookie! A hack!
         return self.context.missing_value
 
-class GSStartANewTopicView(PageForm):
+class GSStartANewTopicView(GroupForm):
     """View of a single GroupServer Topic"""
     label = u'Start a New Topic'
     pageTemplateFileName = 'browser/templates/newTopic.pt'
@@ -24,11 +24,8 @@ class GSStartANewTopicView(PageForm):
     form_fields = form.Fields(IGSPostMessageNewTopic, render_context=False)
     
     def __init__(self, context, request):
-        PageForm.__init__(self, context, request)
-
-        self.siteInfo = createObject('groupserver.SiteInfo', context )
-        self.groupInfo = createObject('groupserver.GroupInfo', context)
-        self.__userInfo = self.__userPostingInfo = self.__message = None
+        GroupForm.__init__(self, context, request)
+        self.__message = None
         cw = CustomWidgetFactory(MyFileWidget)
         self.form_fields['uploadedFile'].custom_widget = cw
 
@@ -91,24 +88,20 @@ class GSStartANewTopicView(PageForm):
           self.status = u'<p>There are errors:</p>'
       assert type(self.status) == unicode
 
-    @property
+    @Lazy
     def userInfo(self):
-        if self.__userInfo == None:
-            self.__userInfo = createObject('groupserver.LoggedInUser', 
-              self.context)
-        return self.__userInfo
+        retval = createObject('groupserver.LoggedInUser', self.context)
+        return retval
         
-    @property
+    @Lazy
     def userPostingInfo(self):
-        if self.__userPostingInfo == None:
-            g = self.groupInfo.groupObj
-            assert g
-            # --=mpj17=-- A Pixie Caramel to anyone who can tell me
-            #    why the following line does not work in Zope 2.10.
-            #   "Zope Five is screwed" is not sufficient.
-            #self.userPostingInfo = IGSPostingUser((g, userInfo))
-            self.__userPostingInfo = getMultiAdapter((g, self.userInfo), 
-                                                      IGSPostingUser)
-        assert self.__userPostingInfo
-        return self.__userPostingInfo
+        g = self.groupInfo.groupObj
+        assert g
+        # --=mpj17=-- A Pixie Caramel to anyone who can tell me
+        #    why the following line does not work in Zope 2.10.
+        #   "Zope Five is screwed" is not sufficient.
+        #self.userPostingInfo = IGSPostingUser((g, userInfo))
+        retval = getMultiAdapter((g, self.userInfo), IGSPostingUser)
+        assert retval
+        return retval
 
