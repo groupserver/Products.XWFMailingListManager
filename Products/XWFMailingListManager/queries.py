@@ -96,6 +96,16 @@ class MemberQuery(object):
         self.groupUserEmailTable = da.createTable('group_user_email')
         self.emailBlacklist = da.createTable('email_blacklist')
 
+    def address_is_blacklisted(self, emailAddress):
+        s = self.emailBlacklist.select()
+        ilike = self.emailBlacklist.c.email.op('ILIKE')
+        s.append_whereclause(ilike(emailAddress))
+        
+        r = s.execute()
+        retval = (r.rowcount > 0)
+        assert type(retval) == bool
+        return retval
+
     def process_blacklist(self, email_addresses):
         eb = self.emailBlacklist
 
