@@ -17,7 +17,7 @@ from DateTime.DateTime import DateTime
 from App.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
 from zope.component import createObject, getMultiAdapter
-
+from zope.cachedescriptors.property import Lazy
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption
 from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
@@ -115,7 +115,7 @@ class XWFMailingList(Folder):
         self.title = title
         self.hashkey = str(random.random())
         self.mailto = mailto
-        
+
     def valid_property_id(self, id):
         # A modified version of the 'valid_property_id' in the PropertyManager
         # class. This one _doesn't_ check for the existence of the ID,
@@ -376,16 +376,13 @@ class XWFMailingList(Folder):
         users = filter(lambda x: x, [ self.acl_users.getUser(uid) for uid in uids if uid ])
                
         return users
-       
+               
     security.declareProtected('Access contents information', 'getValueFor')
     def getValueFor(self, key):
         """ getting the maillist and moderatedlist is a special case, working
             in with the XWFT group framework.
         
         """
-        da = self.zsqlalchemy 
-        assert da
-        memberQuery = MemberQuery(self, da)
 
         if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist', 'mailinlist'):
             maillist = []
@@ -411,6 +408,9 @@ class XWFMailingList(Folder):
                 return maillist_script()
                 
             try:
+                da = self.zsqlalchemy 
+                assert da
+                memberQuery = MemberQuery(self, da)
                 addresses = []
                 if key == 'maillist':
                     addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
@@ -1009,6 +1009,9 @@ class XWFMailingList(Folder):
           self.getValueFor('subscribe'), 
           'digest on',
           'digest off']
+        da = self.zsqlalchemy 
+        assert da
+        memberQuery = MemberQuery(self, da)
         if check_for_commands(msg, commands):
             # If the message is a command, we have to let the 
             #   command-handling subsystem deal with it.
@@ -1043,6 +1046,14 @@ class XWFMailingList(Folder):
                 userInfo.user.send_notification('cannot_post', 'default', 
                                                 ndict)
                 return message
+            elif (userInfo.anonymous 
+                    and memberQuery.address_is_blacklisted(email)):
+                    # A special rule for Anonymous. See Ticket 459
+                    # <https://projects.iopen.net/groupserver/ticket/459>
+                    message = 'Dropping message from blacklisted '\
+                        'address <%s>' % email
+                    log.warning(message)
+                    return message
 
         self._v_last_email_checksum = msg.post_id
     
