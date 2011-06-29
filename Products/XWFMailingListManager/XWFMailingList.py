@@ -1518,6 +1518,9 @@ class XWFMailingList(Folder):
                                    mail=mail,
                                    body=body)
             smtpserver.sendmail(returnpath, [mail['from']], reply_text)
+            m = '%s (%s) sending email_reply notification to <%s>' % \
+                (groupInfo.name, groupInfo.id, email_address)
+            log.info(m)
         smtpserver.quit()            
 
     security.declarePrivate('mail_subscribe_key')
