@@ -272,6 +272,42 @@ Web Feed
   `Basic Appearance`_.)
 * Each post links to the attached files.
 
+Blocked Address
+===============
+
+With the completion of `Ticket 459`_ an address can be *blocked* by
+adding an entry for the address in the ``email_blacklist`` relational
+database table. The table below summarises the correct behaviour for
+blocking, for the different group privacy levels and membership statuses.
+
+======= ======= =========== ======= =========== ======= =========== 
+Group   Member              Non-member          Anonymous
+------- ------------------- ------------------- ------------------- 
+Privacy Blocked Not Blocked Blocked Not Blocked Blocked Not Blocked
+======= ======= =========== ======= =========== ======= =========== 
+Public  Block   Post        Block   Can't post  Block   Email reply
+Private Block   Post        Block   Can't post  Block   Email reply
+Secret  Block   Post        Block   Can't post  Block   Email reply
+Support Block   Post        Block   Post        Block   Post
+======= ======= =========== ======= =========== ======= =========== 
+
+The three different actions are as follows.
+
+Block
+  The post is blocked, the blocking is logged, and no notice is sent.
+
+Post
+  The message is posted to the group: the post appears in the group,
+  and all members get a notification of the new message.
+  
+Can't post
+  The sender gets a *Cannot Post* notification.
+
+Email reply
+  The sender (who does not have a profile on the site) gets an
+  *Email Reply* message (see the ``email_reply`` page template in the
+  List Manager.
+
 Todo
 ====
 
@@ -300,5 +336,6 @@ Useful packages?
 .. _Ticket 459: https://projects.iopen.net/groupserver/ticket/459
 .. _Ticket 456: https://projects.iopen.net/groupserver/ticket/456
 .. _Ticket 171: https://projects.iopen.net/groupserver/ticket/171
+.. _Ticket 459: https://projects.iopen.net/groupserver/ticket/459
 .. _Selenium: http://seleniumhq.org/
 
