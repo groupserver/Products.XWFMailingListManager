@@ -992,7 +992,9 @@ class XWFMailingList(Folder):
         elif self.chk_msg_spam(mailString): # --=mpj17=--I moved this far
             message = u'%s (%s): Spam detected' %\
               (groupInfo.name, groupInfo.id)
-        
+        elif self.chk_sender_blacklist(msg):
+            message = '%s (%s): Dropping message from blacklisted '\
+                'address <%s>' % (groupInfo.name, groupInfo.id, msg.sender)
         if message:
             assert type(message) == unicode
             log.warning(message)
@@ -1009,9 +1011,6 @@ class XWFMailingList(Folder):
           self.getValueFor('subscribe'), 
           'digest on',
           'digest off']
-        da = self.zsqlalchemy 
-        assert da
-        memberQuery = MemberQuery(self, da)
         if check_for_commands(msg, commands):
             # If the message is a command, we have to let the 
             #   command-handling subsystem deal with it.
@@ -1024,7 +1023,8 @@ class XWFMailingList(Folder):
             insts = (groupInfo.groupObj, userInfo)
             postingInfo = getMultiAdapter(insts, IGSPostingUser)
             if not(postingInfo.canPost) and not(userInfo.anonymous):
-                message = postingInfo.status
+                message = '%s (%s): %s' % (userInfo.name, userInfo.id,
+                                            postingInfo.status)
                 log.warning(message)
                 siteInfo = groupInfo.siteInfo
                 joiningInfo = GSGroupJoining(groupInfo.groupObj).joinability
@@ -1046,14 +1046,6 @@ class XWFMailingList(Folder):
                 userInfo.user.send_notification('cannot_post', 'default', 
                                                 ndict)
                 return message
-            elif (userInfo.anonymous 
-                    and memberQuery.address_is_blacklisted(email)):
-                    # A special rule for Anonymous. See Ticket 459
-                    # <https://projects.iopen.net/groupserver/ticket/459>
-                    message = 'Dropping message from blacklisted '\
-                        'address <%s>' % email
-                    log.warning(message)
-                    return message
 
         self._v_last_email_checksum = msg.post_id
     
@@ -1133,6 +1125,15 @@ class XWFMailingList(Folder):
         assert type(retval) == bool
         return retval
 
+    def chk_sender_blacklist(self, msg):
+        # See Ticket 459 <https://projects.iopen.net/groupserver/ticket/459>
+        da = self.zsqlalchemy 
+        assert da
+        memberQuery = MemberQuery(self, da)
+        retval = memberQuery.address_is_blacklisted(msg.sender)        
+        assert type(retval) == bool
+        return retval
+        
     def requestMail(self, REQUEST):
         # Handles requests for subscription changes
 
