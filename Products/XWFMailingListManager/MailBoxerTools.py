@@ -18,6 +18,7 @@
 #####
 
 import StringIO, re, rfc822, multifile, mimetools, mimify
+from html2txt import convert_to_txt
 
 def splitMail(mailString):
     """ returns (header,body) of a mail given as string 
@@ -83,7 +84,7 @@ def getPlainBodyFromMail(mailString):
                                                                   htmlBody)
         if match:
             charset="charset=%s;" % match.group(1)
-        return ('text/plain;%s' % charset, convertHTML2Text(htmlBody))
+        return ('text/plain;%s' % charset, convert_to_txt(htmlBody))
     
 
 def headersAsString(mailString, customHeaders={}):
@@ -180,23 +181,3 @@ def unpackMultifile(multifile, attachments=()):
             
     return (textBody, contentType, htmlBody, tuple(attachments))
 
-
-def convertHTML2Text(html):
-    """ converts given html to plain text.
-    """
-    from sgmllib import SGMLParser
-    class HTMLStripper(SGMLParser):
-        """ Remove tags and translate entities. 
-        """    
-        text = ''
-    
-        def handle_data(self, data):
-            self.text = self.text + data
-    
-        def __str__(self):
-            return self.text.strip()
-
-    p = HTMLStripper()
-    p.feed(html)
-    p.close()
-    return str(p)                      
