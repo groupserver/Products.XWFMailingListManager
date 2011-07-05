@@ -10,7 +10,7 @@ from sqlalchemy.exceptions import SQLError
 from zope.interface import Interface, Attribute, implements
 from zope.datetime import parseDatetimetz
 from Products.XWFCore.XWFUtils import removePathsFromFilenames
-from MailBoxerTools import convertHTML2Text
+from html2txt import convert_to_txt
 from email import Parser, Header
 from addapost import tagProcess
 from crop_email import crop_email
@@ -486,10 +486,8 @@ class EmailMessage(object):
                     break
             html_body = self.html_body
             if html_body and (not self.__body):
-                plain_body = convertHTML2Text(html_body.encode(self.encoding,
-                                                        'xmlcharrefreplace'))
-                self.__body = unicode(plain_body, self.encoding, 'ignore')
-
+                h = html_body.encode(self.encoding,'xmlcharrefreplace')
+                self.__body = convert_to_txt(h)
         assert self.__body != None
         assert type(self.__body) == unicode
         return self.__body
