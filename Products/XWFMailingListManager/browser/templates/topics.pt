@@ -62,6 +62,11 @@
             </span>
           </li>
           <li>
+            <a href="#" class="up"
+              tal:attributes="href view/groupInfo/relativeURL;
+                title view/groupInfo/name">Group</a>
+          </li>
+          <li>
             <a href="#" tal:condition="earlierURL" class="next"
               tal:attributes="href earlierURL;
               title string:The ${len} older topics;">Earlier
