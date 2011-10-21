@@ -340,6 +340,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             groupname = line[2:-2]
             group = self.get_list(groupname)
             if not group:
+                log.error("No group %s existed while processing spool" % groupname)
+                os.remove(spoolfilepath)
                 continue
 
             mailString = spoolfile.read()
@@ -351,7 +353,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 # sleep a little
                 time.sleep(0.5)
             except:
-                pass
+                log.exception("An error occurred while trying to send spooled email")
 
     def processBounce(self, groupId, email):
         """ Process a bounce for a particular list.
