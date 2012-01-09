@@ -1414,7 +1414,8 @@ class XWFMailingList(Folder):
               (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id, 
                userInfo.name, userInfo.id, email)
             log.info(m)
-
+            
+            # TODO: Use gs.group.member.join like the rest of GS
             join_group(user, groupInfo)
             
             retval = 1
