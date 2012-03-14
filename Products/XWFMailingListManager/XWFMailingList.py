@@ -1026,25 +1026,10 @@ class XWFMailingList(Folder):
                 message = '%s (%s): %s' % (userInfo.name, userInfo.id,
                                             postingInfo.status)
                 log.warning(message)
-                siteInfo = groupInfo.siteInfo
-                joiningInfo = GSGroupJoining(groupInfo.groupObj).joinability
-                ndict = {
-                  'userName':        userInfo.name,
-                  'userURL':         userInfo.url,
-                  'groupName':       groupInfo.name,
-                  'groupURL':        groupInfo.url,
-                  'joiningInfo':     joiningInfo,
-                  'siteName':        siteInfo.name,
-                  'siteURL':         siteInfo.url,
-                  'canPost':         postingInfo.canPost,
-                  'postStatus':      postingInfo.status,
-                  'postStatuNum':    postingInfo.statusNum,
-                  'subject':         msg.subject,
-                  'originalMessage': mailString,
-                  'boundary':       'blocked%s' % msg.post_id
-                }
-                userInfo.user.send_notification('cannot_post', 'default', 
-                                                ndict)
+                # TODO:
+                # 1. Create a notifier
+                # 2. Send a notification
+                
                 return message
 
         self._v_last_email_checksum = msg.post_id

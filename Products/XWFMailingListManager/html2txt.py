@@ -42,11 +42,11 @@ class HTMLConverter(HTMLParser):
         if tag == 'a' and self.lastHREF:
             href = self.lastHREF.pop()
             if href and (href != self.lastData):
-                self.outText = self.outText + ' <%s>' % href
+                self.outText = self.outText + ' <%s> ' % href
         
     def handle_data(self, data):
         d = data.strip()
-        d = d and d or '\n'
+        d = d and ('%s ' % d) or '\n'
         self.lastData = d
         self.outText = self.outText + d
 
