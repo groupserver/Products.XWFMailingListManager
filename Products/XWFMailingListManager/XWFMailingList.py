@@ -28,7 +28,10 @@ from Products.GSProfile.utils import create_user_from_email
 from Products.GSGroup.joining import GSGroupJoining
 from Products.GSGroup.groupInfo import IGSGroupInfo
 from gs.group.member.leave.leaver import GroupLeaver
-from gs.group.member.canpost.interfaces import IGSPostingUser
+
+from email import message_from_string
+from gs.group.member.canpost import IGSPostingUser, \
+    Notifier as CanPostNotifier, UnknownEmailNotifier
 
 import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
@@ -671,7 +674,7 @@ class XWFMailingList(Folder):
           (self.getProperty('title', ''), self.getId(), email)
         log.info(m)
         log.info( 'memberlist was: %s' % memberlist)
-        self.mail_reply(self, REQUEST, mail=header, body=body)
+        self.mail_reply(self, REQUEST, mailString)
         
     def processModeration(self, REQUEST):
         # a hook for handling the moderation stage of processing the email
@@ -723,7 +726,7 @@ class XWFMailingList(Folder):
             # --=mpj17=-- If we are here, then we are moderating *everyone*
             moderate = True
         else:
-            self.mail_reply(self, REQUEST, mail=header, body=body)
+            self.mail_reply(self, REQUEST, mailString)
             return msg.sender
             
         if moderate:
@@ -1026,9 +1029,8 @@ class XWFMailingList(Folder):
                 message = '%s (%s): %s' % (userInfo.name, userInfo.id,
                                             postingInfo.status)
                 log.warning(message)
-                # TODO:
-                # 1. Create a notifier
-                # 2. Send a notification
+                notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
+                notifier.notify(userInfo, siteInfo, groupInfo)
                 
                 return message
 
@@ -1472,42 +1474,21 @@ class XWFMailingList(Folder):
         return MailBoxerTools.parseaddr(header)
     
     security.declarePrivate('mail_reply')
-    def mail_reply(self, context, REQUEST, mail=None, body=''):
+    def mail_reply(self, context, REQUEST, message):
         """ A hook used by the MailBoxer framework, which we provide here as
-        a clean default.
-        
-        """
+        a clean default. """
+        # The email message that is sent to unknown email addresses
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         group = get_group_by_siteId_and_groupId(self, siteId, groupId)
-        supportEmail = getOption(group, 'supportEmail')
-        siteInfo = createObject('groupserver.SiteInfo', group)
         groupInfo = IGSGroupInfo(group)
-        sender = mail['from']
-        name, email_address = AddressList(mail['from'])[0]
+        emailAddress = message_from_string(message)['From']
         
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
-        returnpath=self.getValueFor('returnpath')
-        if not returnpath:
-            returnpath = self.getValueFor('moderator')[0]
-        
-        reply = getattr(self, 'email_reply', None)
-        if reply:
-            reply_text = reply(REQUEST, sender=sender, 
-                                   email=email_address,
-                                   supportEmail=supportEmail,
-                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
-                                   siteInfo=siteInfo,
-                                   groupInfo=groupInfo,
-                                   mail=mail,
-                                   body=body)
-            smtpserver.sendmail(returnpath, [mail['from']], reply_text)
-            m = '%s (%s) sending email_reply notification to <%s>' % \
-                (groupInfo.name, groupInfo.id, email_address)
-            log.info(m)
-        smtpserver.quit()            
+        notifier = UnknownEmailNotifier(group, REQUEST)
+        notifier.notify(emailAddress, message)
+        m = '%s (%s) sent Unknown Email Address notification to <%s>' % \
+            (groupInfo.name, groupInfo.id, emailAddress)
+        log.info(m)
 
     security.declarePrivate('mail_subscribe_key')
     def mail_subscribe_key(self, context, REQUEST, msg):
@@ -1668,7 +1649,6 @@ class XWFMailingList(Folder):
                                    siteInfo=siteInfo,
                                    groupInfo=groupInfo,
                                    userInfo=userInfo)
-            print reply_text
             smtpserver.sendmail(returnpath, [msg.sender], reply_text)
         smtpserver.quit()
     
