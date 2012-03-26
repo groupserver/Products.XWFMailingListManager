@@ -105,7 +105,7 @@ except NameError:
     False = 0
 
 try:
-    import MailBoxerTools
+    from Products.XWFMailingListManager import MailBoxerTools
 except:
     STRIP_ATTACHMENTS = 0
 
