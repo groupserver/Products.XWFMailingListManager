@@ -1030,7 +1030,8 @@ class XWFMailingList(Folder):
                                             postingInfo.status)
                 log.warning(message)
                 notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
-                notifier.notify(userInfo, siteInfo, groupInfo)
+                notifier.notify(userInfo, siteInfo, groupInfo, 
+                                mailString)
                 
                 return message
 
