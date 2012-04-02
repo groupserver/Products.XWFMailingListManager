@@ -71,7 +71,7 @@ class GSTopicsView(GroupPage):
           g = self.groupInfo.groupObj
           ui = createObject('groupserver.LoggedInUser', self.context)
           retval = getMultiAdapter((g, ui), IGSPostingUser)
-          assert IGSPostingUser.providedBy(retval)
+          assert retval, 'Posting user is %s' % retval
           return retval
 
       def get_later_url(self):

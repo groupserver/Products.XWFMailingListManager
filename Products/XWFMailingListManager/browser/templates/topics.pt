@@ -93,7 +93,9 @@
         tal:condition="python:not(view.userPostingInfo.canPost) and (view.userPostingInfo.status != 2)"
         tal:define="statusNum view/userPostingInfo/statusNum;
           status view/userPostingInfo/status;"
-        tal:content="structure provider:groupserver.UserCanPost" />
+        tal:content="structure provider:groupserver.CanPost">
+        Can Post Info
+      </p>
           
       <tal:block tal:define="munge_date python:modules['Products.XWFCore.XWFUtils'].munge_date;
         ctx view/context;
