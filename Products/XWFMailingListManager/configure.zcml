@@ -26,13 +26,6 @@
     class=".topicsView.GSTopicsView"
     template="browser/templates/topics.pt" 
     permission="zope2.View" />
-  
-  <!-- The list of posts -->
-  <browser:page for=".interfaces.IGSMessagesFolder" 
-    name="posts.html"
-    class=".postsView.GSPostsView"
-    template="browser/templates/posts.pt" 
-    permission="zope2.View" />
 
   <!-- New Topic form -->
   <browser:page for=".interfaces.IGSMessagesFolder" 
