@@ -20,13 +20,6 @@
       <implements interface=".interfaces.IGSMessagesFolder" />
   </class>
 
-  <!--The list of topics-->
-  <browser:page for=".interfaces.IGSMessagesFolder" 
-    name="topics.html"
-    class=".topicsView.GSTopicsView"
-    template="browser/templates/topics.pt" 
-    permission="zope2.View" />
-
   <!-- New Topic form -->
   <browser:page for=".interfaces.IGSMessagesFolder" 
     name="newTopic.html"
