@@ -10,7 +10,6 @@ class IGSTopicView(Interface):
 
 class IGSPostView(Interface):
     pass
-
                               
 class IGSPostMessageContentProvider(Interface):
     """A content provider for the "Add to Topic" and "Start Topic" forms"""
@@ -66,12 +65,6 @@ class IGSAddToTopicFields(IGSPostMessage, IGSStickyTopic):
     inReplyTo = TextLine(title=u'In Reply To Identifier',
       description=u'The ID of the most recent post to the topic',
       required=True)
-
-class IGSPostMessageNewTopic(IGSPostMessage):
-    topic = TextLine(title=u'Topic',
-        description=u'The title of the topic. This appears as the '\
-          u'subject of the email messages that are sent out.',
-        required=True)
     
 class IGSPostPrivacyContentProvider(Interface):
     pageTemplateFileName = Text(title=u"Page Template File Name",

@@ -12,7 +12,6 @@ from zope.datetime import parseDatetimetz
 from Products.XWFCore.XWFUtils import removePathsFromFilenames
 from html2txt import convert_to_txt
 from email import Parser, Header
-from addapost import tagProcess
 from crop_email import crop_email
 import stopwords
 
@@ -578,13 +577,7 @@ class EmailMessage(object):
     
     @property
     def tags( self ):
-        keywords = self.get( 'keywords', '' )
-        if not keywords:
-            keywords = self.get('x-keywords', '')
-        
-        if keywords:   
-            return tagProcess( keywords )
-        
+        # Deprecated
         return []
         
     @property
