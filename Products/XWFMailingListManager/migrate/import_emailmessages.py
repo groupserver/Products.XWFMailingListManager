@@ -31,7 +31,7 @@ from Products.XWFMailingListManager import emailmessage
 from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
 from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
 from Testing.ZopeTestCase import base
-from sqlalchemy.exceptions import SQLError
+from sqlalchemy.exceptions import SQLAlchemyError
 
 import Products.Five
 import Products.XWFMailingListManager
@@ -97,7 +97,7 @@ for fname in os.listdir( importDir )[position:]:
              msgstorage.insert_keyword_count()
              msgstorage.insert_legacy_id()
          sys.stdout.write('.')
-     except SQLError, x:
+     except SQLAlchemyError, x:
          sys.stdout.write('e')
          log.write("---------START---------\n")
          log.write('%s: %s\n' % (msg.get('x-gsoriginal-id'), str(x.orig)))
