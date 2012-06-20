@@ -21,7 +21,7 @@ from Products.XWFMailingListManager import emailmessage
 from Products.XWFMailingListManager.emailmessage import IRDBStorageForEmailMessage
 from Products.ZSQLAlchemy.ZSQLAlchemy import manage_addZSQLAlchemy
 from Testing.ZopeTestCase import base
-from sqlalchemy.exceptions import SQLError
+from sqlalchemy.exc import SQLError
 import Products.Five
 import Products.XWFMailingListManager
 from Products.GSProfile.utils import create_user_from_email
