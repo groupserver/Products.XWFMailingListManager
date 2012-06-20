@@ -1,4 +1,4 @@
-# coding=utf-8
+
 try:
     from hashlib import md5
 except:
@@ -6,7 +6,7 @@ except:
 import re, string, datetime, time, codecs
 from rfc822 import AddressList
 import sqlalchemy as sa
-from sqlalchemy.exceptions import SQLError
+from sqlalchemy.exc import SQLAlchemyError
 from zope.interface import Interface, Attribute, implements
 from zope.datetime import parseDatetimetz
 from Products.XWFCore.XWFUtils import removePathsFromFilenames
@@ -15,6 +15,9 @@ from email import Parser, Header
 from addapost import tagProcess
 from crop_email import crop_email
 import stopwords
+from zope.sqlalchemy import mark_changed
+
+from gs.database import getSession, getTable
 
 def convert_int2b(num, alphabet, converted=[]):
     mod = num % len(alphabet); rem = num / len(alphabet)
@@ -104,86 +107,92 @@ class RDBFileMetadataStorage(object):
         self.context = context
         self.email_message = email_message
         self.file_ids = file_ids
-    
-    def set_zalchemy_adaptor(self, da):
-        self.fileTable = da.createTable('file')
-        self.postTable = da.createTable('post')
+        self.fileTable = getTable('file')
+        self.postTable = getTable('post') 
         
     def insert(self):
         # FIXME: references like this should *NOT* be hardcoded!
         storage = self.context.FileLibrary2.get_fileStorage()
+        session = getSession()
         for fid in self.file_ids:
             # for each file, get the metadata and insert it into our RDB table
             attachedFile = storage.get_file(fid)
             i = self.fileTable.insert()
             title = attachedFile.getProperty('title','')
-            i.execute(file_id=fid,
-                      mime_type=attachedFile.getProperty('content_type',''),
-                      file_name=attachedFile.getProperty('title',''),
-                      file_size=getattr(attachedFile, 'size', 0),
-                      date=self.email_message.date,
-                      post_id=self.email_message.post_id,
-                      topic_id=self.email_message.topic_id)
+            session.execute(i,
+              params={'file_id': fid,
+                      'mime_type': attachedFile.getProperty('content_type',''),
+                      'file_name': attachedFile.getProperty('title',''),
+                      'file_size': getattr(attachedFile, 'size', 0),
+                      'date': self.email_message.date,
+                      'post_id': self.email_message.post_id,
+                      'topic_id': self.email_message.topic_id})
 
         # set the flag on the post table to avoid lookups
-        self.postTable.update(self.postTable.c.post_id == self.email_message.post_id
-                                   ).execute(has_attachments=True)
+        u = self.postTable.update(
+             self.postTable.c.post_id==self.email_message.post_id)
+        session.execute(u, params={'has_attachments': True})
+        mark_changed(session)
 
 class RDBEmailMessageStorage(object): 
     implements(IRDBStorageForEmailMessage)
     
     def __init__(self, email_message):
         self.email_message = email_message
-
-    def set_zalchemy_adaptor(self, da):
-        self.postTable = da.createTable('post')
-        self.topicTable = da.createTable('topic')
-        self.topic_word_countTable = da.createTable('topic_word_count')
-        self.post_tagTable = da.createTable('post_tag')
-        self.post_id_mapTable = da.createTable('post_id_map')
+        self.postTable = getTable('post')
+        self.topicTable = getTable('topic')
+        self.topic_word_countTable = getTable('topic_word_count')
+        self.post_tagTable = getTable('post_tag')
+        self.post_id_mapTable = getTable('post_id_map')
 
     def _get_topic(self):
         and_ = sa.and_
         
-        r = self.topicTable.select(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
-                                        self.topicTable.c.group_id == self.email_message.group_id, 
-                                        self.topicTable.c.site_id == self.email_message.site_id)).execute()
+        s = self.topicTable.select(
+           and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
+                self.topicTable.c.group_id == self.email_message.group_id, 
+                self.topicTable.c.site_id == self.email_message.site_id))
+        session = getSession()
+        r = session.execute(s)
         
         return r.fetchone()
 
     def insert(self):
         and_ = sa.and_
-
+        session = getSession()
+        
         #
         # add the post itself
         #
         i = self.postTable.insert()
-        i.execute(post_id=self.email_message.post_id, 
-                   topic_id=self.email_message.topic_id, 
-                   group_id=self.email_message.group_id, 
-                   site_id=self.email_message.site_id, 
-                   user_id=self.email_message.sender_id, 
-                   in_reply_to=self.email_message.inreplyto, 
-                   subject=self.email_message.subject, 
-                   date=self.email_message.date, 
-                   body=self.email_message.body, 
-                   htmlbody=self.email_message.html_body, 
-                   header=self.email_message.headers, 
-                   has_attachments=bool(self.email_message.attachment_count))
+        session.execute(i, params={
+                 'post_id': self.email_message.post_id,
+                 'topic_id': self.email_message.topic_id,
+                 'group_id': self.email_message.group_id,
+                 'site_id': self.email_message.site_id,
+                 'user_id': self.email_message.sender_id,
+                 'in_reply_to': self.email_message.inreplyto,
+                 'subject': self.email_message.subject,
+                 'date': self.email_message.date,
+                 'body': self.email_message.body,
+                 'htmlbody': self.email_message.html_body,
+                 'header': self.email_message.headers,
+                 'has_attachments': bool(self.email_message.attachment_count)})
         #
         # add/update the topic
         #
         topic = self._get_topic()
         if not topic:
             i = self.topicTable.insert()
-            i.execute(topic_id=self.email_message.topic_id,
-                       group_id=self.email_message.group_id, 
-                       site_id=self.email_message.site_id, 
-                       original_subject=self.email_message.subject, 
-                       first_post_id=self.email_message.post_id,
-                       last_post_id=self.email_message.post_id, 
-                       last_post_date=self.email_message.date, 
-                       num_posts=1)
+            session.execute(i, params={
+                 'topic_id': self.email_message.topic_id,
+                 'group_id': self.email_message.group_id, 
+                 'site_id': self.email_message.site_id, 
+                 'original_subject': self.email_message.subject, 
+                 'first_post_id': self.email_message.post_id,
+                 'last_post_id': self.email_message.post_id, 
+                 'last_post_date': self.email_message.date, 
+                 'num_posts': 1})
         else:
             num_posts = topic['num_posts']
             # --=mpj17=-- Hypothesis: the following condition is
@@ -198,60 +207,76 @@ class RDBEmailMessageStorage(object):
                 last_post_date = self.email_message.date
                 last_post_id = self.email_message.post_id
             
-            self.topicTable.update(and_(self.topicTable.c.topic_id == self.email_message.topic_id, 
-                                         self.topicTable.c.group_id == self.email_message.group_id, 
-                                         self.topicTable.c.site_id == self.email_message.site_id)
-                                   ).execute(num_posts=num_posts+1, 
-                                             last_post_id=last_post_id, 
-                                             last_post_date=last_post_date)
+            u = self.topicTable.update(and_(
+                 self.topicTable.c.topic_id == self.email_message.topic_id, 
+                 self.topicTable.c.group_id == self.email_message.group_id, 
+                 self.topicTable.c.site_id == self.email_message.site_id)
+                )
+            session.execute(u, params={'num_posts': num_posts+1, 
+                                       'last_post_id': last_post_id, 
+                                       'last_post_date': last_post_date})
         #
         # add any tags we have for the post
         #
         i = self.post_tagTable.insert()
         for tag in self.email_message.tags:
-            i.execute(post_id=self.email_message.post_id,
-                      tag=tag)
+            session.execute(i,
+                    params={'post_id': self.email_message.post_id,
+                            'tag': tag})
+        mark_changed(session)
 
-    def insert_legacy_id(self):
-        #
-        # This is only really needed when doing an upgrade run prior to GS 1.0
-        #
-        i = self.post_id_mapTable.insert()
-        gs_original_id = self.email_message.get('x-gsoriginal-id', None)
-        if gs_original_id:
-            i.execute(old_post_id=gs_original_id,
-                      new_post_id=self.email_message.post_id)
-
-    def insert_keyword_count( self ):
+    def insert_keyword_count(self):
         and_ = sa.and_
         #    
         # add/update the word count for the topic
         #
         counts = self.email_message.word_count
+        # we need to mark the session as changed because we are doing queries
+        # directly
         for word in counts:
+            session = getSession()
+            mark_changed(session)
+            session.begin(subtransactions=True)
             # determine if the word exists before inserting or updating. It, despite appearances, is was actually
             # significantly faster in a real-world trial to do it this way (at least 20% faster).
             try:
                 i = self.topic_word_countTable.insert()
-                i.execute(topic_id=self.email_message.topic_id, 
-                           word=word, 
-                           count=counts[word])
-            except SQLError:
+                session.execute(i, params={
+                           'topic_id': self.email_message.topic_id, 
+                           'word': word, 
+                           'count': counts[word]})
+                session.commit()
+            except SQLAlchemyError:
+                session.rollback()
+                print "KKK: ROLLED BACK"
+                session = getSession()
+                session.begin(subtransactions=True)
                 # otherwise select and update
-                r = self.topic_word_countTable.select(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
-                                                           self.topic_word_countTable.c.word == word)).execute().fetchone() 
+                s = self.topic_word_countTable.select(and_(
+         self.topic_word_countTable.c.topic_id==self.email_message.topic_id,
+         self.topic_word_countTable.c.word==word))
+                r = session.execute(s).fetchone()
                 if r:
-                    self.topic_word_countTable.update(and_(self.topic_word_countTable.c.topic_id == self.email_message.topic_id, 
-                                                           self.topic_word_countTable.c.word == word)).execute(count=r['count']+counts[word])
-                           
+                    u = self.topic_word_countTable.update(and_(
+           self.topic_word_countTable.c.topic_id==self.email_message.topic_id,
+           self.topic_word_countTable.c.word==word))
+                    session.execute(u,
+                                    params={'count':r['count']+counts[word]})
+                session.commit()        
+                
+ 
     def remove(self):
+        session = getSession()
         topic = self._get_topic()
         if topic['num_posts'] == 1:
-            self.topicTable.delete(self.topicTable.c.topic_id == self.email_message.topic_id).execute()         
-
-        #self.topicTable.update( self.topicTable.c.first_post_id == self.email_message.post_id ).execute( first_post_id='' )
-        #self.topicTable.update( self.topicTable.c.last_post_id == self.email_message.post_id ).execute( last_post_id='' )
-        self.postTable.delete(self.postTable.c.post_id == self.email_message.post_id).execute()    
+            d = self.topicTable.delete(
+                  self.topicTable.c.topic_id == self.email_message.topic_id)
+            session.execute(d)
+        
+        d = self.postTable.delete(
+             self.postTable.c.post_id == self.email_message.post_id)
+        session.execute(d)    
+        mark_changed(session)
 
 class IEmailMessage(Interface):
     """ A representation of an email message.
