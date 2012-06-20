@@ -167,8 +167,7 @@ class BounceHandlingAuditor(object):
         self.groupInfo = groupInfo
         self.siteInfo = siteInfo
         
-        da = context.zsqlalchemy
-        self.queries = AuditQuery(da)
+        self.queries = AuditQuery()
 
         self.factory = BounceHandlingAuditEventFactory()
         

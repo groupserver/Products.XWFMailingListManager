@@ -166,8 +166,7 @@ class WebPostAuditor(object):
         self.siteInfo = createObject('groupserver.SiteInfo', context)
         self.groupInfo = createObject('groupserver.GroupInfo', context)
         
-        da = context.zsqlalchemy
-        self.queries = AuditQuery(da)
+        self.queries = AuditQuery()
 
         self.factory = WebPostAuditEventFactory()
         
