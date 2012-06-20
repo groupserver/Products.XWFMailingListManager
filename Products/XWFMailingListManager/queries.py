@@ -1,8 +1,11 @@
-from sqlalchemy.exceptions import NoSuchTableError
+from sqlalchemy.exc import NoSuchTableError
 import sqlalchemy as sa
 import datetime
 from pytz import UTC
 from bounceaudit import SUBSYSTEM, DISABLE
+
+from zope.sqlalchemy import mark_changed
+from gs.database import getTable, getSession
 
 import logging
 log = logging.getLogger("XMLMailingListManager.queries") #@UndefinedVariable
@@ -23,10 +26,10 @@ def summary(s):
     return s[:160]
 
 class DigestQuery(object):
-    def __init__(self, context, da):
+    def __init__(self, context):
         self.context = context
-        
-        self.digestTable = da.createTable('group_digest')
+         
+        self.digestTable = getTable('group_digest')
         self.now = datetime.datetime.now()
 
     def has_digest_since(self, site_id, group_id, interval=datetime.timedelta(0.9)):
@@ -42,7 +45,8 @@ class DigestQuery(object):
         statement.append_whereclause(dt.c.group_id==group_id)
         statement.append_whereclause(dt.c.sent_date >= sincetime)
 
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
         
         result = False
         if r.rowcount:
@@ -55,18 +59,18 @@ class DigestQuery(object):
             which have not received a digest in the 'interval' time period.
         
         """
-        q = sa.text("""select DISTINCT topic.site_id,topic.group_id from 
+        s = sa.text("""select DISTINCT topic.site_id,topic.group_id from 
                (select site_id, group_id, max(sent_date) as sent_date from
                 group_digest group by site_id,group_id) as latest_digest,topic
                 where (topic.site_id=latest_digest.site_id and
                        topic.group_id=latest_digest.group_id and
-                latest_digest.sent_date < CURRENT_TIMESTAMP-interval '%(interval)s'
+                latest_digest.sent_date < CURRENT_TIMESTAMP-interval :interval
                 and topic.last_post_date >
-                CURRENT_TIMESTAMP-interval '%(active_interval)s');""" % locals(), 
-                   engine=self.digestTable.engine)
-
-        r = q.execute()
+                CURRENT_TIMESTAMP-interval :active_interval)""")
         
+        session = getSession()
+        r = session.execute(s, interval=interval,
+                            active_interval=active_interval) 
         retval = []
         if r.rowcount:
             retval = [ {'site_id': x['site_id'],
@@ -81,27 +85,35 @@ class DigestQuery(object):
         
         statement = dt.insert()
 
-        statement.execute(site_id=site_id,group_id=group_id,sent_date=self.now)
+        session = getSession()
+        session.execute(statement,
+                        params={'site_id': site_id,
+                                'group_id': group_id,
+                                'sent_date': self.now})
+
+        mark_changed(session)
 
 class MemberQuery(object):
     # how many user ID's should we attempt to pass to the database before
     # we just do the filtering ourselves to avoid the overhead on the database
     USER_FILTER_LIMIT = 200
 
-    def __init__(self, context, da):
+    def __init__(self, context):
         self.context = context
-        
-        self.emailSettingTable = da.createTable('email_setting')
-        self.userEmailTable = da.createTable('user_email')
-        self.groupUserEmailTable = da.createTable('group_user_email')
-        self.emailBlacklist = da.createTable('email_blacklist')
+         
+        self.emailSettingTable = getTable('email_setting')
+        self.userEmailTable = getTable('user_email')
+        self.groupUserEmailTable = getTable('group_user_email')
+        self.emailBlacklist = getTable('email_blacklist')
 
     def address_is_blacklisted(self, emailAddress):
         s = self.emailBlacklist.select()
         ilike = self.emailBlacklist.c.email.op('ILIKE')
         s.append_whereclause(ilike(emailAddress))
         
-        r = s.execute()
+        session = getSession()
+        r = session.execute(s)
+        
         retval = (r.rowcount > 0)
         assert type(retval) == bool
         return retval
@@ -110,7 +122,9 @@ class MemberQuery(object):
         eb = self.emailBlacklist
 
         blacklist = eb.select()
-        r = blacklist.execute()
+        session = getSession()
+
+        r = session.execute(blacklist)
         blacklisted_addresses = []
         if r.rowcount:
             for row in r:
@@ -144,7 +158,8 @@ class MemberQuery(object):
             email_settings.append_whereclause(est.c.site_id==site_id)
             email_settings.append_whereclause(est.c.group_id==group_id)
             
-            r = email_settings.execute()
+            session = getSession()
+            r = session.execute(email_settings)
         
             if r.rowcount:
                 for row in r:
@@ -159,7 +174,7 @@ class MemberQuery(object):
                 email_group.append_whereclause(guet.c.email==uet.c.email)
                 email_group.append_whereclause(uet.c.verified_date != None)
          
-            r = email_group.execute()
+            r = session.execute(email_group)
             if r.rowcount:
                 n_ignore_ids = []
                 for row in r:
@@ -181,9 +196,9 @@ class MemberQuery(object):
             email_user.append_whereclause(uet.c.verified_date != None)
                     
         if len(user_ids) <= self.USER_FILTER_LIMIT:
-            email_user.append_whereclause(uet.c.user_id.in_(*user_ids))
+            email_user.append_whereclause(uet.c.user_id.in_(user_ids))
 
-        r = email_user.execute()
+        r = session.execute(email_user)
         if r.rowcount:
             for row in r:
                 if len(user_ids) > self.USER_FILTER_LIMIT:
@@ -210,7 +225,8 @@ class MemberQuery(object):
         email_settings.append_whereclause(est.c.group_id==group_id)
         email_settings.append_whereclause(est.c.setting=='digest')
         
-        r = email_settings.execute()
+        session = getSession() 
+        r = session.execute(email_settings)
         
         digest_ids = []
         ignore_ids = []
@@ -223,9 +239,9 @@ class MemberQuery(object):
         email_group = guet.select()
         email_group.append_whereclause(guet.c.site_id==site_id)
         email_group.append_whereclause(guet.c.group_id==group_id)
-        email_group.append_whereclause(guet.c.user_id.in_(*digest_ids))
+        email_group.append_whereclause(guet.c.user_id.in_(digest_ids))
         
-        r = email_group.execute()
+        r = session.execute(email_group)
         if r.rowcount:
             for row in r:
                 ignore_ids.append(row['user_id'])
@@ -236,10 +252,10 @@ class MemberQuery(object):
 
         email_user = uet.select()
         email_user.append_whereclause(uet.c.is_preferred==True)      
-        email_user.append_whereclause(uet.c.user_id.in_(*digest_ids))
+        email_user.append_whereclause(uet.c.user_id.in_(digest_ids))
         email_user.append_whereclause(uet.c.verified_date != None)
         
-        r = email_user.execute()        
+        r = session.execute(email_user)
         if r.rowcount:
             for row in r:
                 if row['user_id'] in user_ids:
@@ -250,16 +266,16 @@ class MemberQuery(object):
         return email_addresses
         
 class MessageQuery(object):
-    def __init__(self, context, da):
+    def __init__(self, context):
         self.context = context
         
-        self.topicTable = da.createTable('topic')
-        self.topic_word_countTable = da.createTable('topic_word_count')
-        self.postTable = da.createTable('post')
-        self.fileTable = da.createTable('file')
+        self.topicTable = getTable('topic')
+        self.topic_word_countTable = getTable('topic_word_count')
+        self.postTable = getTable('post')
+        self.fileTable = getTable('file')
         
         try:
-            self.post_id_mapTable = da.createTable('post_id_map')
+            self.post_id_mapTable = getTable('post_id_map')
         except NoSuchTableError:
             self.post_id_mapTable = None
 
@@ -285,7 +301,7 @@ class MessageQuery(object):
         '''
         statement.append_whereclause(table.c.site_id==site_id)
         if group_ids:
-            inStatement = table.c.group_id.in_(*group_ids)
+            inStatement = table.c.group_id.in_(group_ids)
             statement.append_whereclause(inStatement)
 
         return statement
@@ -299,14 +315,15 @@ class MessageQuery(object):
         
         """
         pit = self.post_id_mapTable
-        if not pit:
+        if pit == None:
             return None
         
         statement = pit.select()
         
         statement.append_whereclause(pit.c.old_post_id==legacy_post_id)
         
-        r = statement.execute()
+        session = getSession() 
+        r = session.execute(statement)
         
         post_id = None
         if r.rowcount:
@@ -322,7 +339,9 @@ class MessageQuery(object):
         pt = self.postTable
         statement = pt.select()
         statement.append_whereclause(pt.c.post_id==post_id)
-        r = statement.execute()
+
+        session = getSession()
+        r = session.execute(statement)
         
         topic_id = None
         if r.rowcount:
@@ -332,14 +351,12 @@ class MessageQuery(object):
         return topic_id
 
     def latest_posts(self, site_id, group_ids=[], limit=None, offset=0):
-        statement = self.postTable.select()
+        statement = self.postTable.select(limit=limit, offset=offset,
+                                 order_by=sa.desc(self.postTable.c.date))
         self.__add_std_where_clauses(statement, self.postTable, 
                                      site_id, group_ids)
-        statement.limit = limit
-        statement.offset = offset
-        statement.order_by(sa.desc(self.postTable.c.date))
-
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
         
         retval = []
         if r.rowcount:
@@ -351,7 +368,8 @@ class MessageQuery(object):
         statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)]) #@UndefinedVariable
         self.__add_std_where_clauses(statement, self.topicTable, 
                                            site_id, group_ids)
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
 
         retval = r.scalar()
         if retval == None:
@@ -363,7 +381,8 @@ class MessageQuery(object):
         statement = sa.select([sa.func.count(self.topicTable.c.topic_id)])
         self.__add_std_where_clauses(statement, self.topicTable, 
                                      site_id, group_ids)
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
 
         retval = r.scalar()
         assert retval >= 0
@@ -379,15 +398,13 @@ class MessageQuery(object):
         """
         tt = self.topicTable
         
-        statement = tt.select()
+        statement = tt.select(limit=limit, offset=offset,
+                              order_by=sa.desc(tt.c.last_post_date))
         self.__add_std_where_clauses(statement, self.topicTable, 
                                      site_id, group_ids)
-                
-        statement.limit = limit
-        statement.offset = offset
-        statement.order_by(sa.desc(tt.c.last_post_date))
         
-        r = statement.execute()
+        session = getSession()        
+        r = session.execute(statement)
 
         retval = []        
         if r.rowcount:
@@ -410,20 +427,20 @@ class MessageQuery(object):
         if topic_id:
             topic_id_filter = 'post.topic_id=curr_post.topic_id and'
         
-        q = sa.text("""select post.date, post.post_id, post.topic_id,
+        s = sa.text("""select post.date, post.post_id, post.topic_id,
                        post.subject, post.user_id, post.has_attachments
                     from post, 
                    (select date,group_id,site_id,post_id,topic_id from post where 
-                    post_id='%(curr_post_id)s') as curr_post where
-                   post.group_id=curr_post.group_id and
-                   post.site_id=curr_post.site_id and
-                   post.date %(op)s curr_post.date and
-                   %(topic_id_filter)s
-                   post.post_id != curr_post.post_id
-                   order by post.date %(dir)s limit 1""" % locals(), 
-                   engine=self.postTable.engine)
+                post_id=:curr_post_id) as curr_post where
+                post.group_id=curr_post.group_id and
+                post.site_id=curr_post.site_id and
+                post.date %s curr_post.date and
+                %s
+                post.post_id != curr_post.post_id
+                order by post.date %s limit 1""" % (op, topic_id_filter, dir))
         
-        r = q.execute().fetchone()
+        session = getSession()
+        r = session.execute(s, params={'curr_post_id': curr_post_id}).fetchone()
         if r:
             return {'post_id': r['post_id'], 
                     'topic_id': r['topic_id'], 
@@ -460,24 +477,24 @@ class MessageQuery(object):
 
     def _nav_topic(self, curr_topic_id, direction):
         op = direction == 'prev' and '<=' or '>='
-        dir = direction == 'prev' and 'desc' or 'asc'
+        dir_ = direction == 'prev' and 'desc' or 'asc'
         
-        q = sa.text("""select topic.last_post_date as date,
+        s = sa.text("""select topic.last_post_date as date,
                               topic.topic_id, topic.last_post_id,
                               topic.original_subject as subject
                     from topic, 
                    (select topic_id,last_post_date as date,group_id,site_id
                     from topic where 
-                    topic_id='%s') as curr_topic where
+                    topic_id=:curr_topic_id) as curr_topic where
                    topic.group_id=curr_topic.group_id and
                    topic.site_id=curr_topic.site_id and
                    topic.last_post_date %s curr_topic.date and
                    topic.topic_id != curr_topic.topic_id
-                   order by date %s limit 1""" % 
-                   (curr_topic_id, op, dir), 
-                   engine=self.postTable.engine)
+                   order by date %s limit 1""" % (op, dir_)) 
         
-        r = q.execute().fetchone()
+        session = getSession()
+        r = session.execute(s,
+                            params={'curr_topic_id': curr_topic_id}).fetchone()
         if r:
             return {'topic_id': r['topic_id'], 
                     'last_post_id': r['last_post_id'], 
@@ -535,7 +552,8 @@ class MessageQuery(object):
         
             statement.append_whereclause(tt.c.topic_id==topic_id)
         
-            r = statement.execute()
+            session = getSession()
+            r = session.execute(statement)
         
             if r.rowcount:
                 result = r.fetchone()
@@ -571,14 +589,15 @@ class MessageQuery(object):
 
         """
         pt = self.postTable
-        statement = pt.select()
+        statement = pt.select(order_by=sa.asc(pt.c.date))
         statement.append_whereclause(pt.c.topic_id==topic_id)
-        statement.order_by(sa.asc(pt.c.date))
         
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
         retval = []
         if r.rowcount:
             retval = [self.marshall_post(x) for x in r ]
+
         return retval
 
     def marshall_post(self, x):
@@ -612,7 +631,8 @@ class MessageQuery(object):
         statement = pt.select()
         statement.append_whereclause(pt.c.post_id==post_id)
         
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
         if r.rowcount:
             assert r.rowcount == 1, "Posts should always be unique"
             row = r.fetchone()
@@ -633,7 +653,9 @@ class MessageQuery(object):
         statement.append_whereclause(tt.c.topic_id==topic_id)
 
         retval = None
-        r = statement.execute()
+        
+        session = getSession()
+        r = session.execute(statement)
         if r.rowcount:
             assert r.rowcount == 1, "Topics should always be unique"
             row = r.fetchone()
@@ -660,8 +682,9 @@ class MessageQuery(object):
         ft = self.fileTable
         statement = ft.select()
         statement.append_whereclause(ft.c.post_id==post_id)
-        
-        r = statement.execute()
+       
+        session = getSession() 
+        r = session.execute(statement)
         out = []
         if r.rowcount:
             out = []
@@ -700,9 +723,10 @@ class MessageQuery(object):
         tt = self.topicTable
         statement = sa.text("""SELECT DISTINCT group_id, site_id
                                FROM topic 
-                               WHERE age(CURRENT_TIMESTAMP, last_post_date) < INTERVAL '%s';""" % interval,
-                            engine=tt.engine)
-        r = statement.execute()
+         WHERE age(CURRENT_TIMESTAMP, last_post_date) < INTERVAL :interval""")
+
+        session = getSession()
+        r = session.execute(s, params={'interval': interval})
         retval = []
         if r.rowcount:
             retval = [ {'site_id': x['site_id'], 
@@ -724,15 +748,16 @@ class MessageQuery(object):
         statement = sa.select((tt.c.topic_id,tt.c.site_id,tt.c.group_id,
                                tt.c.original_subject, tt.c.first_post_id,
                                tt.c.last_post_id, tt.c.num_posts,
-                               tt.c.last_post_date), from_obj=[t])
+                               tt.c.last_post_date), from_obj=[t],
+                              order_by=sa.desc(tt.c.last_post_date),
+                              limit=30)
         self.__add_std_where_clauses(statement, tt, 
                                      site_id, group_ids)
         
-        statement.append_whereclause(twc.c.word.in_(*search_string.split()))
-        statement.order_by(sa.desc(tt.c.last_post_date))
-        statement.limit = 30
+        statement.append_whereclause(twc.c.word.in_(search_string.split()))
         
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
 
         retval = []
         if r.rowcount:
@@ -759,23 +784,29 @@ class MessageQuery(object):
         statement.append_whereclause(pt.c.user_id  == user_id)
         statement.append_whereclause(pt.c.date  > date)
         
-        r = statement.execute()
+        session = getSession()
+        r = session.execute(statement)
+
         retval = r.scalar()
         assert type(retval) == long, 'retval is %s' % type(retval)
         return retval
         
 class BounceQuery(object):
     
-    def __init__(self, context, da):
-        self.bounceTable = da.createTable('bounce')
-        self.auditEventTable = da.createTable('audit_event')
+    def __init__(self, context):
+        self.bounceTable = getTable('bounce')
+        self.auditEventTable = getTable('audit_event')
 
     def addBounce(self, userId, groupId, siteId, email):
         bt = self.bounceTable
         i = bt.insert()
         now = datetime.datetime.now()
-        i.execute(date=now, user_id=userId, group_id=groupId, 
-                  site_id=siteId, email=email)
+        session = getSession()
+         
+        session.execute(i, params={'date': now, 'user_id': userId,
+                                   'group_id': groupId, 
+                                   'site_id': siteId, 'email': email})
+        mark_changed(session)
         
     def previousBounceDates(self, email):
         """ Checks for the number of bounces from this email address
@@ -791,18 +822,20 @@ class BounceQuery(object):
         daysChecked = (now.date() - dateToCheck.date()).days
         
         bt = self.bounceTable
-        s = bt.select()
+        s = bt.select(order_by=sa.desc(bt.c.date))
         s.append_whereclause(bt.c.email==email)
         s.append_whereclause(bt.c.date > dateToCheck)
-        s.order_by(sa.desc(bt.c.date))
         
-        r = s.execute()
+        session = getSession()
+        r = session.execute(s)
+
         bounces = []
         if r.rowcount:
             for row in r:
                 bounceDate = row['date'].strftime("%Y%m%d")
                 if bounceDate not in bounces:
                     bounces.append(bounceDate)
+        
         return (bounces, daysChecked)
 
     def lastDisabledDate(self, email):
@@ -815,14 +848,16 @@ class BounceQuery(object):
 #          AND instance_user_id = userId  # Opted to leave this out for reasons of efficiency.
 #          AND instance_datum = email
 #        ORDER BY event_date DESC;
-        s = sa.select([at.c.event_date])
+        s = sa.select([at.c.event_date], order_by=sa.desc(at.c.event_date))
         s.append_whereclause(at.c.subsystem==SUBSYSTEM)
         s.append_whereclause(at.c.event_code==DISABLE)
         s.append_whereclause(at.c.instance_datum==email)
-        s.order_by(sa.desc(at.c.event_date))
         
         retval = None        
-        r = s.execute().fetchone()
+        
+        session = getSession()
+        r = session.execute(s).fetchone()
+
         if r:
             retval = r['event_date']
         return retval
