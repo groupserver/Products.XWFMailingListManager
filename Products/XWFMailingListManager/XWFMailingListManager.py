@@ -15,7 +15,7 @@ from OFS.Folder import Folder
 
 from Products.XWFCore.XWFUtils import get_support_email
 from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
-from Products.XWFCore.cache import SimpleCache
+from gs.cache import cache
 
 # TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
 from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
@@ -33,7 +33,7 @@ from gs.profile.notify.notifyuser import NotifyUser
 import sqlalchemy as sa
 import datetime
 
-log = logging.getLogger('XWFMailingListManager.XWFMailingListManager') #@UndefinedVariable
+log = logging.getLogger('XWFMailingListManager.XWFMailingListManager')
 
 MAILDROP_SPOOL = '/tmp/mailboxer_spool2'
 
@@ -47,8 +47,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     security = ClassSecurityInfo()
     security.setPermissionDefault('View', ('Manager',))
 
-    ListMailtoCache = SimpleCache("ListMailtoCache")
-    
     meta_type = 'XWF Mailing List Manager'
     version = 0.99
     
@@ -187,7 +185,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         except AttributeError:
             raise AttributeError("No such list %s" % list_id)
 
-    security.declareProtected('View','get_listFromMailto')
+    @cache('Products.XWFMailingListManager', lambda x,y: x, 3600)
     def get_listFromMailto(self, mailto):
         """ Get a contained list, given the list mailto.
         
@@ -197,54 +195,36 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         site = self.site_root()
         siteId = site.getId()
 
-        thisCacheKey = '%s:%s' % (siteId, mailto)
-
-        found = False
-        
-        # first, look in the cache
-        if self.ListMailtoCache.has_key(thisCacheKey):
-            listId = self.ListMailtoCache.get(thisCacheKey)
-            found = True
-            log.info("found list from mailto using cache")
-
         # then try to find it fast, using the LHS of the email address
-        else:
-            listIds = self.objectIds('XWF Mailing List')
+        listIds = self.objectIds('XWF Mailing List')
             
-            assert mailto.find('@'), "No LHS/RHS with @ in mailto"
+        assert mailto.find('@'), "No LHS/RHS with @ in mailto"
 
-            possibleId = mailto.split('@')[0]
-            possListIds = filter(None,
-                          [x.find(possibleId) >= 0 and x for x in listIds])
-            for listId in possListIds:
-                listObj = getattr(self, listId)
-                list_mailto = getattr(listObj, 'mailto', '').lower()
-                if list_mailto:
-                    cacheKey = '%s:%s' % (siteId, list_mailto)
-                    self.ListMailtoCache.add(cacheKey, listId)
-                    if list_mailto == mailto:
-                        log.info("found list from mailto by fast lookup")
-                        found = True
-                        break
+        possibleId = mailto.split('@')[0]
+        possListIds = filter(None,
+                      [x.find(possibleId) >= 0 and x for x in listIds])
+        for listId in possListIds:
+            listObj = getattr(self, listId)
+            list_mailto = getattr(listObj, 'mailto', '').lower()
+            if list_mailto:
+                if list_mailto == mailto:
+                    found = True
+                    break
         
-        # if we still haven't found it, wade through everything, might as
-        # well cache as we go
+        # if we still haven't found it, wade through everything
         if not found:
             for listobj in self.objectValues('XWF Mailing List'):
                 list_mailto = getattr(listobj, 'mailto', '').lower()
                 listId = listobj.getId()
-                cacheKey = '%s:%s' % (siteId, list_mailto)
-                
                 if list_mailto:
-                    self.ListMailtoCache.add(cacheKey, listId)
                     if list_mailto == mailto:
-                        log.info("found list from mailto by slow lookup")
+                        log.debug("found list (%s) from mailto (%s) by slow lookup" % (listId, mailto))
                         found = True
                         break
         
         if not found:
             listId = ''
-            log.warn("did not find list from mailto")
+            log.warn("did not find list from mailto (%s)" % mailto)
                         
         return self.get_list(listId)
 
@@ -280,10 +260,8 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """ Process the digests for all lists.
 
         """
-        da = self.zsqlalchemy 
-        assert da
-        messageQuery = MessageQuery(self, da)
-        digestQuery = DigestQuery(self, da)
+        messageQuery = MessageQuery(self)
+        digestQuery = DigestQuery(self)
 
         # get the groups which have been active in the last 24-ish hours
         active_groups = messageQuery.active_groups() 
@@ -378,8 +356,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             return m
         userInfo = IGSUserInfo(user)
 
-        da = context.zsqlalchemy
-        bq = BounceQuery(context, da)
+        bq = BounceQuery(context)
         previousBounceDates, daysChecked = bq.previousBounceDates(email)
         bq.addBounce(userInfo.id, groupInfo.id, siteInfo.id, email)
         auditor = BounceHandlingAuditor(context, userInfo, groupInfo, siteInfo)
@@ -407,7 +384,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         numBounceDays = len(previousBounceDates)
         # After 5 bounces on unique days, disable address by unverifying
         if numBounceDays >= 5:
-            uq = UserQuery(userInfo.user, da)
+            uq = UserQuery(userInfo.user)
             uq.unverify_userEmail(email)
             stats = '%d;%d' % (numBounceDays, daysChecked)
             auditor.info(DISABLE, email, stats)
