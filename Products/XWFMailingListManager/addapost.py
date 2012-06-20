@@ -4,7 +4,8 @@ from email.MIMENonMultipart import MIMENonMultipart
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText 
 from mimetypes import MimeTypes
-from sqlalchemy.exceptions import SQLError
+from sqlalchemy.exc import SQLAlchemyError
+from gs.database import getSession
 from zope.component import createObject, getMultiAdapter
 from zExceptions import BadRequest
 from gs.group.member.canpost.interfaces import IGSPostingUser
@@ -178,11 +179,15 @@ def add_a_post(groupId, siteId, replyToId, topic, message,
                 result['message'] = errorM
                 log.error(e.encode('ascii', 'ignore'))
                 break
-            except SQLError, e:
+            except SQLAlchemyError, e:
                 result['error'] = True
                 result['message'] = errorM
                 m = e.statement % e.params
                 m = u'%s: %s' % (e.orig, m)
+                # VERY IMPORTANT: we get the session and we rollback, because
+                # we got an error. Otherwise the session will be borked.
+                session = getSession()
+                session.rollback()
                 log.error(m.encode('ascii', 'ignore'))
                 break
             if (not r):
