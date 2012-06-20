@@ -411,9 +411,7 @@ class XWFMailingList(Folder):
                 return maillist_script()
                 
             try:
-                da = self.zsqlalchemy 
-                assert da
-                memberQuery = MemberQuery(self, da)
+                memberQuery = MemberQuery(self)
                 addresses = []
                 if key == 'maillist':
                     addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),                
@@ -615,9 +613,6 @@ class XWFMailingList(Folder):
         m = 'processMail: list (%s)' % self.getId()
         log.info(m)
         
-        da = self.zsqlalchemy 
-        assert da
-
         # Checks if member is allowed to send a mail to list
         mailString = getMailFromRequest(REQUEST)
         
@@ -629,7 +624,7 @@ class XWFMailingList(Folder):
         (header, body) = MailBoxerTools.splitMail(mailString)
 
         # First sanity check ... have we already archived this message?
-        messageQuery = MessageQuery(self, da)
+        messageQuery = MessageQuery(self)
         if messageQuery.post(msg.post_id):
             m = '%s (%s): Post from <%s> has already been archived with post '\
               'ID %s' % (self.getProperty('title', ''), self.getId(), 
@@ -792,56 +787,11 @@ class XWFMailingList(Folder):
             
             return msg.sender
         
-    def _create_mailObject(self, msg, archive):
-        # do the dirty work to tidy up the legacy aspects of manage_addMail
-        
-        # if 'keepdate' is set, get date from mail,
-        if self.getValueFor('keepdate'):
-            time = DateTime(msg.date.isoformat())
-        # ... take our own date, clients are always lying!
-        else:
-            time = DateTime()
-        
-        # let's create the mailObject
-        mailFolder = archive
-        
-        mailFolder.manage_addFolder(str(msg.post_id), msg.title)
-        mailObject = getattr(mailFolder, str(msg.post_id))
-        
-        # and now add some properties to our new mailobject
-        props = list(mailObject._properties)
-        for prop in props:
-            if prop['id'] == 'title':
-                prop['type'] = 'ustring'
-                
-        mailObject._properties = tuple(props)
-        mailObject.title = msg.title
-        
-        mailObject.manage_addProperty('topic_id', msg.topic_id, 'ustring')
-        
-        mailObject.manage_addProperty('mailFrom', msg.sender, 'ustring')
-        mailObject.manage_addProperty('mailSubject', msg.subject, 'ustring')
-        mailObject.manage_addProperty('mailDate', time, 'date')
-        mailObject.manage_addProperty('mailBody', msg.body, 'utext')
-        mailObject.manage_addProperty('compressedSubject', msg.compressed_subject, 'ustring')
-        
-        mailObject.manage_addProperty('headers', msg.headers, 'utext')
-        
-        mailObject.manage_addProperty('mailUserId', msg.sender_id, 'ustring')
-
-        return mailObject
-
     security.declareProtected('Add Folders', 'manage_addMail')
     def manage_addMail(self, msg):
         """ Store mail & attachments in a folder and return it.
         
         """
-        archive = self.restrictedTraverse(self.getValueFor('storage'), 
-                                          default=None)
-        
-        if archive:
-            mailObject = self._create_mailObject(msg, archive)
-            
         ids = []
         for attachment in msg.attachments:
             if attachment['filename'] == '' and attachment['subtype'] == 'plain':
@@ -855,9 +805,9 @@ class XWFMailingList(Folder):
                                        self.getProperty('title'), self.getId())
                 log.info(m)
             elif attachment['contentid']:
-                # TODO: What do we want to do with these? They are typically part
-                # of an HTML message, for example the images, but what should we do with
-                # them once we've stripped them?
+                # TODO: What do we want to do with these? They are typicallypart
+                # of an HTML message, for example the images, but what should
+                # we do with them once we've stripped them?
                 m = '%s (%s): stripped, but not archiving %s attachment '\
                   '%s; it appears to be part of an HTML message.' % \
                   (self.getProperty('title'), self.getId(),
@@ -876,42 +826,19 @@ class XWFMailingList(Folder):
                    attachment['maintype'], attachment['filename'])
                 log.info(m)
                 
-                if archive:
-                    id = self.addMailBoxerFile(mailObject, 
-                                               None, 
-                                               attachment['filename'], 
-                                               attachment['payload'], 
-                                               attachment['mimetype'])
-                else:
-                    id = self.addGSFile(attachment['filename'], 
-                                        msg.subject, 
-                                        msg.sender_id, 
-                                        attachment['payload'], 
-                                        attachment['mimetype'])
+                id = self.addGSFile(attachment['filename'], 
+                                msg.subject, msg.sender_id, 
+                                attachment['payload'], attachment['mimetype'])
                 ids.append(id)
-        if archive and ids:
-            mailObject.manage_addProperty('x-xwfnotification-file-id', 
-                                          ' '.join(ids), 'ustring')
-            mailObject.manage_addProperty('x-xwfnotification-message-length', 
-                                          len(msg.body.replace('\r', '')), 'ustring')
-        if archive:
-            self.catalogMailBoxerMail(mailObject)
-        if self.getProperty('use_rdb', False):
-            msgstorage = IRDBStorageForEmailMessage(msg)
+        
+        msgstorage = IRDBStorageForEmailMessage(msg)    
+        msgstorage.insert()
+        msgstorage.insert_keyword_count()
             
-            da = self.site_root().zsqlalchemy
-            
-            msgstorage.set_zalchemy_adaptor(da)
-            msgstorage.insert()
-            msgstorage.insert_keyword_count()
-            
-            filemetadatastorage = RDBFileMetadataStorage(self, msg, ids)
-            filemetadatastorage.set_zalchemy_adaptor(da)
-            filemetadatastorage.insert()
-        if archive:
-            return (mailObject.getId(), ids)
-        else:
-            return (msg.post_id, ids)
+        filemetadatastorage = RDBFileMetadataStorage(self, msg, ids)
+        filemetadatastorage.insert()
+
+        return (msg.post_id, ids)
     
     def checkMail(self, REQUEST):
         '''Check the email for the correct IP address, loops and spam.
@@ -1115,9 +1042,7 @@ class XWFMailingList(Folder):
 
     def chk_sender_blacklist(self, msg):
         # See Ticket 459 <https://projects.iopen.net/groupserver/ticket/459>
-        da = self.zsqlalchemy 
-        assert da
-        memberQuery = MemberQuery(self, da)
+        memberQuery = MemberQuery(self)
         retval = memberQuery.address_is_blacklisted(msg.sender)        
         assert type(retval) == bool
         return retval
@@ -1280,9 +1205,7 @@ class XWFMailingList(Folder):
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
-        da = self.zsqlalchemy 
-        assert da
-        digestQuery = DigestQuery(self, da)
+        digestQuery = DigestQuery(self)
         # check to see if we have a digest in the last day, and if so, shortcut
         if digestQuery.has_digest_since(siteId, groupId):
             m = u'%s (%s) on %s (%s): Have already issued digest in last day' % \
@@ -1350,16 +1273,7 @@ class XWFMailingList(Folder):
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
 
-        if ((MaildropHostIsAvailable and
-             getattr(self, "MailHost").meta_type=='Maildrop Host')
-            or (SecureMailHostIsAvailable and
-                getattr(self, "MailHost").meta_type=='Secure Mail Host')):
-            TransactionalMailHost = getattr(self, "MailHost")
-            # Deliver each mail on its own with a transactional MailHost
-            batchsize = 1
-        else:
-            TransactionalMailHost = None
-            batchsize = self.getValueFor('batchsize')
+        batchsize = self.getValueFor('batchsize')
 
         # start batching mails
         while maillist:
@@ -1373,13 +1287,11 @@ class XWFMailingList(Folder):
             else:
                 batch = batchsize
             
-            if TransactionalMailHost:
-                TransactionalMailHost._send(returnpath, maillist[0:batch], digest)
-            else:
-                smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                                          int(self.MailHost.smtp_port))
-                smtpserver.sendmail(returnpath, maillist[0:batch], digest, mail_options=mailoptions)
-                smtpserver.quit()
+            smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
+                                      int(self.MailHost.smtp_port))
+            smtpserver.sendmail(returnpath, maillist[0:batch],
+                                digest, mail_options=mailoptions)
+            smtpserver.quit()
 
             # remove already bulked addresses
             maillist = maillist[batch:]
@@ -1433,43 +1345,6 @@ class XWFMailingList(Folder):
         """
         return self.acl_users.get_userIdByEmail(addr) or ''
 
-    security.declareProtected('Add Folders', 'catalogMailBoxerMail')
-    def catalogMailBoxerMail(self, MailBoxerMail):
-        """ Catalogs MailBoxerFile. """
-
-        # Index the new created mailFolder in the catalog
-        Catalog = self.unrestrictedTraverse(self.getValueFor('catalog'),
-                                            default=None)
-        if Catalog is not None:
-            Catalog.catalog_object(MailBoxerMail)
-  
-    security.declareProtected('Manage properties', 'reindex_mailObjects')
-    def reindex_mailObjects(self):
-        """ Reindex the mailObjects that we contain.
-             
-        """
-        for object in self.archive.objectValues('Folder'):
-            if hasattr(object, 'mailFrom'):
-                pp = '/'.join(object.getPhysicalPath())
-                self.Catalog.uncatalog_object(pp)
-                self.Catalog.catalog_object(object, pp)
-         
-        return True
-
-    security.declareProtected('Manage properties', 'unindex_mailObjects')
-    def unindex_mailObjects(self):
-        """ Unindex the mailObjects that we contain.
-
-            Handy for playing with a single list without having to reindex
-            all lists!
-        """
-        for object in self.archive.objectValues('Folder'):
-            if hasattr(object, 'mailFrom'):
-                pp = '/'.join(object.getPhysicalPath())
-                self.Catalog.uncatalog_object(pp)
-
-        return True
-    
     def parseaddr(self, header):
         # wrapper for rfc822.parseaddr, returns (name, addr)
         return MailBoxerTools.parseaddr(header)
@@ -1836,9 +1711,6 @@ class XWFMailingList(Folder):
     def addGSFile(self, title, topic, creator, data, content_type):
         """ Adds an attachment as a file.
         
-            This is used instead of addMailBoxerFile if we are *only* using
-            the relational database.
-            
         """
         # TODO: group ID should be more robust
         group_id = self.getId()
@@ -1857,85 +1729,6 @@ class XWFMailingList(Folder):
         # 
         transaction.commit()
         return id
-
-    def addMailBoxerFile(self, archiveObject, id, title, data, content_type):
-        """ Adds an attachment as File.
-            
-            This is mainly used by the moderation framework, unless the relational
-            database is not being used.
-            
-        """
-        # TODO: group ID should be more robust
-        group_id = self.getId()
-        storage = self.FileLibrary2.get_fileStorage()
-        id = storage.add_file(data)
-        file = storage.get_file(id)
-        fixedTitle = removePathsFromFilenames(title)
-        topic = archiveObject.getProperty('mailSubject', '')
-        creator = archiveObject.getProperty('mailUserId', '')
-        file.manage_changeProperties(content_type=content_type, 
-            title=fixedTitle, tags=['attachment'], group_ids=[group_id],
-            dc_creator=creator, topic=topic)
-        file.reindex_file()
-        
-        return id        
-  
-    def export_as_mbox(self):
-        """ Export our mailing list archives into mbox format, as best we can.
-        
-        """
-        archive = self.restrictedTraverse(self.getValueFor('storage'), 
-                                          default=None)
-        
-        self.REQUEST.RESPONSE.setHeader('Content-Type', 'application/mbox')
-        
-        export_archive_as_mbox(archive, group_id=self.getId(), 
-                                site_id=self.getProperty('siteId', ''), 
-                                group_title=self.getProperty('title', ''), 
-                                writer=self.REQUEST.RESPONSE)
-
-    def processSpool(self):
-        #
-        # run through the spool, and actually send the mail out
-        #
-        m = 'processSpool: %s (%s)' % (self.getProperty('title', ''), self.getId())
-        log.info(m)
-        
-        archive = self.restrictedTraverse(self.getValueFor('storage'))
-        for spoolfilepath in os.listdir(MAILDROP_SPOOL):
-            if os.path.exists(os.path.join(MAILDROP_SPOOL,
-                                           '%s.lck' % spoolfilepath)):
-                continue # we're locked
-            spoolfile = file(os.path.join(MAILDROP_SPOOL, spoolfilepath))
-            line = spoolfile.readline().strip()
-            if len(line) < 5 or line[:2] != ';;' or line[-2:] != ';;':
-                log.error('Spooled email has no group specified')
-                continue
-
-            groupname = line[2:-2]
-            if self.getId() != groupname:
-                continue # not for us
-                     
-            mailString = spoolfile.read()
-            (header, body) = self.splitMail(mailString) #@UnusedVariable
-            
-            # a robustness check -- if we an archive ID, and we aren't in
-            # the archive, what are we doing here?
-            archive_id = header.get('x-archive-id', None)
-            log.error('archive_id = "%s"' % archive_id)
-            if archive_id and not hasattr(archive.aq_explicit,
-                                          archive_id.strip()):
-                m= 'Spooled email had archive_id %s, but did not exist in '\
-                  ' archive %s (%s)' %\
-                  (archive_id, self.getProperty('title', ''), self.getId())
-                log.error(m)
-                continue
-
-            self.sendMail(mailString)
-            spoolfile.close()
-            os.remove(spoolfilepath)
-            # sleep a little
-            time.sleep(0.5)
 
     def sendMail(self, mailString):
         # actually send the email
@@ -1960,16 +1753,7 @@ class XWFMailingList(Folder):
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
         
-        if ((MaildropHostIsAvailable and
-             getattr(self, "MailHost").meta_type=='Maildrop Host') 
-            or (SecureMailHostIsAvailable and 
-                getattr(self, "MailHost").meta_type=='Secure Mail Host')):
-            TransactionalMailHost = getattr(self, "MailHost")
-            # Deliver each mail on its own with a transactional MailHost
-            batchsize = 50
-        else:
-            TransactionalMailHost = None
-            batchsize = self.getValueFor('batchsize')
+        batchsize = self.getValueFor('batchsize')
 
         # start batching mails
         while maillist:
@@ -1982,13 +1766,10 @@ class XWFMailingList(Folder):
             else:
                 batch = batchsize
 
-            if TransactionalMailHost:
-                TransactionalMailHost._send(returnpath, maillist[0:batch], mailString)
-            else:
-                smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
-                                          int(self.MailHost.smtp_port))
-                smtpserver.sendmail(returnpath, maillist[0:batch], mailString, mail_options=mailoptions)
-                smtpserver.quit()
+            smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
+                                      int(self.MailHost.smtp_port))
+            smtpserver.sendmail(returnpath, maillist[0:batch], mailString, mail_options=mailoptions)
+            smtpserver.quit()
 
             # remove already bulked addresses
             maillist = maillist[batch:]
