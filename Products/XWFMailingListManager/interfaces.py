@@ -10,7 +10,6 @@ class IGSTopicView(Interface):
 
 class IGSPostView(Interface):
     pass
-
                               
 class IGSPostMessageContentProvider(Interface):
     """A content provider for the "Add to Topic" and "Start Topic" forms"""
@@ -39,44 +38,10 @@ class IGSPostMessageContentProvider(Interface):
                                 that is used to render the post.""",
                                 required=False,
                                 default=u"browser/templates/postMessage.pt")
-
-class IGSPostMessage(Interface):
-    fromAddress = Choice(title=u'Email From',
-      description=u'The email address that you want in the "From" '\
-        u'line in the email you send.',
-      vocabulary = 'EmailAddressesForLoggedInUser',
-      required=True)
-
-    message = Text(title=u'Message',
-      description=u'The message you want to post to this topic.',
-      required=True)
-    
-    uploadedFile = Bytes(title=u'Files',
-                         description=u'A file you wish to add.',
-                         required=False)
       
-class IGSStickyTopic(Interface):
-    sticky = Bool(title=u'Sticky',
-      description=u'Display this topic before all other topics on '\
-        u'the Latest Topics page.',
-      required=False)
-
-class IGSAddToTopicFields(IGSPostMessage, IGSStickyTopic):
-    u'''Fields used on the topic page.'''
-    inReplyTo = TextLine(title=u'In Reply To Identifier',
-      description=u'The ID of the most recent post to the topic',
-      required=True)
-
-class IGSPostMessageNewTopic(IGSPostMessage):
-    topic = TextLine(title=u'Topic',
-        description=u'The title of the topic. This appears as the '\
-          u'subject of the email messages that are sent out.',
-        required=True)
-    
 class IGSPostPrivacyContentProvider(Interface):
     pageTemplateFileName = Text(title=u"Page Template File Name",
         description=u"""The name of the ZPT file
         that is used to render the post.""",
         required=False,
         default=u"browser/templates/postprivacy.pt")
-
