@@ -1273,6 +1273,8 @@ class XWFMailingList(Folder):
         if 'XVERP' in mailoptions:
             returnpath = self.getValueFor('mailto')
 
+
+
         batchsize = self.getValueFor('batchsize')
 
         # start batching mails

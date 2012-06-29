@@ -147,7 +147,7 @@ class MemberQuery(object):
         est = self.emailSettingTable        
         uet = self.userEmailTable
         guet = self.groupUserEmailTable
-        
+        session = getSession() 
         ignore_ids = []
         email_addresses = []
 
@@ -158,7 +158,6 @@ class MemberQuery(object):
             email_settings.append_whereclause(est.c.site_id==site_id)
             email_settings.append_whereclause(est.c.group_id==group_id)
             
-            session = getSession()
             r = session.execute(email_settings)
         
             if r.rowcount:
