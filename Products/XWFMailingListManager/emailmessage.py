@@ -224,45 +224,35 @@ class RDBEmailMessageStorage(object):
                             'tag': tag})
         mark_changed(session)
 
-    def insert_keyword_count(self):
+    def _update_kw(self, topic_id, word, count):
         and_ = sa.and_
+        session = getSession()
+        s = self.topic_word_countTable.select(and_(
+         self.topic_word_countTable.c.topic_id==self.email_message.topic_id,
+         self.topic_word_countTable.c.word==word))
+        r = session.execute(s).fetchone()
+        if r:
+            u = self.topic_word_countTable.update(and_(
+           self.topic_word_countTable.c.topic_id==self.email_message.topic_id,
+           self.topic_word_countTable.c.word==word))
+            session.execute(u,
+                            params={'count':r['count']+count})
+        else:
+            i = self.topic_word_countTable.insert()
+            session.execute(i, params={
+                           'topic_id': topic_id,
+                           'word': word,
+                           'count': count})
+
+    def insert_keyword_count(self):
         #    
         # add/update the word count for the topic
         #
         counts = self.email_message.word_count
-        # we need to mark the session as changed because we are doing queries
-        # directly
         for word in counts:
-            session = getSession()
-            mark_changed(session)
-            session.begin(subtransactions=True)
-            # determine if the word exists before inserting or updating. It, despite appearances, is was actually
-            # significantly faster in a real-world trial to do it this way (at least 20% faster).
-            try:
-                i = self.topic_word_countTable.insert()
-                session.execute(i, params={
-                           'topic_id': self.email_message.topic_id, 
-                           'word': word, 
-                           'count': counts[word]})
-                session.commit()
-            except SQLAlchemyError:
-                session.rollback()
-                print "KKK: ROLLED BACK"
-                session = getSession()
-                session.begin(subtransactions=True)
-                # otherwise select and update
-                s = self.topic_word_countTable.select(and_(
-         self.topic_word_countTable.c.topic_id==self.email_message.topic_id,
-         self.topic_word_countTable.c.word==word))
-                r = session.execute(s).fetchone()
-                if r:
-                    u = self.topic_word_countTable.update(and_(
-           self.topic_word_countTable.c.topic_id==self.email_message.topic_id,
-           self.topic_word_countTable.c.word==word))
-                    session.execute(u,
-                                    params={'count':r['count']+counts[word]})
-                session.commit()        
-                
+            topic_id = self.email_message.topic_id
+            count = counts[word]
+            self._update_kw(topic_id, word, count)
  
     def remove(self):
         session = getSession()
