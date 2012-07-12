@@ -170,8 +170,9 @@ class XWFMailingList(Folder):
             return TRUE
 
         # Process the mail...
-        self.processMail(REQUEST)
-        return TRUE
+        retval = self.processMail(REQUEST)
+
+        return retval
 
 
     security.declareProtected('View', 'manage_requestboxer')
@@ -659,10 +660,10 @@ class XWFMailingList(Folder):
         if unclosed or (email in (memberlist + moderatorlist)):
             if hasattr(self, 'mail_handler'):
                 self.mail_handler(self, REQUEST, mail=header, body=body)
+                return email
             else:
-                self.listMail(REQUEST)
-                
-            return email
+                retval = self.listMail(REQUEST)
+                return retval
 
         # if all previous tests fail, it must be an unknown sender.
         m = 'processMail %s (%s): Mail received from unknown sender <%s>'%\
@@ -1255,9 +1256,9 @@ class XWFMailingList(Folder):
 
     def send_digest(self, digest):
         """ Send out a digest of topics to users who have
-	    requested it.
+            requested it.
         
-	    """
+            """
         memberlist = MailBoxerTools.lowerList(self.getValueFor('digestmaillist'))
         maillist = []
         for email in memberlist:
