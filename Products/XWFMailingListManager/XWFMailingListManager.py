@@ -185,16 +185,14 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         except AttributeError:
             raise AttributeError("No such list %s" % list_id)
 
-    @cache('Products.XWFMailingListManager', lambda x,y: x, 3600)
+    @cache('Products.XWFMailingListManager', lambda x,y: y, 3600)
     def get_listFromMailto(self, mailto):
         """ Get a contained list, given the list mailto.
         
         """
         mailto = mailto.lower()
-
         site = self.site_root()
         siteId = site.getId()
-
         # then try to find it fast, using the LHS of the email address
         listIds = self.objectIds('XWF Mailing List')
             
@@ -203,6 +201,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         possibleId = mailto.split('@')[0]
         possListIds = filter(None,
                       [x.find(possibleId) >= 0 and x for x in listIds])
+        found = False # Typical pessimism
         for listId in possListIds:
             listObj = getattr(self, listId)
             list_mailto = getattr(listObj, 'mailto', '').lower()
@@ -221,7 +220,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                         log.debug("found list (%s) from mailto (%s) by slow lookup" % (listId, mailto))
                         found = True
                         break
-        
         if not found:
             listId = ''
             log.warn("did not find list from mailto (%s)" % mailto)
