@@ -186,7 +186,7 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             raise AttributeError("No such list %s" % list_id)
 
     @cache('Products.XWFMailingListManager', lambda x,y: y, 3600)
-    def get_listFromMailto(self, mailto):
+    def get_listIdFromMailto(self, mailto):
         """ Get a contained list, given the list mailto.
         
         """
@@ -224,7 +224,12 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             listId = ''
             log.warn("did not find list from mailto (%s)" % mailto)
                         
-        return self.get_list(listId)
+        return listId
+
+    def get_listFromMailto(self, mailto):
+        listId = self.get_listIdFromMailto(mailto)
+        retval = self.get_list(listId)
+        return retval
 
     security.declareProtected('View','get_listPropertiesFromMailto')
     def get_listPropertiesFromMailto(self, mailto):
