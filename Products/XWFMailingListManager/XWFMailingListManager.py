@@ -35,8 +35,6 @@ import datetime
 
 log = logging.getLogger('XWFMailingListManager.XWFMailingListManager')
 
-MAILDROP_SPOOL = '/tmp/mailboxer_spool2'
-
 class Record:
     pass
 
@@ -85,7 +83,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         {'id':'catalog', 'type':'string', 'mode':'wd'},
         {'id':'xmailer', 'type':'string', 'mode':'wd'},
         {'id':'headers', 'type':'string', 'mode':'wd'},
-        {'id':'batchsize','type':'int','mode':'wd'},
         {'id':'senderlimit','type':'int','mode':'wd'},
         {'id':'senderinterval','type':'int','mode':'wd'},
         {'id':'mailqueue','type':'string','mode':'wd'},
@@ -117,7 +114,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     catalog = 'Catalog'
     xmailer = 'GroupServer'
     headers = ''
-    batchsize = 0
     senderlimit = 10                # default: no more than 10 mails
     senderinterval = 600            # in 10 minutes (= 600 seconds) allowed
     mailqueue = 'mqueue'
@@ -142,9 +138,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         """
         if getattr(self, '__initialised', 1):
             return 1
-        
-        item.manage_addProduct['MailHost'].manage_addMailHost('MailHost', 
-                                                              smtp_host='127.0.0.1')
         
         return True
 
@@ -298,41 +291,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 continue
             
 
-    def processSpool(self):
-        """ Process the deferred spool files.
-
-        """
-        objdir = os.path.join(*self.getPhysicalPath())
-        spooldir = os.path.join(MAILDROP_SPOOL, objdir)
-        if not os.path.exists(spooldir): # no spool to process yet
-            return
-        for spoolfilepath in os.listdir(spooldir):
-            if os.path.exists(os.path.join(spooldir, '%s.lck' % spoolfilepath)):
-                continue # we're locked
-            spoolfilepath = os.path.join(spooldir, spoolfilepath)
-            spoolfile = file(spoolfilepath)
-            line = spoolfile.readline().strip()
-            if len(line) < 5 or line[:2] != ';;' or line[-2:] != ';;':
-                continue
-
-            groupname = line[2:-2]
-            group = self.get_list(groupname)
-            if not group:
-                log.error("No group %s existed while processing spool" % groupname)
-                os.remove(spoolfilepath)
-                continue
-
-            mailString = spoolfile.read()
-
-            try:
-                group.sendMail(mailString)
-                spoolfile.close()
-                os.remove(spoolfilepath)
-                # sleep a little
-                time.sleep(0.5)
-            except:
-                log.exception("An error occurred while trying to send spooled email")
-
     def processBounce(self, groupId, email):
         """ Process a bounce for a particular list.
         """
@@ -407,24 +365,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                 log.warn(m)
         return True
                 
-    security.declareProtected('Upgrade objects', 'upgrade')
-    security.setPermissionDefault('Upgrade objects', ('Manager', 'Owner'))
-    def upgrade(self):
-        """ Upgrade to the latest version.
-            
-        """
-        currversion = getattr(self, '_version', 0)
-        if currversion == self.version:
-            return 'already running latest version (%s)' % currversion
-
-        self.__initialised = 1
-        self._setupMetadata()
-        self._version = self.version
-
-        return 'upgraded %s to version %s from version %s' % (self.getId(),
-                                                              self._version,
-                                                              currversion)
-
 manage_addXWFMailingListManagerForm = PageTemplateFile(
     'management/manage_addXWFMailingListManagerForm.zpt',
     globals(),

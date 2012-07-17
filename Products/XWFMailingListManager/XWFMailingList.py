@@ -9,7 +9,7 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
-import random, smtplib, os, re, time, transaction
+import random, os, re, time, transaction
 from rfc822 import AddressList
 from cgi import escape
 from AccessControl import ClassSecurityInfo
@@ -41,6 +41,8 @@ from queries import MemberQuery, MessageQuery, DigestQuery
 from export import export_archive_as_mbox
 from utils import check_for_commands, pin, getMailFromRequest
 
+from gs.email import send_email
+
 import logging
 log = logging.getLogger('XWFMailingList')
 
@@ -48,40 +50,9 @@ DIGEST = 3
 
 null_convert = lambda x: x
 
-try:
-    from Products import MaildropHost #@UnresolvedImport @UnusedImport
-    MaildropHostIsAvailable = 1
-except:
-    MaildropHostIsAvailable = 0
-
-try:
-    from Products import SecureMailHost #@UnresolvedImport @UnusedImport
-    SecureMailHostIsAvailable = 1
-except:
-    SecureMailHostIsAvailable = 0
-
 # Simple return-Codes for web-callable-methods for the smtp2zope-gate
 TRUE = "TRUE"
 FALSE = "FALSE"
-
-DEFER_EMAIL = True
-MAILDROP_SPOOL='/tmp/mailboxer_spool2'
-
-if not os.path.isdir(MAILDROP_SPOOL):
-    os.makedirs(MAILDROP_SPOOL)
-
-def makeTempPath(objpath):
-    """ Helper to create a temp file name safely """
-    temp_path_dir = os.path.join(MAILDROP_SPOOL, objpath)
-    temp_path = os.path.join(temp_path_dir, str(random.randint(100000, 9999999)))
-
-    if not os.path.isdir(temp_path_dir):
-        os.makedirs(temp_path_dir)
-
-    while os.path.exists(temp_path):
-        temp_path = os.path.join(temp_path_dir, str(random.randint(100000, 9999999)))
-
-    return temp_path
 
 class XWFMailingList(Folder):
     """ A mailing list implementation, based heavily on the excellent Mailboxer
@@ -584,27 +555,7 @@ class XWFMailingList(Folder):
                                       body, 
                                       customFooter)
         
-        if not DEFER_EMAIL:
-            self.sendMail(newMail)
-        else:
-            # otherwise, we save the email into a spool file for 
-            # sending later. This should provide a _much_ faster 
-            # response time for listMail we write the email to the 
-            # spool file after we put the groupname at the top.
-            spoolMail = ';;%s;;\r\n%s' % (self.getId(), newMail)
-
-            objpath = os.path.join(*self.aq_parent.getPhysicalPath())
-            tempfilepath = makeTempPath(objpath)
-            lockfilepath = '%s.lck' % tempfilepath
-
-            lockfile = file(lockfilepath, 'a+')
-            lockfile.write('locked')
-            lockfile.close()
-
-            spoolfile = file(tempfilepath, 'ab+')
-            spoolfile.write(spoolMail.encode('utf-8'))
-
-            os.remove(lockfilepath)
+        self.sendMail(newMail)
             
         return post_id
         
@@ -1264,40 +1215,9 @@ class XWFMailingList(Folder):
             if '@' in email and email not in maillist:
                 maillist.append(email)
         
-        mailoptions = self.getValueFor('mailoptions')
-        if not mailoptions:
-            mailoptions = []
-
-        # we want to handle bounces with XVERP
-        returnpath = self.getValueFor('digestreturnpath') or self.getValueFor('moderator')[0]
-        if 'XVERP' in mailoptions:
-            returnpath = self.getValueFor('mailto')
-
-
-
-        batchsize = self.getValueFor('batchsize')
-
-        # start batching mails
-        while maillist:
-            # if no batchsize is set (default)
-            # or batchsize is greater than maillist,
-            # bulk all mails in one batch,
-            # otherwise bulk only 'batch'-mails at once
-
-            if (batchsize == 0) or (batchsize > len(maillist)):
-                batch = len(maillist)
-            else:
-                batch = batchsize
-            
-            smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                                      int(self.MailHost.smtp_port))
-            smtpserver.sendmail(returnpath, maillist[0:batch],
-                                digest, mail_options=mailoptions)
-            smtpserver.quit()
-
-            # remove already bulked addresses
-            maillist = maillist[batch:]
-            
+        returnpath = self.getValueFor('mailto')
+        send_email(returnpath, maillist, digest)
+         
     security.declareProtected('Manage properties', 'manage_addMember')
     def manage_addMember(self, email):
         """ Add member to group. """
@@ -1398,9 +1318,6 @@ class XWFMailingList(Folder):
         m.encode('ascii','ignore')
         log.info(m)
 
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
@@ -1418,8 +1335,7 @@ class XWFMailingList(Folder):
                                    siteInfo=siteInfo,
                                    groupInfo=groupInfo,
                                    userInfo=userInfo)
-            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
-        smtpserver.quit()
+            send_email(returnpath, [msg.sender], reply_text)
     
     security.declarePrivate('mail_unsubscribe_key')
     def mail_unsubscribe_key(self, context, REQUEST, msg):
@@ -1448,9 +1364,6 @@ class XWFMailingList(Folder):
         m.encode('ascii','ignore')
         log.info(m)
 
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
@@ -1467,8 +1380,7 @@ class XWFMailingList(Folder):
                                    siteInfo=siteInfo,
                                    groupInfo=groupInfo,
                                    userInfo=userInfo)
-            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
-        smtpserver.quit()
+            send_email(returnpath, [msg.sender], reply_text)
 
     security.declarePrivate('mail_cannot_change_subscription')
     def mail_cannot_change_subscription(self, context, REQUEST, msg, change):
@@ -1511,9 +1423,6 @@ class XWFMailingList(Folder):
         m.encode('ascii','ignore')
         log.info(m)
 
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
@@ -1521,14 +1430,14 @@ class XWFMailingList(Folder):
         reply = getattr(self, notification, None)
         if reply:
             reply_text = reply(REQUEST, sender=msg.sender,
-                                   listMailTo=self.getValueFor('mailto'),
-                                   supportEmail=supportEmail,
-                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
-                                   siteInfo=siteInfo,
-                                   groupInfo=groupInfo,
-                                   userInfo=userInfo)
-            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
-        smtpserver.quit()
+                listMailTo=self.getValueFor('mailto'),
+                supportEmail=supportEmail,
+                shortName=groupInfo.get_property('short_name', groupInfo.name),
+                siteInfo=siteInfo,
+                groupInfo=groupInfo,
+                userInfo=userInfo)
+
+            send_email(returnpath, [msg.sender], reply_text)
     
     security.declarePrivate('mail_digest_on')
     def mail_digest_on(self, context, REQUEST, mail=None, body=''):
@@ -1558,9 +1467,6 @@ class XWFMailingList(Folder):
         m.encode('ascii','ignore')
         log.info(m)
         
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
@@ -1568,17 +1474,17 @@ class XWFMailingList(Folder):
         reply = getattr(self, 'email_digest_on', None)
         if reply:
             reply_text = reply(REQUEST, listId=self.listId(), 
-                                   getValueFor=self.getValueFor, 
-                                   email=msg.sender,
-                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
-                                   listMailTo=self.getValueFor('mailto'),
-                                   xmailer=self.getValueFor('xmailer'),
-                                   returnpath=returnpath,
-                                   siteInfo=siteInfo,
-                                   groupInfo=groupInfo,
-                                   userInfo=userInfo)
-            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
-        smtpserver.quit()
+               getValueFor=self.getValueFor, 
+               email=msg.sender,
+               shortName=groupInfo.get_property('short_name', groupInfo.name),
+               listMailTo=self.getValueFor('mailto'),
+               xmailer=self.getValueFor('xmailer'),
+               returnpath=returnpath,
+               siteInfo=siteInfo,
+               groupInfo=groupInfo,
+               userInfo=userInfo)
+
+            send_email(returnpath, [msg.sender], reply_text)
 
     security.declarePrivate('mail_digest_off')
     def mail_digest_off(self, context, REQUEST, mail=None, body=''):
@@ -1608,9 +1514,6 @@ class XWFMailingList(Folder):
         m.encode('ascii','ignore')
         log.info(m)
         
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
@@ -1618,17 +1521,16 @@ class XWFMailingList(Folder):
         reply = getattr(self, 'email_digest_off', None)
         if reply:
             reply_text = reply(REQUEST, listId=self.listId(), 
-                                   getValueFor=self.getValueFor, 
-                                   email=msg.sender,
-                                   shortName=groupInfo.get_property('short_name', groupInfo.name),
-                                   listMailTo=self.getValueFor('mailto'),
-                                   xmailer=self.getValueFor('xmailer'),
-                                   returnpath=returnpath,
-                                   siteInfo=siteInfo,
-                                   groupInfo=groupInfo,
-                                   userInfo=userInfo)
-            smtpserver.sendmail(returnpath, [msg.sender], reply_text)
-        smtpserver.quit()
+               getValueFor=self.getValueFor, 
+               email=msg.sender,
+               shortName=groupInfo.get_property('short_name', groupInfo.name),
+               listMailTo=self.getValueFor('mailto'),
+               xmailer=self.getValueFor('xmailer'),
+               returnpath=returnpath,
+               siteInfo=siteInfo,
+               groupInfo=groupInfo,
+               userInfo=userInfo)
+            send_email(returnpath, [msg.sender], reply_text)
 
     security.declarePrivate('mail_event_default')
     def mail_event_default(self, context, event_codes, headers):
@@ -1648,9 +1550,6 @@ class XWFMailingList(Folder):
         if user:
             userInfo = IGSUserInfo(user)
         
-        smtpserver = smtplib.SMTP(self.MailHost.smtp_host, 
-                              int(self.MailHost.smtp_port))
-                
         returnpath=self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
@@ -1663,9 +1562,8 @@ class XWFMailingList(Folder):
                 reply_text = reply(context, code, headers, supportEmail, 
                                    siteInfo, groupInfo, userInfo)
                 if reply_text and email_address:
-                    smtpserver.sendmail(returnpath, [email_address], reply_text)
+                    send_mail(returnpath, [email_address], reply_text)
             seen.append(code)
-        smtpserver.quit()
     
     security.declarePrivate('mail_header')
     def mail_header(self, context, REQUEST, getValueFor=None, title='', 
@@ -1744,39 +1642,10 @@ class XWFMailingList(Folder):
             if '@' in email and email not in maillist:
                 maillist.append(email)
 
-        # if no returnpath is set, use first moderator as returnpath
-        returnpath=self.getValueFor('returnpath') or self.getValueFor('moderator')[0]
-        
-        mailoptions = self.getValueFor('mailoptions')
-        if not mailoptions:
-            mailoptions = []
+        returnpath = self.getValueFor('mailto')
 
-        # we want to handle bounces with XVERP
-        if 'XVERP' in mailoptions:
-            returnpath = self.getValueFor('mailto')
-        
-        batchsize = self.getValueFor('batchsize')
+        send_email(returnpath, maillist, mailString)
 
-        # start batching mails
-        while maillist:
-            # if no batchsize is set (default)
-            # or batchsize is greater than maillist,
-            # bulk all mails in one batch,
-            # otherwise bulk only 'batch'-mails at once
-            if (batchsize == 0) or (batchsize > len(maillist)):
-                batch = len(maillist)
-            else:
-                batch = batchsize
-
-            smtpserver = smtplib.SMTP(self.MailHost.smtp_host,
-                                      int(self.MailHost.smtp_port))
-            smtpserver.sendmail(returnpath, maillist[0:batch], mailString, mail_options=mailoptions)
-            smtpserver.quit()
-
-            # remove already bulked addresses
-            maillist = maillist[batch:]
-
-    
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt', 
     globals(), 
