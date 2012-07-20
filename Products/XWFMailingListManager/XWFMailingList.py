@@ -473,11 +473,7 @@ class XWFMailingList(Folder):
 
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
-        # --=mpj17=-- Does the following condition  *ever* return 
-        #   false? If it did "file_ids" would not be set and the 
-        #   call to self.mail_header would fail.
-        if self.getValueFor('archived') != self.archive_options[0]:
-            (post_id, file_ids) = self.manage_addMail(msg)
+        (post_id, file_ids) = self.manage_addMail(msg)
         
         # The custom header is actually capable of replacing the top of the
         # message, for example with a banner, so we need to parse it again

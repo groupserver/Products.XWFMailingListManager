@@ -17,9 +17,6 @@ from Products.XWFCore.XWFUtils import get_support_email
 from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
 from gs.cache import cache
 
-# TODO: once catalog is completely removed, we can remove XWFMetadataProvider too
-from Products.XWFCore.XWFMetadataProvider import XWFMetadataProvider
-
 from Products.XWFMailingListManager.queries import MessageQuery, DigestQuery 
 from Products.XWFMailingListManager.queries import BounceQuery
 from bounceaudit import BounceHandlingAuditor, BOUNCE, DISABLE
@@ -35,10 +32,7 @@ import datetime
 
 log = logging.getLogger('XWFMailingListManager.XWFMailingListManager')
 
-class Record:
-    pass
-
-class XWFMailingListManager(Folder, XWFMetadataProvider):
+class XWFMailingListManager(Folder):
     """ A searchable, self indexing mailing list manager.
 
     """
@@ -56,8 +50,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
                                         globals(),
                                         __name__='manage_main')
     
-    archive_options = ['not archived', 'plain text', 'with attachments']
-    
     id_namespace = 'http://xwft.org/ns/mailinglistmanager'
     _properties = (
         {'id':'title', 'type':'string', 'mode':'w'},
@@ -71,16 +63,12 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
         {'id':'unclosed','type':'boolean','mode':'wd'},
         {'id':'plainmail', 'type':'boolean', 'mode':'wd'},
         {'id':'keepdate', 'type':'boolean', 'mode':'wd'},
-        {'id':'storage', 'type':'string', 'mode':'wd'},
-        {'id':'archived', 'type':'selection','mode':'wd',
-                      'select_variable':'archive_options'},
         {'id':'subscribe', 'type':'string', 'mode':'wd'},
         {'id':'unsubscribe','type':'string', 'mode':'wd'},
         {'id':'mtahosts', 'type':'tokens', 'mode':'wd'},
         {'id':'spamlist', 'type':'lines', 'mode':'wd'},
         {'id':'atmask', 'type':'string', 'mode':'wd'},
         {'id':'sniplist', 'type':'lines', 'mode':'wd'},
-        {'id':'catalog', 'type':'string', 'mode':'wd'},
         {'id':'xmailer', 'type':'string', 'mode':'wd'},
         {'id':'headers', 'type':'string', 'mode':'wd'},
         {'id':'senderlimit','type':'int','mode':'wd'},
@@ -101,8 +89,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     unclosed = 0
     plainmail = 0
     keepdate = 0
-    storage = 'archive'
-    archived = archive_options[0]
     subscribe = 'subscribe'
     unsubscribe = 'unsubscribe'
     mtahosts = []
@@ -111,7 +97,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
     sniplist = [r'(\n>[^>].*)+|(\n>>[^>].*)+',
                 r'(?s)\n-- .*',
                 r'(?s)\n_+\n.*']
-    catalog = 'Catalog'
     xmailer = 'GroupServer'
     headers = ''
     senderlimit = 10                # default: no more than 10 mails
@@ -140,33 +125,6 @@ class XWFMailingListManager(Folder, XWFMetadataProvider):
             return 1
         
         return True
-
-    security.declareProtected('View','get_catalog')
-    def get_catalog(self):
-        """ Get the catalog associated with this file library.
-        
-        """
-        return self.Catalog
-
-    security.declareProtected('View','find_email')
-    def find_email(self, query):
-        """ Return the catalog 'brains' objects representing the results of
-        our query.
-        
-        """
-        catalog = self.get_catalog()
-        
-        return catalog.searchResults(query)
-
-    security.declareProtected('Manage properties', 'unrestricted_find_email')
-    def unrestricted_find_email(self, query):
-        """ Similar to find email, but using the unrestricted version of
-        searchResults.
-        
-        """
-        catalog = self.get_catalog()
-        
-        return catalog.unrestrictedSearchResults(query)
 
     security.declareProtected('View','get_list')
     def get_list(self, list_id):
