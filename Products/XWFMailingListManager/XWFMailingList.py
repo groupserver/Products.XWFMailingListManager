@@ -718,7 +718,6 @@ class XWFMailingList(Folder):
                     'moderatedUserId': msg.sender_id,
                     'moderatedUserName': moderatedUser.getProperty('fn','')}
                 notify = NotifyUser(moderator)
-                notifyUser.send_notification(nType, groupInfo.id, nDict, addresses)
                 notify.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
