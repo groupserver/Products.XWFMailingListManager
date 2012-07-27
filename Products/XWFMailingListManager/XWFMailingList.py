@@ -41,7 +41,7 @@ from queries import MemberQuery, MessageQuery, DigestQuery
 from export import export_archive_as_mbox
 from utils import check_for_commands, pin, getMailFromRequest
 
-from gs.profile.notify.notifyuser import NotifyUserFromUserInfo
+from gs.profile.notify.notifyuser import NotifyUser
 
 from gs.email import send_email
 
@@ -717,7 +717,8 @@ class XWFMailingList(Folder):
                     'absolute_url': self.absolute_url(),
                     'moderatedUserId': msg.sender_id,
                     'moderatedUserName': moderatedUser.getProperty('fn','')}
-                notify = NotifyUserFromUserInfo(moderator)
+                notify = NotifyUser(moderator)
+                notifyUser.send_notification(nType, groupInfo.id, nDict, addresses)
                 notify.send_notification('mail_moderator', 'default',
                     n_dict=nDict)
 
@@ -733,7 +734,7 @@ class XWFMailingList(Folder):
               'absolute_url': self.absolute_url(),
               'moderatedUserName': moderatedUser.getProperty('fn','')}
 
-            notify = NotifyUserFromUserInfo(moderatedUser)
+            notify = NotifyUser(moderatedUser)
             notify.send_notification('mail_moderated_user', 
               'default', n_dict=nDict)
             
