@@ -18,8 +18,6 @@ from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
 from gs.cache import cache
 
 from Products.XWFMailingListManager.queries import MessageQuery, DigestQuery 
-from Products.XWFMailingListManager.queries import BounceQuery
-from bounceaudit import BounceHandlingAuditor, BOUNCE, DISABLE
 
 import os, time, logging, StringIO, traceback
 from Products.CustomUserFolder.queries import UserQuery
@@ -249,83 +247,8 @@ class XWFMailingListManager(Folder):
                 message = fp.getvalue()
 
                 log.warn("Problems processing digest for list %s: %s" % (group_id, message))
-                continue
-            
+                continue            
 
-    def processBounce(self, groupId, email):
-        """ Process a bounce for a particular list.
-        """
-        try:
-            mlist = self.get_list(groupId)
-        except AttributeError:
-            m = 'Bounce detection failure: no list for group id %s' % groupId
-            log.warn(m)
-            return m
-        
-        siteId = mlist.getProperty('siteId', '')
-        group = get_group_by_siteId_and_groupId(mlist, siteId, groupId)
-        groupInfo = IGSGroupInfo(group)
-        siteInfo = createObject('groupserver.SiteInfo', group)
-        context = groupInfo.groupObj
-
-        user = self.acl_users.get_userByEmail(email)
-        if not user:
-            m = 'Bounce detection failure: no user with email <%s>' % email
-            log.warn(m)
-            return m
-        userInfo = IGSUserInfo(user)
-
-        bq = BounceQuery(context)
-        previousBounceDates, daysChecked = bq.previousBounceDates(email)
-        bq.addBounce(userInfo.id, groupInfo.id, siteInfo.id, email)
-        auditor = BounceHandlingAuditor(context, userInfo, groupInfo, siteInfo)
-        auditor.info(BOUNCE, email)
-
-        doNotification = False
-        now = datetime.datetime.now()
-        bounceDate = now.strftime("%Y%m%d")
-        if bounceDate not in previousBounceDates:
-            previousBounceDates.append(bounceDate)
-            doNotification = True
-
-        emailUser = EmailUser(context, userInfo)
-        addresses = [e.lower() for e in emailUser.get_verified_addresses()]
-        try:
-            addresses.remove(email.lower())
-        except ValueError:
-            m = u'%s (%s) <%s> was already unverified' %\
-                 (userInfo.name, userInfo.id, email)
-            m.encode('ascii', 'ignore')
-            log.info(m)
-            return True
-
-        nType = 'bounce_detection'        
-        numBounceDays = len(previousBounceDates)
-        # After 5 bounces on unique days, disable address by unverifying
-        if numBounceDays >= 5:
-            uq = UserQuery(userInfo.user)
-            uq.unverify_userEmail(email)
-            stats = '%d;%d' % (numBounceDays, daysChecked)
-            auditor.info(DISABLE, email, stats)
-            nType = 'disabled_email'
-        
-        if doNotification and addresses:
-            nDict =  {
-              'userInfo'      : userInfo,
-              'groupInfo'     : groupInfo,
-              'siteInfo'      : siteInfo,
-              'supportEmail'  : get_support_email(groupInfo.groupObj, siteInfo.id),
-              'bounced_email' : email
-            }
-            try:
-                notifyUser = NotifyUser(userInfo.user, siteInfo)
-                notifyUser.send_notification(nType, groupInfo.id, nDict, addresses)
-            except:
-                m = 'Failed to send %s notification to %s' %\
-                  (nType, addresses)
-                log.warn(m)
-        return True
-                
 manage_addXWFMailingListManagerForm = PageTemplateFile(
     'management/manage_addXWFMailingListManagerForm.zpt',
     globals(),
