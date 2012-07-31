@@ -719,8 +719,7 @@ class MessageQuery(object):
             http://www.postgresql.org/docs/8.0/interactive/datatype-datetime.html
         """
         tt = self.topicTable
-        statement = sa.text("""SELECT DISTINCT group_id, site_id
-                               FROM topic 
+        s = sa.text("""SELECT DISTINCT group_id, site_id FROM topic 
          WHERE age(CURRENT_TIMESTAMP, last_post_date) < INTERVAL :interval""")
 
         session = getSession()
