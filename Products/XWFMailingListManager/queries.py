@@ -68,8 +68,8 @@ class DigestQuery(object):
                 CURRENT_TIMESTAMP-interval :active_interval)""")
         
         session = getSession()
-        r = session.execute(s, interval=interval,
-                            active_interval=active_interval) 
+        r = session.execute(s, params={'interval': interval,
+                                       'active_interval': active_interval}) 
         retval = []
         if r.rowcount:
             retval = [ {'site_id': x['site_id'],
