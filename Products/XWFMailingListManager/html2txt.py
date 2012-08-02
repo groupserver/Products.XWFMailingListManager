@@ -45,7 +45,9 @@ class HTMLConverter(HTMLParser):
                 self.outText = self.outText + ' <%s> ' % href
         
     def handle_data(self, data):
-        data = unicode(data, 'utf-8', 'ignore')
+        if not isinstance(data, unicode):
+            data = unicode(data, 'utf-8', 'ignore')
+           
         d = data.strip()
         d = d and ('%s ' % d) or '\n'
         self.lastData = d
