@@ -164,7 +164,8 @@ class RDBEmailMessageStorage(object):
         # add the post itself
         #
         i = self.postTable.insert()
-        session.execute(i, params={
+        try:
+            session.execute(i, params={
                  'post_id': self.email_message.post_id,
                  'topic_id': self.email_message.topic_id,
                  'group_id': self.email_message.group_id,
@@ -177,6 +178,13 @@ class RDBEmailMessageStorage(object):
                  'htmlbody': self.email_message.html_body,
                  'header': self.email_message.headers,
                  'has_attachments': bool(self.email_message.attachment_count)})
+        except SQLAlchemyError:
+            log.warn("Post id %s already existed in database. This should be "
+                     "changed to raise a specific error to the UI." 
+                    % self.email_message.post_id)
+            session.rollback()
+            return
+ 
         #
         # add/update the topic
         #
