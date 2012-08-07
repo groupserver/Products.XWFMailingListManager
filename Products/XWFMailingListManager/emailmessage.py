@@ -18,6 +18,9 @@ from zope.sqlalchemy import mark_changed
 
 from gs.database import getSession, getTable
 
+import logging
+log = logging.getLogger('Products.XWFMailingListManager.emailmessage')
+
 def convert_int2b(num, alphabet, converted=[]):
     mod = num % len(alphabet); rem = num / len(alphabet)
     converted.append(alphabet[mod])
