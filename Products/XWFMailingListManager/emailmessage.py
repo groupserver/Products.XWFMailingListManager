@@ -104,6 +104,9 @@ def calculate_file_id(file_body, mime_type):
 class IRDBStorageForEmailMessage(Interface):
     pass
 
+class DuplicateMessageError(Exception):
+    pass
+
 class RDBFileMetadataStorage(object):
     def __init__(self, context, email_message, file_ids):
         self.context = context
@@ -187,7 +190,9 @@ class RDBEmailMessageStorage(object):
                      "changed to raise a specific error to the UI." 
                     % self.email_message.post_id)
             session.rollback()
-            return
+            
+            raise DuplicateMessageError("Post %s already existed in database."
+                    % self.email_message.post_id)
  
         #
         # add/update the topic
