@@ -131,10 +131,11 @@ class RDBFileMetadataStorage(object):
                       'topic_id': self.email_message.topic_id})
 
         # set the flag on the post table to avoid lookups
-        u = self.postTable.update(
-             self.postTable.c.post_id==self.email_message.post_id)
-        session.execute(u, params={'has_attachments': True})
-        mark_changed(session)
+        if self.file_ids:
+            u = self.postTable.update(
+                 self.postTable.c.post_id==self.email_message.post_id)
+            session.execute(u, params={'has_attachments': True})
+            mark_changed(session)
 
 class RDBEmailMessageStorage(object): 
     implements(IRDBStorageForEmailMessage)
