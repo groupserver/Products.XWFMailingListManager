@@ -50,9 +50,4 @@
     file="browser/javascript/gsfileupload.js" 
     permission="zope2.Public" />
 
-  <utility 
-    factory=".bounceaudit.BounceHandlingAuditEventFactory"
-    name="groupserver.BounceHandling"
-    permission="zope.Public" />
-
 </configure>
