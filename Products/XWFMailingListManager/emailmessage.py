@@ -2,20 +2,22 @@
 try:
     from hashlib import md5
 except:
-    from md5 import md5
-import re, string, datetime, time, codecs
+    from md5 import md5  # lint:ok
+import re
+import string
+import datetime
+import time
+import codecs
 from rfc822 import AddressList
 import sqlalchemy as sa
 from sqlalchemy.exc import SQLAlchemyError
-from zope.interface import Interface, Attribute, implements
+from zope.cachedescriptors.property import Lazy
 from zope.datetime import parseDatetimetz
+from zope.sqlalchemy import mark_changed
+from zope.interface import Interface, Attribute, implements
+from gs.database import getSession, getTable
 from html2txt import convert_to_txt
 from email import Parser, Header
-from crop_email import crop_email
-import stopwords
-from zope.sqlalchemy import mark_changed
-
-from gs.database import getSession, getTable
 
 import logging
 log = logging.getLogger('Products.XWFMailingListManager.emailmessage')
@@ -152,7 +154,6 @@ class RDBEmailMessageStorage(object):
         self.email_message = email_message
         self.postTable = getTable('post')
         self.topicTable = getTable('topic')
-        self.topic_word_countTable = getTable('topic_word_count')
         self.post_tagTable = getTable('post_tag')
         self.post_id_mapTable = getTable('post_id_map')
 
@@ -246,35 +247,6 @@ class RDBEmailMessageStorage(object):
                             'tag': tag})
         mark_changed(session)
 
-    def _update_kw(self, topic_id, word, count):
-        and_ = sa.and_
-        session = getSession()
-        s = self.topic_word_countTable.select(and_(
-         self.topic_word_countTable.c.topic_id == self.email_message.topic_id,
-         self.topic_word_countTable.c.word == word))
-        r = session.execute(s).fetchone()
-        if r:
-            u = self.topic_word_countTable.update(and_(
-           self.topic_word_countTable.c.topic_id == self.email_message.topic_id,
-           self.topic_word_countTable.c.word == word))
-            session.execute(u, params={'count': r['count'] + count})
-        else:
-            i = self.topic_word_countTable.insert()
-            session.execute(i, params={
-                           'topic_id': topic_id,
-                           'word': word,
-                           'count': count})
-
-    def insert_keyword_count(self):
-        #
-        # add/update the word count for the topic
-        #
-        counts = self.email_message.word_count
-        for word in counts:
-            topic_id = self.email_message.topic_id
-            count = counts[word]
-            self._update_kw(topic_id, word, count)
-
     def remove(self):
         session = getSession()
         topic = self._get_topic()
@@ -325,8 +297,6 @@ class IEmailMessage(Interface):
 
     attachment_count = Attribute("A count of attachments which have a"
                                     "filename")
-    word_count = Attribute("A dictionary of words and their count within the"
-                            "document")
 
     def get(name, default):
         """ Get the value of a header, changed to unicode using the
@@ -342,7 +312,6 @@ def check_encoding(encoding):
     # a slightly wierd encoding that isn't in the standard encoding table
     if encoding.lower() == 'macintosh':
         encoding = 'mac_roman'
-
     try:
         codecs.lookup(encoding)
     except:
@@ -350,7 +319,6 @@ def check_encoding(encoding):
         # the encoding anyway, and UTF-8 is going to be right more of the time
         # in the very, very rare case that we have to force this!
         encoding = 'utf-8'
-
     return encoding
 
 
@@ -360,20 +328,23 @@ class EmailMessage(object):
     def __init__(self, message, list_title='', group_id='', site_id='',
                 sender_id_cb=None,
                        replace_mail_date=True):
-        parser = Parser.Parser()
-        msg = parser.parsestr(message)
-
-        self.message = msg
+        self.msg = message
         self._list_title = list_title
         self.group_id = group_id
         self.site_id = site_id
         self.sender_id_cb = sender_id_cb
         self.replace_mail_date = replace_mail_date
-        self._date = datetime.datetime.now()
 
-        self.__body = None
-        self.__attachments = None
-        self.__subject = None
+    @Lazy
+    def message(self):
+        parser = Parser.Parser()
+        retval = parser.parsestr(self.msg)
+        return retval
+
+    @Lazy
+    def _date(self):
+        retval = datetime.datetime.now()
+        return retval
 
     def get(self, name, default=''):
         value = self.message.get(name, default)
@@ -384,7 +355,7 @@ class EmailMessage(object):
 
         return u' '.join(header_parts)
 
-    @property
+    @Lazy
     def sender_id(self):
         retval = ''
         if self.sender_id_cb:
@@ -392,13 +363,12 @@ class EmailMessage(object):
 
         return retval
 
-    @property
+    @Lazy
     def encoding(self):
         encoding = check_encoding(self.message.get_param('charset', 'utf-8'))
-
         return encoding
 
-    @property
+    @Lazy
     def attachments(self):
         def split_multipart(msg, pl):
             if msg.is_multipart():
@@ -409,58 +379,57 @@ class EmailMessage(object):
 
             return pl
 
-        if self.__attachments is None:
-            payload = self.message.get_payload()
-            if isinstance(payload, list):
-                outmessages = []
-                self.__attachments = []
-                for i in payload:
-                    outmessages = split_multipart(i, outmessages)
+        retval = []
+        payload = self.message.get_payload()
+        if isinstance(payload, list):
+            outmessages = []
+            for i in payload:
+                outmessages = split_multipart(i, outmessages)
 
-                for msg in outmessages:
-                    actual_payload = msg.get_payload(decode=True)
-                    encoding = msg.get_param('charset', self.encoding)
-                    pd = parse_disposition(msg.get('content-disposition', ''))
-                    filename = unicode(pd, encoding, 'ignore')
-                    fileid, length, md5_sum = calculate_file_id(actual_payload,
-                                                        msg.get_content_type())
-                    self.__attachments.append({
-                          'payload': actual_payload,
-                          'fileid': fileid,
-                          'filename': filename,
-                          'length': length,
-                          'md5': md5_sum,
-                          'charset': encoding,  # --=mpj17=-- Issues?
-                          'maintype': msg.get_content_maintype(),
-                          'subtype': msg.get_content_subtype(),
-                          'mimetype': msg.get_content_type(),
-                          'contentid': msg.get('content-id', '')})
-            else:
-                # Since we aren't a bunch of attachments, actually decode the
-                #   body
-                payload = self.message.get_payload(decode=True)
-                cd = self.message.get('content-disposition', '')
-                pd = parse_disposition(cd)
-                filename = unicode(pd, self.encoding, 'ignore')
+            for msg in outmessages:
+                actual_payload = msg.get_payload(decode=True)
+                encoding = msg.get_param('charset', self.encoding)
+                pd = parse_disposition(msg.get('content-disposition', ''))
+                filename = unicode(pd, encoding, 'ignore')
+                fileid, length, md5_sum = calculate_file_id(actual_payload,
+                                                    msg.get_content_type())
+                retval.append({
+                      'payload': actual_payload,
+                      'fileid': fileid,
+                      'filename': filename,
+                      'length': length,
+                      'md5': md5_sum,
+                      'charset': encoding,  # --=mpj17=-- Issues?
+                      'maintype': msg.get_content_maintype(),
+                      'subtype': msg.get_content_subtype(),
+                      'mimetype': msg.get_content_type(),
+                      'contentid': msg.get('content-id', '')})
+        else:
+            # Since we aren't a bunch of attachments, actually decode the
+            #   body
+            payload = self.message.get_payload(decode=True)
+            cd = self.message.get('content-disposition', '')
+            pd = parse_disposition(cd)
+            filename = unicode(pd, self.encoding, 'ignore')
 
-                fileid, length, md5_sum = calculate_file_id(payload,
-                                            self.message.get_content_type())
-                self.__attachments = [{
-                          'payload': payload,
-                          'md5': md5_sum,
-                          'fileid': fileid,
-                          'filename': filename,
-                          'length': length,
-                          'charset': self.message.get_charset(),
-                          'maintype': self.message.get_content_maintype(),
-                          'subtype': self.message.get_content_subtype(),
-                          'mimetype': self.message.get_content_type(),
-                          'contentid': self.message.get('content-id', '')}]
-        assert self.__attachments is not None
-        assert type(self.__attachments) == list
-        return self.__attachments
+            fileid, length, md5_sum = calculate_file_id(payload,
+                                        self.message.get_content_type())
+            retval = [{
+                      'payload': payload,
+                      'md5': md5_sum,
+                      'fileid': fileid,
+                      'filename': filename,
+                      'length': length,
+                      'charset': self.message.get_charset(),
+                      'maintype': self.message.get_content_maintype(),
+                      'subtype': self.message.get_content_subtype(),
+                      'mimetype': self.message.get_content_type(),
+                      'contentid': self.message.get('content-id', '')}]
+        assert retval is not None
+        assert type(retval) == list
+        return retval
 
-    @property
+    @Lazy
     def headers(self):
         # return a flattened version of the headers
         header_string = '\n'.join(map(lambda x: '%s: %s' % (x[0], x[1]),
@@ -471,134 +440,89 @@ class EmailMessage(object):
 
         return header_string
 
-    @property
+    @Lazy
     def attachment_count(self):
         count = 0
         for item in self.attachments:
             if item['filename']:
                 count += 1
-
         return count
 
-    @property
+    @Lazy
     def language(self):
         # one day we might want to detect languages, primarily this
         # will be used for stemming, stopwords and search
         return 'en'
 
-    @property
-    def word_count(self):
-        wc = {}
-        cropped_body, rest = crop_email(self.body)
-        process_body = ''
-        for line in cropped_body.split('\n'):
-            if line and line[0] != '>':
-                process_body += line + '\n'
-
-        for word in process_body.split():
-            word = word.lower()
-            subs = (("'s$", ""), ("\.$", ""), (",$", ""), ("'$", ""))
-            for repstr, substr in subs:
-                word = re.sub(repstr, substr, word)
-
-            # check for stopwords
-            if word in stopwords.en:
-                continue
-
-            skip = False
-            for letter in word:
-                if letter not in string.ascii_lowercase + string.digits:
-                    skip = True
-                    break
-
-            if skip:
-                continue
-
-            if word in wc:
-                wc[word] += 1
-            else:
-                wc[word] = 1
-
-        return wc
-
-    @property
+    @Lazy
     def body(self):
-        if self.__body is None:
-            self.__body = u''
-            for item in self.attachments:
-                if item['filename'] == '' and item['subtype'] != 'html':
-                    self.__body = unicode(item['payload'], self.encoding,
-                                            'ignore')
-                    break
-            html_body = self.html_body
-            if html_body and (not self.__body):
-                h = html_body.encode(self.encoding, 'xmlcharrefreplace')
-                self.__body = convert_to_txt(h)
-        assert self.__body is not None
-        assert type(self.__body) == unicode
-        return self.__body
+        retval = u''
+        for item in self.attachments:
+            if item['filename'] == '' and item['subtype'] != 'html':
+                retval = unicode(item['payload'], self.encoding,
+                                        'ignore')
+                break
+        html_body = self.html_body
+        if html_body and (not retval):
+            h = html_body.encode(self.encoding, 'xmlcharrefreplace')
+            retval = convert_to_txt(h)
+        assert retval is not None
+        assert type(retval) == unicode
+        return retval
 
-    @property
+    @Lazy
     def html_body(self):
         for item in self.attachments:
             if item['filename'] == '' and item['subtype'] == 'html':
                 return unicode(item['payload'], self.encoding, 'ignore')
         return ''
 
-    @property
+    @Lazy
     def subject(self):
-        if self.__subject == None:
-            self.__subject = strip_subject(self.get('subject'),
-                                            self._list_title)
-        return self.__subject
+        retval = strip_subject(self.get('subject'), self._list_title)
+        return retval
 
-    @property
+    @Lazy
     def compressed_subject(self):
         return normalise_subject(self.subject)
 
-    @property
+    @Lazy
     def sender(self):
         sender = self.get('from')
-
         if sender:
             name, sender = AddressList(sender)[0]
             sender = sender.lower()
-
         return sender
 
-    @property
+    @Lazy
     def name(self):
         sender = self.get('from')
-        name = ''
-
+        retval = ''
         if sender:
-            name, sender = AddressList(sender)[0]
+            retval, sender = AddressList(sender)[0]
+        return retval
 
-        return name
-
-    @property
+    @Lazy
     def to(self):
         to = self.get('to')
-
         if to:
             name, to = AddressList(to)[0]
             to = to.lower()
         # --=mpj17=-- TODO: Add the group name.
         return to
 
-    @property
+    @Lazy
     def title(self):
         return '%s / %s' % (self.subject, self.sender)
 
-    @property
+    @Lazy
     def inreplyto(self):
         return self.get('in-reply-to')
 
-    @property
+    @Lazy
     def date(self):
         if self.replace_mail_date:
             return self._date
-
         d = self.get('date', '').strip()
         if d:
             # if we have the format Sat, 10 Mar 2007 22:47:20 +1300 (NZDT)
@@ -606,14 +530,14 @@ class EmailMessage(object):
             # parser
             d = re.sub(' \(.*?\)', '', d)
             return parseDatetimetz(d)
-
         return self._date
 
-    @property
+    @Lazy
     def md5_body(self):
-        return md5(self.body.encode('utf-8')).hexdigest()
+        retval = md5(self.body.encode('utf-8')).hexdigest()
+        return retval
 
-    @property
+    @Lazy
     def topic_id(self):
         # this is calculated from what we have/know
 
@@ -625,12 +549,12 @@ class EmailMessage(object):
 
         return unicode(convert_int2b62(long(tid, 16)))
 
-    @property
+    @Lazy
     def tags(self):
         # Deprecated
         return []
 
-    @property
+    @Lazy
     def post_id(self):
         # this is calculated from what we have/know
         len_payloads = sum([x['length'] for x in self.attachments])
@@ -647,5 +571,5 @@ class EmailMessage(object):
                   self.md5_body + ':' + self.sender + ':' +
                   self.inreplyto + ':' + str(len_payloads))
         pid = md5(items.encode('utf-8')).hexdigest()
-
-        return unicode(convert_int2b62(long(pid, 16)))
+        retval = unicode(convert_int2b62(long(pid, 16)))
+        return retval
