@@ -5,11 +5,6 @@ from gs.database import getTable, getSession
 from querydigest import DigestQuery  # lint:ok
 from querymember import MemberQuery  # lint:ok
 
-import logging
-log = logging.getLogger("XMLMailingListManager.queries")
-
-LAST_NUM_DAYS = 60
-
 
 def to_unicode(s):
     retval = s
