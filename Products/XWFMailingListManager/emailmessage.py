@@ -191,7 +191,8 @@ class RDBEmailMessageStorage(object):
                  'htmlbody': self.email_message.html_body,
                  'header': self.email_message.headers,
                  'has_attachments': bool(self.email_message.attachment_count)})
-        except SQLAlchemyError:
+        except SQLAlchemyError, se:
+            log.warn(se)
             log.warn("Post id %s already existed in database. This should be "
                      "changed to raise a specific error to the UI."
                     % self.email_message.post_id)
