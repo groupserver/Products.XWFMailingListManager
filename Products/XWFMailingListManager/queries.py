@@ -24,6 +24,7 @@ class MessageQuery(object):
         self.context = context
 
         self.topicTable = getTable('topic')
+        self.topicKeywordsTable = getTable('topic_keywords')
         self.postTable = getTable('post')
         self.fileTable = getTable('file')
 
@@ -493,9 +494,10 @@ class MessageQuery(object):
                'last_post_id': ID, 'count': Int, 'last_post_date': Date,
                'group_id': ID, 'site_id': ID}, ...)"""
         tt = self.topicTable
+        tkt = self.topicKeywordsTable
         cols = (tt.c.topic_id, tt.c.site_id, tt.c.group_id,
                tt.c.original_subject, tt.c.first_post_id, tt.c.last_post_id,
-               tt.c.num_posts, tt.c.last_post_date, tt.c.keywords)
+               tt.c.num_posts, tt.c.last_post_date, tkt.c.keywords)
         statement = sa.select(cols, order_by=sa.desc(tt.c.last_post_date),
                               limit=30)
         self.__add_std_where_clauses(statement, tt,
@@ -503,6 +505,7 @@ class MessageQuery(object):
         if search_string:
             q = ' & '.join(search_string)
             statement.append_whereclause(tt.c.fts_vectors.match(q))
+        statement.append_whereclause(tt.c.topic_id == tkt.c.topic_id)
 
         session = getSession()
         r = session.execute(statement)
