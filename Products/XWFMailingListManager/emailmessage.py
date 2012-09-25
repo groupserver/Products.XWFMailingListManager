@@ -327,20 +327,15 @@ class EmailMessage(object):
     implements(IEmailMessage)
 
     def __init__(self, message, list_title='', group_id='', site_id='',
-                sender_id_cb=None,
-                       replace_mail_date=True):
-        self.msg = message
+                sender_id_cb=None, replace_mail_date=True):
         self._list_title = list_title
         self.group_id = group_id
         self.site_id = site_id
         self.sender_id_cb = sender_id_cb
         self.replace_mail_date = replace_mail_date
-
-    @Lazy
-    def message(self):
+        # --=mpj17=-- self.message is not @Lazy, because it is mutable.
         parser = Parser.Parser()
-        retval = parser.parsestr(self.msg)
-        return retval
+        self.message = parser.parsestr(message)
 
     @Lazy
     def _date(self):
@@ -430,8 +425,9 @@ class EmailMessage(object):
         assert type(retval) == list
         return retval
 
-    @Lazy
+    @property
     def headers(self):
+        # --=mpj17=-- Not @Lazy because self.message. changes.
         # return a flattened version of the headers
         header_string = '\n'.join(map(lambda x: '%s: %s' % (x[0], x[1]),
                                         self.message._headers))
