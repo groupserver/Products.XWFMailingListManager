@@ -403,13 +403,13 @@ class XWFMailingList(Folder):
                         maillist.append(email)
 
             except Exception, x:
-                m = '%s (%s): A problem was experienced while getting '\
-                  'values: %s' % (self.getProperty('title', ''), self.getId(), x)
+                m = '%s (%s): A problem was experienced while getting values'\
+                  ': %s' % (self.getProperty('title', ''), self.getId(), x)
                 log.error(m)
                 maillist = None
 
             # last ditch effort
-            if maillist == None:
+            if maillist is None:
                 maillist = self.getProperty('maillist', [])
 
             return maillist
@@ -428,9 +428,8 @@ class XWFMailingList(Folder):
         return self.getId()
 
     def create_mailableSubject(self, subject, include_listid=1):
-        """ A helper method for tidying up the mailing list subject for remailing.
-
-        """
+        """ A helper method for tidying up the mailing list subject for
+        remailing. """
         # there is an assumption that if we're including a listid we should
         # strip any existing listid reference
         if include_listid:
@@ -439,33 +438,32 @@ class XWFMailingList(Folder):
         else:
             list_title = ''
 
-        subject = strip_subject(subject, list_title, False)
+        retval = strip_subject(subject, list_title, False)
 
         is_reply = 0
-        if subject.lower().find('re:', 0, 3) == 0 and len(subject) > 3:
-            subject = subject[3:].strip()
+        if (retval.lower().find('re:', 0, 3)) == 0 and (len(retval) > 3):
+            retval = retval[3:].strip()
             is_reply = 1
 
         re_string = '%s' % (is_reply and 'Re: ' or '')
         if include_listid:
-            subject = '%s[%s] %s' % (re_string, list_title, subject)
+            retval = '%s[%s] %s' % (re_string, list_title, retval)
         else:
-            subject = '%s%s' % (re_string, subject)
-
-        return subject
+            retval = '%s%s' % (re_string, retval)
+        return retval
 
     def listMail(self, REQUEST):
         # Shifted from MailBoxer till reintegration project
 
         # Send a mail to all members of the list.
         mailString = getMailFromRequest(REQUEST)
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
-                                       group_id=self.getId(),
-                                       site_id=self.getProperty('siteId', ''),
-                                       sender_id_cb=self.get_mailUserId)
+        msg = EmailMessage(mailString,
+                list_title=self.getProperty('title', ''),
+                group_id=self.getId(), site_id=self.getProperty('siteId', ''),
+                sender_id_cb=self.get_mailUserId)
         # TODO: Audit
-        m = 'listMail: Processing message in group "%s", post id "%s" from <%s>' % \
-                (self.getId(), msg.post_id, msg.sender)
+        m = 'listMail: Processing message in group "%s", post id "%s" from '\
+            '<%s>' % (self.getId(), msg.post_id, msg.sender)
         log.info(m)
 
         # store mail in the archive? get context for the mail...
@@ -512,7 +510,7 @@ class XWFMailingList(Folder):
 
         for hdr in customHeader.message.keys():
             if customHeader.message[hdr].strip():
-                if msg.message.has_key(hdr):
+                if hdr in msg.message:
                     msg.message.replace_header(hdr, customHeader.message[hdr])
                 else:
                     msg.message.add_header(hdr, customHeader.message[hdr])
@@ -521,28 +519,30 @@ class XWFMailingList(Folder):
                 del(msg.message[hdr])
 
         # patch in the archive ID
-        if msg.message.has_key('x-archive-id'):
+        if 'x-archive-id' in msg.message:
             msg.message.replace_header('x-archive-id', post_id)
         else:
             msg.message.add_header('X-Archive-Id', post_id)
 
         # patch in the user ID
-        if msg.message.has_key('x-gsuser-id'):
+        if 'x-gsuser-id' in msg.message:
             msg.message.replace_header('x-gsuser-id', msg.sender_id)
         else:
             msg.message.add_header('X-GSUser-Id', msg.sender_id)
 
         # We *always* distribute plain mail at the moment.
-        if msg.message.has_key('content-type'):
-            msg.message.replace_header('content-type', 'text/plain; charset=utf-8;')
+        if 'content-type' in msg.message:
+            msg.message.replace_header('content-type',
+                                        'text/plain; charset=utf-8;')
         else:
-            msg.message.add_header('content-type', 'text/plain; charset=utf-8;')
+            msg.message.add_header('content-type',
+                                    'text/plain; charset=utf-8;')
 
         # remove headers that should not be generally used for either our
         # encoding scheme or in general list mail
         for hdr in ('content-transfer-encoding', 'disposition-notification-to',
                     'return-receipt-to'):
-            if msg.message.has_key(hdr):
+            if hdr in msg.message:
                 del(msg.message[hdr])
 
         newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers,
@@ -1633,7 +1633,7 @@ class XWFMailingList(Folder):
         memberlist = self.getValueFor('maillist')
 
         # Remove "blank" / corrupted / doubled entries
-        maillist=[]
+        maillist = []
         for email in memberlist:
             if '@' in email and email not in maillist:
                 maillist.append(email)
@@ -1646,6 +1646,7 @@ manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt',
     globals(),
     __name__='manage_addXWFMailingListForm')
+
 
 def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
                                      REQUEST=None):
@@ -1662,6 +1663,7 @@ def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
         return self.manage_main(self, REQUEST)
 
 InitializeClass(XWFMailingList)
+
 
 def initialize(context):
     context.registerClass(
