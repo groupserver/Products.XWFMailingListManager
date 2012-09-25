@@ -402,6 +402,16 @@ class MessageQuery(object):
 
         return None
 
+    @property
+    def topicCols(self):
+        tt = self.topicTable
+        tkt = self.topicKeywordsTable
+        retval = (tt.c.topic_id, tt.c.site_id, tt.c.group_id,
+                   tt.c.original_subject, tt.c.first_post_id,
+                   tt.c.last_post_id, tt.c.num_posts, tt.c.last_post_date,
+                   tkt.c.keywords)
+        return retval
+
     def topic(self, topic_id):
         """
             Returns:
@@ -410,8 +420,10 @@ class MessageQuery(object):
                'group_id': ID, 'site_id': ID}
         """
         tt = self.topicTable
-        statement = tt.select()
+        tkt = self.topicKeywordsTable
+        statement = sa.select(self.topicCols)
         statement.append_whereclause(tt.c.topic_id == topic_id)
+        statement.append_whereclause(tt.c.topic_id == tkt.c.topic_id)
 
         session = getSession()
         r = session.execute(statement)
@@ -495,11 +507,8 @@ class MessageQuery(object):
                'group_id': ID, 'site_id': ID}, ...)"""
         tt = self.topicTable
         tkt = self.topicKeywordsTable
-        cols = (tt.c.topic_id, tt.c.site_id, tt.c.group_id,
-               tt.c.original_subject, tt.c.first_post_id, tt.c.last_post_id,
-               tt.c.num_posts, tt.c.last_post_date, tkt.c.keywords)
-        statement = sa.select(cols, order_by=sa.desc(tt.c.last_post_date),
-                              limit=30)
+        statement = sa.select(self.topicCols,
+                            order_by=sa.desc(tt.c.last_post_date), limit=30)
         self.__add_std_where_clauses(statement, tt,
                                      site_id, group_ids)
         if search_string:
