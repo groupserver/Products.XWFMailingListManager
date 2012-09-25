@@ -53,7 +53,7 @@ class DigestQuery(object):
 
         session = getSession()
         r = session.execute(s, interval=interval,
-                            active_interval=active_interval)
+                            active_interval=active_interval)  # FIXME?
         retval = []
         if r.rowcount:
             retval = [{'site_id': x['site_id'],
