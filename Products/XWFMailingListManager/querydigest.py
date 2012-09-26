@@ -42,18 +42,17 @@ class DigestQuery(object):
             which have not received a digest in the 'interval' time period.
 
         """
-        s = sa.text("""select DISTINCT topic.site_id,topic.group_id from
-               (select site_id, group_id, max(sent_date) as sent_date from
-                group_digest group by site_id,group_id) as latest_digest,topic
-                where (topic.site_id=latest_digest.site_id and
-                       topic.group_id=latest_digest.group_id and
-                latest_digest.sent_date < CURRENT_TIMESTAMP-interval :interval
-                and topic.last_post_date >
-                CURRENT_TIMESTAMP-interval :active_interval)""")
+        s = sa.text("""SELECT DISTINCT topic.site_id, topic.group_id FROM
+  (SELECT site_id, group_id, max(sent_date) AS sent_date
+     FROM group_digest GROUP BY site_id,group_id) AS latest_digest, topic
+  WHERE topic.site_id = latest_digest.site_id
+    AND topic.group_id = latest_digest.group_id
+    AND latest_digest.sent_date < CURRENT_TIMESTAMP-interval :interval
+    AND topic.last_post_date > CURRENT_TIMESTAMP-interval :active_interval""")
 
         session = getSession()
-        r = session.execute(s, interval=interval,
-                            active_interval=active_interval)  # FIXME?
+        d = {'interval': interval, 'active_interval': active_interval}
+        r = session.execute(s, params=d)
         retval = []
         if r.rowcount:
             retval = [{'site_id': x['site_id'],
