@@ -197,7 +197,6 @@ class MessageQuery(object):
         topic_id_filter = ''
         if topic_id:
             topic_id_filter = 'post.topic_id=curr_post.topic_id and'
-        #FIXME: This should use :thingies: rather than %s
         s = sa.text("""select post.date, post.post_id, post.topic_id,
                        post.subject, post.user_id, post.has_attachments
                     from post,
