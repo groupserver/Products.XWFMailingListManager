@@ -87,7 +87,7 @@ class MemberQuery(object):
             email_group.append_whereclause(guet.c.group_id == group_id)
             if verified_only:
                 email_group.append_whereclause(guet.c.email == uet.c.email)
-                email_group.append_whereclause(uet.c.verified_date != None)  # lint:ok
+                email_group.append_whereclause(uet.c.verified_date != None)
 
             r = session.execute(email_group)
             if r.rowcount:
