@@ -9,6 +9,7 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
+import inspect
 from cgi import escape
 from email import message_from_string
 import random
@@ -275,22 +276,27 @@ class XWFMailingList(Folder):
         """ Get the user objects corresponding to the membership list, assuming we can.
 
         """
-        member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
+        member_groups = self.getProperty('member_groups',
+                                        ['%s_member' % self.listId()])
         uids = []
         for gid in member_groups:
             group = self.acl_users.getGroupById(gid)
             uids += group.getUsers()
 
         if ids_only:
-            return uids
-
-        users = []
-        for uid in uids:
-            user = self.acl_users.getUser(uid)
-            if user:
-                users.append(user)
-
-        return users
+            retval = uids
+        else:
+            m = 'Getting all the user-objects in "%s"' % self.listId()
+            log.warning(m)
+            s = inspect.stack()[:2]
+            log.warning(s)
+            users = []
+            for uid in uids:
+                user = self.acl_users.getUser(uid)
+                if user:
+                    users.append(user)
+            retval = users
+        return retval
 
     security.declareProtected('Manage properties', 'get_memberUserCount')
     def get_memberUserCount(self):
@@ -383,20 +389,28 @@ class XWFMailingList(Folder):
                 memberQuery = MemberQuery(self)
                 addresses = []
                 if key == 'maillist':
-                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),
-                                                    self.get_memberUserObjects)
+                    addresses = memberQuery.get_member_addresses(
+                                self.getProperty('siteId'), self.getId(),
+                                self.get_memberUserObjects)
                 elif key == 'digestmaillist':
-                    addresses = memberQuery.get_digest_addresses(self.getProperty('siteId'), self.getId(),
-                                                    self.get_memberUserObjects)
+                    addresses = memberQuery.get_digest_addresses(
+                                self.getProperty('siteId'), self.getId(),
+                                self.get_memberUserObjects)
                 elif key == 'moderator':
-                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),
-                                                    self.get_moderatorUserObjects, preferred_only=False, process_settings=False)
+                    addresses = memberQuery.get_member_addresses(
+                                self.getProperty('siteId'), self.getId(),
+                                self.get_moderatorUserObjects,
+                                preferred_only=False, process_settings=False)
                 elif key == 'moderatedlist':
-                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),
-                                                    self.get_moderatedUserObjects, preferred_only=False, process_settings=False)
+                    addresses = memberQuery.get_member_addresses(
+                                self.getProperty('siteId'), self.getId(),
+                                self.get_moderatedUserObjects,
+                                preferred_only=False, process_settings=False)
                 elif key == 'mailinlist':
-                    addresses = memberQuery.get_member_addresses(self.getProperty('siteId'), self.getId(),
-                                                    self.get_memberUserObjects, preferred_only=False, process_settings=False)
+                    addresses = memberQuery.get_member_addresses(
+                                self.getProperty('siteId'), self.getId(),
+                                self.get_memberUserObjects,
+                                preferred_only=False, process_settings=False)
                 for email in addresses:
                     email = email.strip()
                     if email and email not in maillist:
