@@ -186,7 +186,7 @@ class MessageQuery(object):
 
         retval = []
         if r.rowcount:
-            retval = [{self.marshal_topic(x)} for x in r]
+            retval = [self.marshal_topic(x) for x in r]
 
         return retval
 
