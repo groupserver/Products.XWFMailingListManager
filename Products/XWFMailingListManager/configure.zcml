@@ -42,12 +42,4 @@
   <browser:resourceDirectory name="postImages"
     directory="browser/images/green/" permission="zope2.Public" />
 
-  <browser:resourceDirectory name="multiple_file_upload"
-    directory="browser/javascript/multiple_file_upload" 
-    permission="zope2.Public" />
-
-  <browser:resource name="gsfileupload-20090622.js"
-    file="browser/javascript/gsfileupload.js" 
-    permission="zope2.Public" />
-
 </configure>
