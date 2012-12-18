@@ -34,8 +34,4 @@
     factory=".emailmessage.RDBEmailMessageStorage"
     provides=".emailmessage.IRDBStorageForEmailMessage" />
   
-  <!--Resources-->
-  <browser:resourceDirectory name="postImages"
-    directory="browser/images/green/" permission="zope2.Public" />
-
 </configure>
