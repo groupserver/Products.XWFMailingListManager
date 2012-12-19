@@ -26,7 +26,6 @@ from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption
 from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
 from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroupMember.groupmembership import join_group
-from Products.GSSearch.topicdigestview import TopicDigestView
 from Products.GSProfile.utils import create_user_from_email
 from Products.GSGroup.groupInfo import IGSGroupInfo
 from gs.group.member.leave.leaver import GroupLeaver
@@ -37,7 +36,7 @@ from gs.email import send_email
 import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
     RDBFileMetadataStorage, strip_subject
-from queries import MemberQuery, MessageQuery, DigestQuery
+from queries import MemberQuery, MessageQuery
 from utils import check_for_commands, pin, getMailFromRequest
 
 import logging
@@ -1138,95 +1137,6 @@ class XWFMailingList(Folder):
 
         user.set_disableDigestByKey(groupInfo.id)
         self.mail_digest_off(self, REQUEST, mail=header, body=body)
-
-    def manage_digestBoxer(self, REQUEST):
-        '''Generate a topic digest for the group
-
-        Generate a topic digest for the group, if necessary, and send
-        it out to all users that wish to recieve a topic digest. Normally
-        this method is called by "process_all_digests" scripts
-
-        ARGUMENTS
-            REQUEST:  The HTTP request.
-
-        RETURNS
-            None.
-
-        SIDE EFFECTS
-            Sends an email message containing the topic digest to all
-            users that wish to recieve it.
-
-        SEE ALSO
-            "self.send_digest"
-        '''
-        # --=mpj17=-- Get group here
-        siteId = self.getProperty('siteId', '')
-        groupId = self.getId()
-        site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
-        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-
-        digestQuery = DigestQuery(self)
-        # check to see if we have a digest in the last day, and if so, shortcut
-        if digestQuery.has_digest_since(siteId, groupId):
-            m = u'%s (%s) on %s (%s): Have already issued digest in last day' % \
-              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
-            log.info(m)
-            return
-
-        # -- Call topic digest view
-        topicDigestView = TopicDigestView(groupInfo.groupObj, REQUEST)
-        if topicDigestView.showDigest:
-            topicDigestStats = topicDigestView.post_stats()
-            m = u'%s (%s) on %s (%s): sending out topic digest with %s '\
-              u'new topics and %s existing topics'%\
-                  (groupInfo.name, groupInfo.id, siteInfo.name,
-                   siteInfo.id,
-                   topicDigestStats['newTopics'],
-                   topicDigestStats['existingTopics'])
-            log.info(m)
-
-            # --=mpj17=-- For some broken reason, best known to the crack
-            #   head who wrote Zope 2, calling "get_property" causes a
-            #   permission-failure with the page template, even though
-            #   everything is either on the file-system or got the
-            #   Manager proxy. So I get the short-name of the group here,
-            #   even though the group-info instance is passed into the page
-            #   template.
-            shortName = groupInfo.get_property('short_name', groupInfo.name)
-
-            emailTemplate = groupInfo.groupObj.Templates.email.list.digest
-            digest = emailTemplate(REQUEST,
-                                    mailList=self,
-                                    groupInfo=groupInfo,
-                                    siteInfo=siteInfo,
-                                    digestText=topicDigestView(),
-                                    digestStats=topicDigestStats,
-                                    shortGroupName=shortName)
-
-            # even if we screw up, mark in the database that we've sent the digest,
-            # because we don't want repeat screwups to lead to repeat digests
-            digestQuery.update_group_digest(siteId, groupId)
-            digest = digest.encode('utf-8', 'ignore')
-            self.send_digest(digest)
-        else:
-            m = u'%s (%s) on %s (%s): No topics for digest' % \
-              (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id)
-            log.info(m)
-
-    def send_digest(self, digest):
-        """ Send out a digest of topics to users who have
-            requested it.
-
-            """
-        memberlist = MailBoxerTools.lowerList(self.getValueFor('digestmaillist'))
-        maillist = []
-        for email in memberlist:
-            if '@' in email and email not in maillist:
-                maillist.append(email)
-
-        returnpath = self.getValueFor('mailto')
-        send_email(returnpath, maillist, digest)
 
     security.declareProtected('Manage properties', 'manage_addMember')
     def manage_addMember(self, email):

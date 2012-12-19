@@ -2,7 +2,6 @@
 from sqlalchemy.exc import NoSuchTableError
 import sqlalchemy as sa
 from gs.database import getTable, getSession
-from querydigest import DigestQuery  # lint:ok
 from querymember import MemberQuery  # lint:ok
 
 
