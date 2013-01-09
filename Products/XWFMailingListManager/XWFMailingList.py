@@ -1567,7 +1567,7 @@ class XWFMailingList(Folder):
 
         returnpath = self.getValueFor('mailto')
 
-        send_email(returnpath, maillist, mailString)
+        send_email(returnpath, maillist, mailString.encode('utf-8', 'ignore'))
 
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt',
