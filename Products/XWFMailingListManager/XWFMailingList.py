@@ -754,20 +754,23 @@ class XWFMailingList(Folder):
         """
         ids = []
         for attachment in msg.attachments:
-            if attachment['filename'] == '' and attachment['subtype'] == 'plain':
+            if ((attachment['filename'] == '')
+                and (attachment['subtype'] == 'plain')):
                 # We definately don't want to save the plain text body again!
                 pass
-            elif attachment['filename'] == '' and attachment['subtype'] == 'html':
-                # We might want to do something with the HTML body some day, but we
-                # archive the HTML body here, as it suggests in the log message. The
-                # HTML body is archived along with the plain text body.
+            elif ((attachment['filename'] == '')
+                    and (attachment['subtype'] == 'html')):
+                # We might want to do something with the HTML body some day,
+                # but we archive the HTML body here, as it suggests in the log
+                # message. The HTML body is archived along with the plain text
+                # body.
                 m = '%s (%s): archiving HTML message.' % (
                                        self.getProperty('title'), self.getId())
                 log.info(m)
             elif attachment['contentid']:
-                # TODO: What do we want to do with these? They are typicallypart
-                # of an HTML message, for example the images, but what should
-                # we do with them once we've stripped them?
+                # TODO: What do we want to do with these? They are typically
+                # part of an HTML message, for example the images, but what
+                # should we do with them once we've stripped them?
                 m = '%s (%s): stripped, but not archiving %s attachment '\
                   '%s; it appears to be part of an HTML message.' % \
                   (self.getProperty('title'), self.getId(),
@@ -786,14 +789,13 @@ class XWFMailingList(Folder):
                    attachment['maintype'], attachment['filename'])
                 log.info(m)
 
-                nid = self.addGSFile(attachment['filename'],
-                                msg.subject, msg.sender_id,
-                                attachment['payload'], attachment['mimetype'])
+                nid = self.addGSFile(attachment['filename'], msg.subject,
+                                        msg.sender_id, attachment['payload'],
+                                        attachment['mimetype'])
                 ids.append(nid)
 
         msgstorage = IRDBStorageForEmailMessage(msg)
         msgstorage.insert()
-
 
         filemetadatastorage = RDBFileMetadataStorage(self, msg, ids)
         filemetadatastorage.insert()
@@ -1470,13 +1472,14 @@ class XWFMailingList(Folder):
         if user:
             userInfo = IGSUserInfo(user)
 
-        returnpath=self.getValueFor('returnpath')
+        returnpath = self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
 
         seen = []
         for code in event_codes:
-            if code in seen: continue
+            if code in seen:
+                continue
             reply = getattr(self, 'xwf_email_event', None)
             if reply:
                 reply_text = reply(context, code, headers, supportEmail,
@@ -1535,20 +1538,20 @@ class XWFMailingList(Folder):
         # TODO: group ID should be more robust
         group_id = self.getId()
         storage = self.FileLibrary2.get_fileStorage()
-        id = storage.add_file(data)
-        file = storage.get_file(id)
+        fileId = storage.add_file(data)
+        fileObj = storage.get_file(fileId)
         fixedTitle = removePathsFromFilenames(title)
-        file.manage_changeProperties(content_type=content_type,
+        fileObj.manage_changeProperties(content_type=content_type,
           title=fixedTitle, tags=['attachment'], group_ids=[group_id],
           dc_creator=creator, topic=topic)
-        file.reindex_file()
+        fileObj.reindex_file()
         #
         # Commit the ZODB transaction -- this basically makes it impossible for
         # us to rollback, but since our RDB transactions won't be rolled back
         # anyway, we do this so we don't have dangling metadata.
         #
         transaction.commit()
-        return id
+        return fileId
 
     def sendMail(self, mailString):
         # actually send the email
