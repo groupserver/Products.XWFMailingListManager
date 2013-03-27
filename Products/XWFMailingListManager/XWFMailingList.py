@@ -15,9 +15,8 @@ from email import message_from_string
 import random
 import re
 from rfc822 import AddressList
-import transaction
+# import transaction  # See line 1549 below
 from zope.component import createObject, getMultiAdapter
-from zope.cachedescriptors.property import Lazy
 from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
@@ -1083,7 +1082,7 @@ class XWFMailingList(Folder):
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
+        siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
         m = u'Registering <%s> with %s (%s) on %s (%s)' %\
@@ -1105,7 +1104,7 @@ class XWFMailingList(Folder):
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
+        siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         userInfo = createObject('groupserver.UserFromId',
                             self.site_root(), user.getId())
@@ -1126,7 +1125,7 @@ class XWFMailingList(Folder):
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
+        siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         userInfo = createObject('groupserver.UserFromId',
                             self.site_root(), user.getId())
@@ -1151,10 +1150,10 @@ class XWFMailingList(Folder):
             siteId = self.getProperty('siteId', '')
             groupId = self.getId()
             site = getattr(self.site_root().Content, siteId)
-            siteInfo  = createObject('groupserver.SiteInfo', site)
+            siteInfo = createObject('groupserver.SiteInfo', site)
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
-            m = u'%s (%s) on %s (%s) subscribing %s (%s) <%s>'%\
+            m = u'%s (%s) on %s (%s) subscribing %s (%s) <%s>' % \
               (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id,
                userInfo.name, userInfo.id, email)
             log.info(m)
@@ -1177,7 +1176,8 @@ class XWFMailingList(Folder):
             groupId = self.getId()
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
             userInfo = \
-              createObject('groupserver.UserFromId', self.site_root(), user.getId())
+              createObject('groupserver.UserFromId', self.site_root(),
+                            user.getId())
             leaver = GroupLeaver(groupInfo, userInfo)
             leaver.removeMember()
             retval = int(not(leaver.isMember))
@@ -1222,7 +1222,7 @@ class XWFMailingList(Folder):
         if userInfo.anonymous:
             m = u'subscribe: Cannot subscribe user %s because they '\
               u'do not exist. We shouldn\'t have gotten this far.' % msg.sender_id
-            m.encode('ascii','ignore')
+            m.encode('ascii', 'ignore')
             log.error(m)
             return
 
@@ -1237,7 +1237,7 @@ class XWFMailingList(Folder):
           u'existing user %s (%s)' %\
           (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id,
            thepin, userInfo.name, userInfo.id)
-        m.encode('ascii','ignore')
+        m.encode('ascii', 'ignore')
         log.info(m)
 
         returnpath=self.getValueFor('returnpath')
@@ -1269,7 +1269,7 @@ class XWFMailingList(Folder):
         if userInfo.anonymous:
             m = u'unsubscribe: Cannot unsubscribe user %s because they '\
               u'do not exist. We shouldn\'t have gotten this far.' % msg.sender_id
-            m.encode('ascii','ignore')
+            m.encode('ascii', 'ignore')
             log.error(m)
             return
 
@@ -1278,12 +1278,12 @@ class XWFMailingList(Folder):
         site = getattr(self.site_root().Content, siteId)
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-        thepin = pin( msg.sender, self.getValueFor('hashkey') )
+        thepin = pin(msg.sender, self.getValueFor('hashkey'))
 
         m = u'%s (%s) on %s (%s) sending unsubscribe key (%s) to %s (%s)'%\
           (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id,
            thepin, userInfo.name, userInfo.id)
-        m.encode('ascii','ignore')
+        m.encode('ascii', 'ignore')
         log.info(m)
 
         returnpath=self.getValueFor('returnpath')
@@ -1320,7 +1320,7 @@ class XWFMailingList(Folder):
         if userInfo.anonymous:
             m = u'cannot_change_subscription: Cannot notify user %s because they '\
               u'do not exist. We shouldn\'t have gotten this far.' % msg.sender_id
-            m.encode('ascii','ignore')
+            m.encode('ascii', 'ignore')
             log.error(m)
             return
 
@@ -1342,7 +1342,7 @@ class XWFMailingList(Folder):
           u'existing user %s (%s)' %\
           (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id,
            notification, userInfo.name, userInfo.id)
-        m.encode('ascii','ignore')
+        m.encode('ascii', 'ignore')
         log.info(m)
 
         returnpath=self.getValueFor('returnpath')
@@ -1386,7 +1386,7 @@ class XWFMailingList(Folder):
           (groupInfo.name, groupInfo.id,
            siteInfo.name, siteInfo.id,
            userInfo.name, userInfo.id)
-        m.encode('ascii','ignore')
+        m.encode('ascii', 'ignore')
         log.info(m)
 
         returnpath=self.getValueFor('returnpath')
@@ -1424,7 +1424,7 @@ class XWFMailingList(Folder):
         assert not userInfo.anonymous
         siteId = self.getProperty('siteId', '')
         site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
+        siteInfo = createObject('groupserver.SiteInfo', site)
         groupId = self.getId()
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
@@ -1433,7 +1433,7 @@ class XWFMailingList(Folder):
           (groupInfo.name, groupInfo.id,
            siteInfo.name, siteInfo.id,
            userInfo.name, userInfo.id)
-        m.encode('ascii','ignore')
+        m.encode('ascii', 'ignore')
         log.info(m)
 
         returnpath=self.getValueFor('returnpath')
@@ -1465,7 +1465,6 @@ class XWFMailingList(Folder):
         supportEmail = getOption(group, 'supportEmail')
         siteInfo = createObject('groupserver.SiteInfo', group)
         groupInfo = IGSGroupInfo(group)
-        sender = headers['from']
         name, email_address = AddressList(headers['from'])[0]
         user = self.site_root().acl_users.get_userByEmail(email_address)
         userInfo = None
@@ -1485,7 +1484,7 @@ class XWFMailingList(Folder):
                 reply_text = reply(context, code, headers, supportEmail,
                                    siteInfo, groupInfo, userInfo)
                 if reply_text and email_address:
-                    send_mail(returnpath, [email_address], reply_text)
+                    send_email(returnpath, [email_address], reply_text)
             seen.append(code)
 
     security.declarePrivate('mail_header')
@@ -1550,7 +1549,9 @@ class XWFMailingList(Folder):
         # us to rollback, but since our RDB transactions won't be rolled back
         # anyway, we do this so we don't have dangling metadata.
         #
-        transaction.commit()
+        # --=mpj17=-- But it caused death on my local box. So I am
+        # experimenting with commenting it out.
+        # transaction.commit()
         return fileId
 
     def sendMail(self, mailString):
@@ -1599,4 +1600,3 @@ def initialize(context):
         constructors=(manage_addXWFMailingListForm,
                       manage_addXWFMailingList),
         )
-
