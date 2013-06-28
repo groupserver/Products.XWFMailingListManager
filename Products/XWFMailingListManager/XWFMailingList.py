@@ -847,22 +847,23 @@ class XWFMailingList(Folder):
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
+        siteInfo = createObject('groupserver.SiteInfo', site)
         try:
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         except:
-            message = u'%s (%s): No group found to match listId. This should not happen.' % \
-                               (self.getProperty('title', ''), self.getId())
+            m = u'{0} ({1}): No group found to match listId. This should not '\
+                u'happen.'
+            message = m.format(self.getProperty('title', ''), self.getId())
             log.error(message)
             return message
 
         mailString = getMailFromRequest(REQUEST)
         msg = EmailMessage(mailString,
-                           list_title   =  self.getProperty('title', ''),
-                           group_id     =  groupId,
-                           site_id      =  siteId,
-                           sender_id_cb =  self.get_mailUserId)
-        m  = u'checkMail: %s (%s) checking message from <%s>' %\
+                           list_title=self.getProperty('title', ''),
+                           group_id=groupId,
+                           site_id=siteId,
+                           sender_id_cb=self.get_mailUserId)
+        m = u'checkMail: %s (%s) checking message from <%s>' %\
           (groupInfo.name, groupInfo.id, msg.sender)
         log.info(m)
 
@@ -880,7 +881,7 @@ class XWFMailingList(Folder):
         elif self.chk_msg_disabled(msg):
             message = u'%s (%s): Email address <%s> is disabled.' %\
               (groupInfo.name, groupInfo.id, msg.sender)
-        elif self.chk_msg_spam(mailString): # --=mpj17=--I moved this far
+        elif self.chk_msg_spam(mailString):  # --=mpj17=--I moved this far
             message = u'%s (%s): Spam detected' %\
               (groupInfo.name, groupInfo.id)
         elif self.chk_sender_blacklist(msg):
@@ -933,7 +934,7 @@ class XWFMailingList(Folder):
                                 body=msg.body):
                 return message
 
-        m  = u'checkMail: %s (%s) message from <%s> checks ok' %\
+        m = u'checkMail: %s (%s) message from <%s> checks ok' %\
           (groupInfo.name, groupInfo.id, msg.sender)
         log.info(m)
         return None
