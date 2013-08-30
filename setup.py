@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from setuptools import setup, find_packages
 import os
 
@@ -8,10 +9,17 @@ setup(name='Products.XWFMailingListManager',
       description="",
       long_description=open("README.txt").read() + "\n" +
                        open(os.path.join("docs", "HISTORY.txt")).read(),
-      # Get more strings from http://www.python.org/pypi?%3Aaction=list_classifiers
       classifiers=[
+        'Development Status :: 5 - Production/Stable',
+        "Environment :: Web Environment",
+        "Framework :: Zope2",
+        "Intended Audience :: Developers",
+        'License :: OSI Approved :: Zope Public License',
+        "Natural Language :: English",
+        "Operating System :: POSIX :: Linux"
         "Programming Language :: Python",
-        ],
+        "Topic :: Software Development :: Libraries :: Python Modules",
+      ],
       keywords='',
       author='Richard Waid',
       author_email='richard@iopen.net',
