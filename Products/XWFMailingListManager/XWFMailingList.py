@@ -1076,10 +1076,7 @@ class XWFMailingList(Folder):
         unsubscribe = self.getValueFor('unsubscribe')
         if unsubscribe != '' and check_for_commands(msg, unsubscribe):
             if email.lower() in memberlist:
-                if subject.find(pin(email, self.getValueFor('hashkey'))) != -1:
-                    self.manage_delMember(email)
-                else:
-                    self.mail_unsubscribe_key(self, REQUEST, msg)
+                self.manage_delMember(email)
             else:
                 self.mail_cannot_change_subscription(self, REQUEST, msg,
                                                         'unsubscribe')
