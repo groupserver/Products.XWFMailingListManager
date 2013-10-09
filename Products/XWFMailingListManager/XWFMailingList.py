@@ -982,7 +982,8 @@ class XWFMailingList(Folder):
         return retval
 
     def chk_msg_tight_loop(self, msg):
-        assert hasattr(self, '_v_last_email_checksum'), "no _v_last_email_checksum"
+        assert hasattr(self, '_v_last_email_checksum'),\
+                 "no _v_last_email_checksum"
         retval = self._v_last_email_checksum and \
           (self._v_last_email_checksum == msg.post_id) or False
         assert type(retval) == bool, "type was %s, not bool" % type(retval)
@@ -993,7 +994,7 @@ class XWFMailingList(Folder):
         matches the list of banned regular expressions. This is normally
         used to prevent out-of-office autoreply messages hitting the list.
         '''
-        retval = False # Uncharacteristic optimism
+        retval = False  # Uncharacteristic optimism
         for regexp in self.getValueFor('spamlist'):
             if regexp and re.search(regexp, mailString):
                 log.info(u'%s matches message' % regexp)
@@ -1035,7 +1036,8 @@ class XWFMailingList(Folder):
         if email in memberlist and msg.sender_id:
             userInfo = createObject('groupserver.UserFromId',
                          self.site_root(), msg.sender_id)
-            deliverySettings = userInfo.user.get_deliverySettingsByKey(self.getId())
+            deliverySettings = \
+                        userInfo.user.get_deliverySettingsByKey(self.getId())
             if check_for_commands(msg, 'digest on'):
                 if deliverySettings != DIGEST:
                     self.digest_on(REQUEST, userInfo.user, header, body)
@@ -1059,12 +1061,15 @@ class XWFMailingList(Folder):
                     self.manage_addMember(email)
                 else:
                     user = self.acl_users.get_userByEmail(email)
-                    if user: # if the user exists, send out a subscription email
+                    if user:
+                        # if the user exists, send out a subscription email
                         self.mail_subscribe_key(self, REQUEST, msg)
-                    else: # otherwise handle subscription as part of registration
+                    else:
+                        # otherwise handle subscription as part of registration
                         self.register_newUser(REQUEST, msg)
             else:
-                self.mail_cannot_change_subscription(self, REQUEST, msg, 'subscribe')
+                self.mail_cannot_change_subscription(self, REQUEST, msg,
+                                                    'subscribe')
             return email
 
         # unsubscription? only unsubscribe if unsubscription is enabled...
@@ -1076,7 +1081,8 @@ class XWFMailingList(Folder):
                 else:
                     self.mail_unsubscribe_key(self, REQUEST, msg)
             else:
-                self.mail_cannot_change_subscription(self, REQUEST, msg, 'unsubscribe')
+                self.mail_cannot_change_subscription(self, REQUEST, msg,
+                                                        'unsubscribe')
             return email
 
     def register_newUser(self, REQUEST, msg):
@@ -1263,6 +1269,7 @@ class XWFMailingList(Folder):
             send_email(returnpath, [msg.sender], reply_text)
 
     security.declarePrivate('mail_unsubscribe_key')
+
     def mail_unsubscribe_key(self, context, REQUEST, msg):
         """ Email out an unsubscription authentication notification.
 
@@ -1271,7 +1278,8 @@ class XWFMailingList(Folder):
                             self.site_root(), msg.sender_id)
         if userInfo.anonymous:
             m = u'unsubscribe: Cannot unsubscribe user %s because they '\
-              u'do not exist. We shouldn\'t have gotten this far.' % msg.sender_id
+              u'do not exist. We shouldn\'t have gotten this far.' % \
+              msg.sender_id
             m.encode('ascii', 'ignore')
             log.error(m)
             return
@@ -1279,17 +1287,17 @@ class XWFMailingList(Folder):
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
-        siteInfo  = createObject('groupserver.SiteInfo', site)
+        siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         thepin = pin(msg.sender, self.getValueFor('hashkey'))
 
-        m = u'%s (%s) on %s (%s) sending unsubscribe key (%s) to %s (%s)'%\
+        m = u'%s (%s) on %s (%s) sending unsubscribe key (%s) to %s (%s)' % \
           (groupInfo.name, groupInfo.id, siteInfo.name, siteInfo.id,
            thepin, userInfo.name, userInfo.id)
         m.encode('ascii', 'ignore')
         log.info(m)
 
-        returnpath=self.getValueFor('returnpath')
+        returnpath = self.getValueFor('returnpath')
         if not returnpath:
             returnpath = self.getValueFor('moderator')[0]
 
@@ -1308,6 +1316,7 @@ class XWFMailingList(Folder):
             send_email(returnpath, [msg.sender], reply_text)
 
     security.declarePrivate('mail_cannot_change_subscription')
+
     def mail_cannot_change_subscription(self, context, REQUEST, msg, change):
         """ Explain that the user:
               * cannot subscribe because they are already a member,
