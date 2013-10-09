@@ -1119,7 +1119,6 @@ class XWFMailingList(Folder):
         user.set_enableDigestByKey(groupInfo.id)
         self.mail_digest_on(self, REQUEST, mail=header, body=body)
 
-
     def digest_off(self, REQUEST, user, header, body):
         '''Turn off digest mode (and turn on one email per post) for a user
         '''
@@ -1141,6 +1140,7 @@ class XWFMailingList(Folder):
         self.mail_digest_off(self, REQUEST, mail=header, body=body)
 
     security.declareProtected('Manage properties', 'manage_addMember')
+
     def manage_addMember(self, email):
         """ Add member to group. """
         retval = 0
@@ -1167,6 +1167,7 @@ class XWFMailingList(Folder):
         return retval
 
     security.declareProtected('Manage properties', 'manage_delMember')
+
     def manage_delMember(self, email):
         """ Remove member from group. """
         retval = 0
@@ -1195,6 +1196,7 @@ class XWFMailingList(Folder):
         return MailBoxerTools.parseaddr(header)
 
     security.declarePrivate('mail_reply')
+
     def mail_reply(self, context, REQUEST, message):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default. """
