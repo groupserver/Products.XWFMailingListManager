@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+##############################################################################
+#
+# Copyright © 2013 OnlineGroups.net and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
 from setuptools import setup, find_packages
 import os
 
@@ -24,7 +37,7 @@ setup(name='Products.XWFMailingListManager',
       author='Richard Waid',
       author_email='richard@iopen.net',
       url='http://groupserver.org',
-      license='ZPL',
+      license='ZPL 2.1',
       packages=find_packages(exclude=['ez_setup']),
       namespace_packages=['Products'],
       include_package_data=True,
