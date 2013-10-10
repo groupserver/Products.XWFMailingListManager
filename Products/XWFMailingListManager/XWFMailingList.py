@@ -622,10 +622,10 @@ class XWFMailingList(Folder):
                 return retval
 
         # if all previous tests fail, it must be an unknown sender.
-        m = 'processMail %s (%s): Mail received from unknown sender <%s>'%\
+        m = 'processMail %s (%s): Mail received from unknown sender <%s>' % \
           (self.getProperty('title', ''), self.getId(), email)
         log.info(m)
-        log.info( 'memberlist was: %s' % memberlist)
+        log.info('memberlist was: %s' % memberlist)
         self.mail_reply(self, REQUEST, mailString)
 
     def processModeration(self, REQUEST):
