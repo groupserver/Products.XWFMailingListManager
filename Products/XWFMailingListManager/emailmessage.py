@@ -358,7 +358,7 @@ class EmailMessage(object):
         value = self.message.get(name, default)
         header_parts = []
         for value, encoding in Header.decode_header(value):
-            encoding = encoding and check_encoding(encoding) or self.encoding
+            encoding = check_encoding(encoding) if encoding else self.encoding
             header_parts.append(unicode(value, encoding, 'ignore'))
 
         return ' '.join(header_parts)
@@ -398,7 +398,7 @@ class EmailMessage(object):
                 actual_payload = msg.get_payload(decode=True)
                 encoding = msg.get_param('charset', self.encoding)
                 pd = parse_disposition(msg.get('content-disposition', ''))
-                filename = unicode(pd, encoding, 'ignore')
+                filename = unicode(pd, encoding, 'ignore') if pd else ''
                 fileid, length, md5_sum = calculate_file_id(actual_payload,
                                                     msg.get_content_type())
                 retval.append({
@@ -418,7 +418,7 @@ class EmailMessage(object):
             payload = self.message.get_payload(decode=True)
             cd = self.message.get('content-disposition', '')
             pd = parse_disposition(cd)
-            filename = unicode(pd, self.encoding, 'ignore')
+            filename = unicode(pd, self.encoding, 'ignore') if pd else ''
 
             fileid, length, md5_sum = calculate_file_id(payload,
                                         self.message.get_content_type())
