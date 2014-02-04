@@ -769,7 +769,7 @@ class XWFMailingList(Folder):
                 m = '%s (%s): archiving HTML message.' % (
                                        self.getProperty('title'), self.getId())
                 log.info(m)
-            elif attachment['contentid']:
+            elif attachment['contentid'] and (attachment['filename'] == ''):
                 # TODO: What do we want to do with these? They are typically
                 # part of an HTML message, for example the images, but what
                 # should we do with them once we've stripped them?
