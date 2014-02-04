@@ -1,28 +1,36 @@
-# coding=utf-8
-# Copyright IOPEN Technologies Ltd., 2003
-# richard@iopen.net
+# -*- coding: utf-8 -*-
+##############################################################################
 #
-# For details of the license, please see LICENSE.
+# Copyright IOPEN Technologies Ltd., 2003, Copyright © 2014 OnlineGroups.net
+# and Contributors. All Rights Reserved.
 #
-# You MUST follow the rules in README_STYLE before checking in code
-# to the head. Code which does not follow the rules will be rejected.
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
-import inspect
 from cgi import escape
 from email import message_from_string
-import random
-import re
+from inspect import stack as inspect_stack
+from logging import getLogger
+log = getLogger('XWFMailingList')
+from random import random
+from re import search
 from rfc822 import AddressList
-# import transaction  # See line 1549 below
+# import transaction  # See line 1560 below
 from zope.component import createObject, getMultiAdapter
 from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption
-from Products.XWFCore.XWFUtils import get_group_by_siteId_and_groupId
+from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption, \
+    get_group_by_siteId_and_groupId
 from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSProfile.utils import create_user_from_email
@@ -30,21 +38,16 @@ from Products.GSGroup.groupInfo import IGSGroupInfo
 from gs.group.member.leave.leaver import GroupLeaver
 from gs.group.member.canpost import IGSPostingUser, \
     Notifier as CanPostNotifier, UnknownEmailNotifier
-from gs.profile.notify.notifyuser import NotifyUser
+from gs.profile.notify import NotifyUser
 from gs.email import send_email
-import MailBoxerTools
 from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
     RDBFileMetadataStorage, strip_subject
 from queries import MemberQuery, MessageQuery
 from utils import check_for_commands, pin, getMailFromRequest
-
-import logging
-log = logging.getLogger('XWFMailingList')
+import MailBoxerTools
 
 DIGEST = 3
-
 null_convert = lambda x: x
-
 # Simple return-Codes for web-callable-methods for the smtp2zope-gate
 TRUE = "TRUE"
 FALSE = "FALSE"
@@ -82,7 +85,7 @@ class XWFMailingList(Folder):
         """
         self.id = id
         self.title = title
-        self.hashkey = str(random.random())
+        self.hashkey = str(random())
         self.mailto = mailto
 
     def valid_property_id(self, id):
@@ -286,7 +289,7 @@ class XWFMailingList(Folder):
         else:
             m = 'Getting all the user-objects in "%s"' % self.listId()
             log.warning(m)
-            s = inspect.stack()[:2]
+            s = inspect_stack()[:2]
             log.warning(s)
             users = []
             for uid in uids:
@@ -996,7 +999,7 @@ class XWFMailingList(Folder):
         '''
         retval = False  # Uncharacteristic optimism
         for regexp in self.getValueFor('spamlist'):
-            if regexp and re.search(regexp, mailString):
+            if regexp and search(regexp, mailString):
                 log.info(u'%s matches message' % regexp)
                 retval = True
                 break
