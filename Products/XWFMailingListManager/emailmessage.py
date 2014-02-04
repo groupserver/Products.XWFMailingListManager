@@ -1,14 +1,29 @@
-# -*- coding: utf-8 *-*
+# -*- coding: utf-8 -*-
+##############################################################################
+#
+# Copyright © 2014 OnlineGroups.net and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
+from __future__ import absolute_import, unicode_literals
+import codecs
+import datetime
+from email import Parser, Header
 try:
     from hashlib import md5
 except:
     from md5 import md5  # lint:ok
 import re
-import string
-import datetime
-import time
-import codecs
 from rfc822 import AddressList
+import string
+import time
 import sqlalchemy as sa
 from sqlalchemy.exc import SQLAlchemyError
 from zope.cachedescriptors.property import Lazy
@@ -16,8 +31,7 @@ from zope.datetime import parseDatetimetz
 from zope.sqlalchemy import mark_changed
 from zope.interface import Interface, Attribute, implements
 from gs.database import getSession, getTable
-from html2txt import convert_to_txt
-from email import Parser, Header
+from .html2txt import convert_to_txt
 
 import logging
 log = logging.getLogger('Products.XWFMailingListManager.emailmessage')
@@ -63,7 +77,7 @@ def strip_subject(subject, list_title, remove_re=True):
     if list_title:
         subject = re.sub('\[%s\]' % re.escape(list_title), '', subject).strip()
 
-    subject = uParaRegexep.sub(u' ', subject)
+    subject = uParaRegexep.sub(' ', subject)
     # compress up the whitespace into a single space
     subject = re.sub('\s+', ' ', subject).strip()
     if remove_re:
@@ -83,9 +97,7 @@ def strip_subject(subject, list_title, remove_re=True):
 
 
 def normalise_subject(subject):
-    """ Compress whitespace and lower-case subject
-
-    """
+    """Compress whitespace and lower-case subject"""
     return re.sub('\s+', '', subject).lower()
 
 
@@ -191,7 +203,7 @@ class RDBEmailMessageStorage(object):
                  'htmlbody': self.email_message.html_body,
                  'header': self.email_message.headers,
                  'has_attachments': bool(self.email_message.attachment_count)})
-        except SQLAlchemyError, se:
+        except SQLAlchemyError as se:
             log.warn(se)
             log.warn("Post id %s already existed in database. This should be "
                      "changed to raise a specific error to the UI."
@@ -349,7 +361,7 @@ class EmailMessage(object):
             encoding = encoding and check_encoding(encoding) or self.encoding
             header_parts.append(unicode(value, encoding, 'ignore'))
 
-        return u' '.join(header_parts)
+        return ' '.join(header_parts)
 
     @Lazy
     def sender_id(self):
@@ -453,7 +465,7 @@ class EmailMessage(object):
 
     @Lazy
     def body(self):
-        retval = u''
+        retval = ''
         for item in self.attachments:
             if item['filename'] == '' and item['subtype'] != 'html':
                 retval = unicode(item['payload'], self.encoding,
