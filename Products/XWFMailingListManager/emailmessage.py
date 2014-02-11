@@ -219,15 +219,26 @@ class RDBEmailMessageStorage(object):
         topic = self._get_topic()
         if not topic:
             i = self.topicTable.insert()
-            session.execute(i, params={
-                 'topic_id': self.email_message.topic_id,
-                 'group_id': self.email_message.group_id,
-                 'site_id': self.email_message.site_id,
-                 'original_subject': self.email_message.subject,
-                 'first_post_id': self.email_message.post_id,
-                 'last_post_id': self.email_message.post_id,
-                 'last_post_date': self.email_message.date,
-                 'num_posts': 1})
+            try:
+                session.execute(i, params={
+                     'topic_id': self.email_message.topic_id,
+                     'group_id': self.email_message.group_id,
+                     'site_id': self.email_message.site_id,
+                     'original_subject': self.email_message.subject,
+                     'first_post_id': self.email_message.post_id,
+                     'last_post_id': self.email_message.post_id,
+                     'last_post_date': self.email_message.date,
+                     'num_posts': 1})
+            except SQLAlchemyError as se:
+                log.warn(se)
+                m = 'Topic id "{0}" already existed in database. This should '\
+                    'be changed to raise a specific error to the UI.'
+                log.warn(m.format(self.email_message.topic_id))
+                session.rollback()
+
+                m = 'Topic "{0}" already existed in database.'
+                msg = m.format(self.email_message.topic_id)
+                raise DuplicateMessageError(msg)
         else:
             num_posts = topic['num_posts']
             # --=mpj17=-- Hypothesis: the following condition is
