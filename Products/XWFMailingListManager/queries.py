@@ -1,21 +1,14 @@
 # -*- coding: utf-8 *-*
 from sqlalchemy.exc import NoSuchTableError
 import sqlalchemy as sa
+from gs.core import to_unicode_or_bust as to_unicode
 from gs.database import getTable, getSession
 from querymember import MemberQuery  # lint:ok
 
 
-def to_unicode(s):
-    retval = s
-    if not isinstance(s, unicode):
-        retval = unicode(s, 'utf-8')
-    return retval
-
-
 def summary(s):
-    if not isinstance(s, unicode):
-        s = unicode(s, 'utf-8')
-    return s[:160]
+    retval = to_unicode(s)[:160]
+    return retval
 
 
 class MessageQuery(object):
