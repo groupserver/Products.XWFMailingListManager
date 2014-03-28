@@ -15,6 +15,7 @@
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
+from __future__ import absolute_import
 from cgi import escape
 from email import message_from_string
 from inspect import stack as inspect_stack
@@ -40,11 +41,11 @@ from gs.group.member.canpost import IGSPostingUser, \
     Notifier as CanPostNotifier, UnknownEmailNotifier
 from gs.profile.notify import NotifyUser
 from gs.email import send_email
-from emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
+from .emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
     RDBFileMetadataStorage, strip_subject
-from queries import MemberQuery, MessageQuery
-from utils import check_for_commands, pin, getMailFromRequest
-import MailBoxerTools
+from .queries import MemberQuery, MessageQuery
+from .utils import check_for_commands, pin, getMailFromRequest
+from .MailBoxerTools import lowerList, parseaddr, splitMail
 
 DIGEST = 3
 null_convert = lambda x: x
@@ -581,7 +582,7 @@ class XWFMailingList(Folder):
                                        site_id=self.getProperty('siteId', ''),
                                        sender_id_cb=self.get_mailUserId)
 
-        (header, body) = MailBoxerTools.splitMail(mailString)
+        (header, body) = splitMail(mailString)
 
         # First sanity check ... have we already archived this message?
         messageQuery = MessageQuery(self)
@@ -596,10 +597,10 @@ class XWFMailingList(Folder):
         email = msg.sender
 
         # Get members
-        memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+        memberlist = lowerList(self.getValueFor('mailinlist'))
 
         # Get moderators
-        moderatorlist = MailBoxerTools.lowerList(self.getValueFor('moderator'))
+        moderatorlist = lowerList(self.getValueFor('moderator'))
 
         moderated = self.getValueFor('moderated')
         unclosed = self.getValueFor('unclosed')
@@ -640,7 +641,7 @@ class XWFMailingList(Folder):
         mailString = getMailFromRequest(REQUEST)
 
         # TODO: erradicate splitMail usage
-        (header, body) = MailBoxerTools.splitMail(mailString)
+        (header, body) = splitMail(mailString)
 
         msg = EmailMessage(mailString,
           list_title=self.getProperty('title', ''),
@@ -649,13 +650,13 @@ class XWFMailingList(Folder):
 
         # Get members
         try:
-            memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+            memberlist = lowerList(self.getValueFor('mailinlist'))
         except:
-            memberlist = MailBoxerTools.lowerList(self.getValueFor('maillist'))
+            memberlist = lowerList(self.getValueFor('maillist'))
 
         # Get individually moderated members
         moderatedlist = filter(None,
-                               MailBoxerTools.lowerList(self.getValueFor('moderatedlist') or []))
+                               lowerList(self.getValueFor('moderatedlist') or []))
 
         unclosed = self.getValueFor('unclosed')
 
@@ -1020,7 +1021,7 @@ class XWFMailingList(Folder):
 
         # TODO: this needs to be completely removed, but some of the email
         # depends on it still
-        (header, body) = MailBoxerTools.splitMail(mailString)
+        (header, body) = splitMail(mailString)
 
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
                                        group_id=self.getId(),
@@ -1033,7 +1034,7 @@ class XWFMailingList(Folder):
         # get email-address
         email = msg.sender
 
-        memberlist = MailBoxerTools.lowerList(self.getValueFor('mailinlist'))
+        memberlist = lowerList(self.getValueFor('mailinlist'))
 
         # process digest commands
         if email in memberlist and msg.sender_id:
@@ -1199,7 +1200,7 @@ class XWFMailingList(Folder):
 
     def parseaddr(self, header):
         # wrapper for rfc822.parseaddr, returns (name, addr)
-        return MailBoxerTools.parseaddr(header)
+        return parseaddr(header)
 
     security.declarePrivate('mail_reply')
 
