@@ -420,10 +420,10 @@ class XWFMailingList(Folder):
                         maillist.append(email)
 
             except Exception as x:
-                groupId = to_ascii(self.getId())
                 m = '%s (%s): A problem was experienced while getting values'\
-                  ': %s' % (self.getProperty('title', ''), groupId, x)
-                log.error(m)
+                  '\n\n%s'
+                msg = m % (self.getProperty('title', ''), self.listId(), x)
+                log.error(to_ascii(msg))
                 maillist = None
 
             # last ditch effort
@@ -851,7 +851,7 @@ class XWFMailingList(Folder):
             return message
 
         siteId = self.getProperty('siteId', '')
-        groupId = to_ascii(self.getId())
+        groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo = createObject('groupserver.SiteInfo', site)
         try:
@@ -1026,7 +1026,7 @@ class XWFMailingList(Folder):
         (header, body) = splitMail(mailString)
 
         msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
-                                       group_id=to_ascii(self.getId()),
+                                       group_id=self.getId(),
                                        site_id=self.getProperty('siteId', ''),
                                        sender_id_cb=self.get_mailUserId)
 
@@ -1090,7 +1090,7 @@ class XWFMailingList(Folder):
 
     def register_newUser(self, REQUEST, msg):
         siteId = self.getProperty('siteId', '')
-        groupId = to_ascii(self.getId())
+        groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
@@ -1112,7 +1112,7 @@ class XWFMailingList(Folder):
         '''Turn on digest mode for a user
         '''
         siteId = self.getProperty('siteId', '')
-        groupId = to_ascii(self.getId())
+        groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
@@ -1132,7 +1132,7 @@ class XWFMailingList(Folder):
         '''Turn off digest mode (and turn on one email per post) for a user
         '''
         siteId = self.getProperty('siteId', '')
-        groupId = to_ascii(self.getId())
+        groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
@@ -1157,8 +1157,8 @@ class XWFMailingList(Folder):
         if user:
             userInfo = createObject('groupserver.UserFromId',
                                 self.site_root(), user.getId())
-            siteId = to_ascii(self.getProperty('siteId', ''))
-            groupId = to_ascii(self.getId())
+            siteId = self.getProperty('siteId', '')
+            groupId = self.getId()
             site = getattr(self.site_root().Content, siteId)
             siteInfo = createObject('groupserver.SiteInfo', site)
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
@@ -1182,9 +1182,9 @@ class XWFMailingList(Folder):
         retval = 0
         user = self.acl_users.get_userByEmail(email)
         if user:
-            siteId = to_ascii(self.getProperty('siteId', ''))
+            siteId = self.getProperty('siteId', '')
             site = getattr(self.site_root().Content, siteId)
-            groupId = to_ascii(self.getId())
+            groupId = self.getId()
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
             userInfo = \
               createObject('groupserver.UserFromId', self.site_root(),
@@ -1210,8 +1210,8 @@ class XWFMailingList(Folder):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default. """
         # The email message that is sent to unknown email addresses
-        siteId = to_ascii(self.getProperty('siteId', ''))
-        groupId = to_ascii(self.getId())
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
         group = get_group_by_siteId_and_groupId(self, siteId, groupId)
         groupInfo = IGSGroupInfo(group)
         emailAddress = message_from_string(message)['From']
@@ -1238,8 +1238,8 @@ class XWFMailingList(Folder):
             log.error(m)
             return
 
-        siteId = to_ascii(self.getProperty('siteId', ''))
-        groupId = to_ascii(self.getId())
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo  = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
@@ -1287,8 +1287,8 @@ class XWFMailingList(Folder):
             log.error(m)
             return
 
-        siteId = to_ascii(self.getProperty('siteId', ''))
-        groupId = to_ascii(self.getId())
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         siteInfo = createObject('groupserver.SiteInfo', site)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
@@ -1339,8 +1339,8 @@ class XWFMailingList(Folder):
             log.error(m)
             return
 
-        siteId = to_ascii(self.getProperty('siteId', ''))
-        groupId = to_ascii(self.getId())
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
         group = get_group_by_siteId_and_groupId(self, siteId, groupId)
         supportEmail = getOption(group, 'supportEmail')
         siteInfo = createObject('groupserver.SiteInfo', group)
@@ -1475,8 +1475,8 @@ class XWFMailingList(Folder):
         a clean default.
 
         """
-        siteId = to_ascii(self.getProperty('siteId', ''))
-        groupId = to_ascii(self.getId())
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
         group = get_group_by_siteId_and_groupId(self, siteId, groupId)
         supportEmail = getOption(group, 'supportEmail')
         siteInfo = createObject('groupserver.SiteInfo', group)
