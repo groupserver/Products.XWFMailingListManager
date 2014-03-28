@@ -40,6 +40,7 @@ from gs.group.member.leave.leaver import GroupLeaver
 from gs.group.member.canpost import IGSPostingUser, \
     Notifier as CanPostNotifier, UnknownEmailNotifier
 from gs.profile.notify import NotifyUser
+from gs.core import to_ascii
 from gs.email import send_email
 from .emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
     RDBFileMetadataStorage, strip_subject
@@ -849,7 +850,7 @@ class XWFMailingList(Folder):
             return message
 
         siteId = self.getProperty('siteId', '')
-        groupId = self.getId()
+        groupId = to_ascii(self.getId())
         site = getattr(self.site_root().Content, siteId)
         siteInfo = createObject('groupserver.SiteInfo', site)
         try:
