@@ -45,6 +45,7 @@ setup(name='Products.XWFMailingListManager',
       install_requires=[
           'setuptools',
           'gs.cache',
+          'gs.core',
           'gs.database',
           'gs.group.base',
           # -*- Extra requirements: -*-
