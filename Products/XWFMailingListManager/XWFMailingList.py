@@ -850,8 +850,11 @@ class XWFMailingList(Folder):
             log.warning(message)
             return message
 
-        siteId = self.getProperty('siteId', '')
         groupId = self.getId()
+        siteId = self.getProperty('siteId', '')
+        if not siteId:
+            m = u'No site identifier associated with "{0}"'.format(groupId)
+            raise ValueError(m)
         site = getattr(self.site_root().Content, siteId)
         siteInfo = createObject('groupserver.SiteInfo', site)
         try:
@@ -864,11 +867,19 @@ class XWFMailingList(Folder):
             return message
 
         mailString = getMailFromRequest(REQUEST)
-        msg = EmailMessage(mailString,
-                           list_title=self.getProperty('title', ''),
-                           group_id=groupId,
-                           site_id=siteId,
-                           sender_id_cb=self.get_mailUserId)
+        try:
+            msg = EmailMessage(mailString,
+                               list_title=self.getProperty('title', ''),
+                               group_id=groupId,
+                               site_id=siteId,
+                               sender_id_cb=self.get_mailUserId)
+        except ValueError:
+            m = u'Could not create an email message in the group "{0}" with '\
+                'the mail-string starting with\n{1}'
+            message = m.format(groupId, mailString[:256])
+            log.error(message)
+            raise
+
         m = u'checkMail: %s (%s) checking message from <%s>' %\
           (groupInfo.name, groupInfo.id, msg.sender)
         log.info(m)
