@@ -875,14 +875,21 @@ class XWFMailingList(Folder):
                                sender_id_cb=self.get_mailUserId)
         except ValueError:
             m = u'Could not create an email message in the group "{0}" with '\
-                'the mail-string starting with\n{1}'
+                u'the mail-string starting with\n{1}'
             message = m.format(groupId, mailString[:256])
             log.error(message)
             raise
 
-        m = u'checkMail: %s (%s) checking message from <%s>' %\
-          (groupInfo.name, groupInfo.id, msg.sender)
-        log.info(m)
+        try:
+            m = u'checkMail: {0} ({1}) checking message from <{2}>'
+            message = m.format(groupInfo.name, groupInfo.id, msg.sender)
+            log.info(message)
+        except AttributeError:
+            m = u'checkMail: problem checking message to "{0}" with the '\
+                u'mail-string starting with\n{1}'
+            message = m.format(groupId, mailString[:256])
+            log.error(message)
+            raise
 
         message = u''
         if self.chk_msg_xmailer_loop(msg):
