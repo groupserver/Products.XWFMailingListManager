@@ -18,7 +18,7 @@
 from __future__ import absolute_import
 from cgi import escape
 from email import message_from_string
-from emai.utils import formataddr
+from email.utils import formataddr
 from email.Header import Header
 from inspect import stack as inspect_stack
 from logging import getLogger
