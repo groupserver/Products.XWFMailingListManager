@@ -18,6 +18,8 @@
 from __future__ import absolute_import
 from cgi import escape
 from email import message_from_string
+from emai.utils import formataddr
+from email.Header import Header
 from inspect import stack as inspect_stack
 from logging import getLogger
 log = getLogger('XWFMailingList')
@@ -40,14 +42,14 @@ from gs.group.member.leave.leaver import GroupLeaver
 from gs.group.member.canpost import IGSPostingUser, \
     Notifier as CanPostNotifier, UnknownEmailNotifier
 from gs.profile.notify import NotifyUser
-from gs.core import to_ascii
+from gs.core import to_ascii, to_unicode_or_bust
 from gs.email import send_email
 from .emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
     RDBFileMetadataStorage, strip_subject
 from .queries import MemberQuery, MessageQuery
 from .utils import check_for_commands, pin, getMailFromRequest
 from .MailBoxerTools import lowerList, parseaddr, splitMail
-
+UTF8 = 'utf-8'
 DIGEST = 3
 null_convert = lambda x: x
 # Simple return-Codes for web-callable-methods for the smtp2zope-gate
@@ -555,6 +557,38 @@ class XWFMailingList(Folder):
         else:
             msg.message.add_header('content-type',
                                     'text/plain; charset=utf-8;')
+
+        # Check if the From address is Yahoo!
+        originalFromAddr = msg.sender
+        user = self.acl_users.get_userByEmail(originalFromAddr)
+        if ('yahoo' in originalFromAddr) and user:
+            # Set the old From header to 'X-gs-formerly-from'
+            oldName = to_unicode_or_bust(msg.name)
+            oldHeaderName = Header(oldName, UTF8)
+            oldEncodedName = oldHeaderName.encode()
+            oldFrom = formataddr((oldEncodedName, originalFromAddr))
+            msg.message.add_header('X-gs-formerly-from', oldFrom)
+
+            # Create a new From address
+            userInfo = \
+                createObject('groupserver.UserFromId', self.site_root(),
+                                user.getId())
+            listMailto = self.getValueFor('mailto')
+            domain = self.parseaddr(listMailto)[1].split('@')[1]
+            na = 'user-{userInfo.id}@{domain}'
+            newAddress = na.format(userInfo=userInfo, domain=domain)
+
+            # Pick the "best" name, using length as a proxy for "best"
+            if len(userInfo.name) >= len(msg.name):
+                fn = to_unicode_or_bust(userInfo.name)
+            else:
+                fn = to_unicode_or_bust(msg.name)
+            headerName = Header(fn, UTF8)
+            encodedName = headerName.encode()
+
+            # Set the From address
+            newFrom = formataddr((encodedName, newAddress))
+            msg.message.replace_header('From', newFrom)
 
         # remove headers that should not be generally used for either our
         # encoding scheme or in general list mail
