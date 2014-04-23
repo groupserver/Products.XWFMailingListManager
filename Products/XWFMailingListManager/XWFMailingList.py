@@ -558,10 +558,11 @@ class XWFMailingList(Folder):
             msg.message.add_header('content-type',
                                     'text/plain; charset=utf-8;')
 
-        # Check if the From address is Yahoo!
+        # Check if the From address is Yahoo! or AOL
         originalFromAddr = msg.sender
         user = self.acl_users.get_userByEmail(originalFromAddr)
-        if ('yahoo' in originalFromAddr) and user:
+        if ((('yahoo' in originalFromAddr)
+            or ('aol.com' in originalFromAddr)) and user):
             # Set the old From header to 'X-gs-formerly-from'
             oldName = to_unicode_or_bust(msg.name)
             oldHeaderName = Header(oldName, UTF8)
