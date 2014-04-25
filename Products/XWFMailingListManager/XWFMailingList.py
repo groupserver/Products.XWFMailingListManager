@@ -32,18 +32,20 @@ from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
+from gs.core import to_ascii, to_unicode_or_bust
+from gs.cache import cache
+from gs.dmarc import lookup_receiver_policy, ReceiverPolicy
+from gs.email import send_email
+from gs.group.member.canpost import IGSPostingUser, \
+    Notifier as CanPostNotifier, UnknownEmailNotifier
+from gs.group.member.leave.leaver import GroupLeaver
+from gs.profile.notify import NotifyUser
 from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption, \
     get_group_by_siteId_and_groupId
 from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroupMember.groupmembership import join_group
 from Products.GSProfile.utils import create_user_from_email
 from Products.GSGroup.groupInfo import IGSGroupInfo
-from gs.group.member.leave.leaver import GroupLeaver
-from gs.group.member.canpost import IGSPostingUser, \
-    Notifier as CanPostNotifier, UnknownEmailNotifier
-from gs.profile.notify import NotifyUser
-from gs.core import to_ascii, to_unicode_or_bust
-from gs.email import send_email
 from .emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
     RDBFileMetadataStorage, strip_subject
 from .queries import MemberQuery, MessageQuery
@@ -472,6 +474,11 @@ class XWFMailingList(Folder):
             retval = '%s%s' % (re_string, retval)
         return retval
 
+    @cache('Products.XWFMailingList.dmarc', lambda x, y: y, 7 * 60)
+    def get_dmarc_policy_for_host(self, host):
+        retval = lookup_receiver_policy(host)
+        return retval
+
     def listMail(self, REQUEST):
         # Shifted from MailBoxer till reintegration project
 
@@ -560,9 +567,10 @@ class XWFMailingList(Folder):
 
         # Check if the From address is Yahoo! or AOL
         originalFromAddr = msg.sender
+        origHost = self.parseaddr(originalFromAddr)[1].split('@')[1]
+        dmarcPolicy = self.get_dmarc_policy_for_host(origHost)
         user = self.acl_users.get_userByEmail(originalFromAddr)
-        if ((('yahoo' in originalFromAddr)
-            or ('aol.com' in originalFromAddr)) and user):
+        if ((dmarcPolicy != ReceiverPolicy.none) and user):
             # Set the old From header to 'X-gs-formerly-from'
             oldName = to_unicode_or_bust(msg.name)
             oldHeaderName = Header(oldName, UTF8)
