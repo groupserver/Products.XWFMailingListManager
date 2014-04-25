@@ -474,8 +474,9 @@ class XWFMailingList(Folder):
             retval = '%s%s' % (re_string, retval)
         return retval
 
-    @cache('Products.XWFMailingList.dmarc', lambda x, y: y, 7 * 60)
-    def get_dmarc_policy_for_host(self, host):
+    @staticmethod
+    @cache('Products.XWFMailingList.dmarc', lambda h: h, 7 * 60)
+    def get_dmarc_policy_for_host(host):
         retval = lookup_receiver_policy(host)
         return retval
 
