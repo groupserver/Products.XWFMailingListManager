@@ -44,7 +44,8 @@ setup(name='Products.XWFMailingListManager',
       zip_safe=False,
       install_requires=[
           'setuptools',
-          'gs.cache',
+          'gs.cache[redis]',  # With Redis support
+          'gs.config[zope]',  # With Zope support
           'gs.core',
           'gs.database',
           'gs.group.base',
