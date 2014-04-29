@@ -570,26 +570,40 @@ class XWFMailingList(Folder):
         originalFromAddr = msg.sender
         origHost = self.parseaddr(originalFromAddr)[1].split('@')[1]
         dmarcPolicy = self.get_dmarc_policy_for_host(origHost)
-        user = self.acl_users.get_userByEmail(originalFromAddr)
-        if ((dmarcPolicy != ReceiverPolicy.none) and user):
+        if (dmarcPolicy != ReceiverPolicy.none):
             # Set the old From header to 'X-gs-formerly-from'
             oldName = to_unicode_or_bust(msg.name)
             oldHeaderName = Header(oldName, UTF8)
             oldEncodedName = oldHeaderName.encode()
             oldFrom = formataddr((oldEncodedName, originalFromAddr))
             msg.message.add_header('X-gs-formerly-from', oldFrom)
+            m = 'Rewriting From address "{0}" because of DMARC settings for '\
+                '"{1}"'
+            log.info(m.format(originalFromAddr, origHost))
 
-            # Create a new From address
-            userInfo = \
-                createObject('groupserver.UserFromId', self.site_root(),
-                                user.getId())
+            # Create a new From address from the list address
+            user = self.acl_users.get_userByEmail(originalFromAddr)
             listMailto = self.getValueFor('mailto')
             domain = self.parseaddr(listMailto)[1].split('@')[1]
-            na = 'user-{userInfo.id}@{domain}'
-            newAddress = na.format(userInfo=userInfo, domain=domain)
+            if (user is not None):
+                # Create a new From using the user-ID
+                userInfo = createObject('groupserver.UserFromId',
+                                        self.site_root(), user.getId())
+                na = 'user-{userInfo.id}@{domain}'
+                newAddress = na.format(userInfo=userInfo, domain=domain)
+                m = 'Using user-address "{0}"'
+                log.info(m.format(newAddress))
+            else:
+                # Create a new From using the old address
+                na = 'anon-{mbox}-at-{host}@{domain}'
+                mbox, host = self.parseaddr(originalFromAddr)[1].split('@')
+                host = host.replace('.', '-')
+                newAddress = na.format(mbox=mbox, host=host, domain=domain)
+                m = 'Using anon-address "{0}"'
+                log.info(m.format(newAddress))
 
             # Pick the "best" name, using length as a proxy for "best"
-            if len(userInfo.name) >= len(msg.name):
+            if (user is not None) and (len(userInfo.name) >= len(msg.name)):
                 fn = to_unicode_or_bust(userInfo.name)
             else:
                 fn = to_unicode_or_bust(msg.name)
