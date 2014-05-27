@@ -57,6 +57,7 @@ setup(name='Products.XWFMailingListManager',
           'gs.config[zope]',  # With Zope support
           'gs.core',
           'gs.database',
+          'gs.dmarc',
           'gs.group.base',
           # -*- Extra requirements: -*-
       ],
