@@ -53,13 +53,32 @@ setup(name='Products.XWFMailingListManager',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'SQLAlchemy',
+          'zope.app.pagetemplate',
+          'zope.browserpage',
+          'zope.cachedescriptors',
+          'zope.component',
+          'zope.datetime',
+          'zope.schema',
+          'zope.sqlalchemy',
+          'zope.tales',
+          'AccessControl',
+          'Zope2',
           'gs.cache[redis]',  # With Redis support
           'gs.config[zope]',  # With Zope support
           'gs.core',
           'gs.database',
           'gs.dmarc',
+          'gs.email',
           'gs.group.base',
-          # -*- Extra requirements: -*-
+          'gs.group.member.canpost',
+          'gs.group.member.leave',
+          'gs.profile.notify',
+          'Products.CustomUserFolder',
+          'Products.GSAuditTrail',
+          'Products.GSGroup',
+          'Products.GSGroupMember',
+          'Products.GSProfile',
       ],
       entry_points="""
       # -*- Entry points: -*-
