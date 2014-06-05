@@ -369,7 +369,8 @@ class XWFMailingList(Folder):
 
         """
 
-        if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist', 'mailinlist'):
+        if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist',
+                    'mailinlist'):
             maillist = []
             if key in ('digestmaillist', 'maillist'):
                 maillist_script = getattr(self, 'maillist_members', None)
