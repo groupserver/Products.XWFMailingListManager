@@ -166,7 +166,6 @@ class RDBEmailMessageStorage(object):
         self.email_message = email_message
         self.postTable = getTable('post')
         self.topicTable = getTable('topic')
-        self.post_tagTable = getTable('post_tag')
         self.post_id_mapTable = getTable('post_id_map')
 
     def _get_topic(self):
@@ -261,14 +260,6 @@ class RDBEmailMessageStorage(object):
             session.execute(u, params={'num_posts': num_posts + 1,
                                        'last_post_id': last_post_id,
                                        'last_post_date': last_post_date})
-        #
-        # add any tags we have for the post
-        #
-        i = self.post_tagTable.insert()
-        for tag in self.email_message.tags:
-            session.execute(i,
-                    params={'post_id': self.email_message.post_id,
-                            'tag': tag})
         mark_changed(session)
 
     def remove(self):
