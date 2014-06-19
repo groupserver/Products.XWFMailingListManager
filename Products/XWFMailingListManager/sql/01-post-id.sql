@@ -10,6 +10,6 @@ CREATE TABLE post_id_map (
     new_post_id  TEXT  NOT NULL REFERENCES post(post_id)
 );
 
-CREATE UNIQUE INDEX old_post_id_pkey 
-    ON post_id_map 
+CREATE UNIQUE INDEX old_post_id_pkey
+    ON post_id_map
     USING BTREE (old_post_id);
