@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-##############################################################################
+############################################################################
 #
 # Copyright IOPEN Technologies Ltd., 2003, Copyright © 2014 OnlineGroups.net
 # and Contributors. All Rights Reserved.
@@ -11,7 +11,7 @@
 # WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
 # FOR A PARTICULAR PURPOSE.
 #
-##############################################################################
+############################################################################
 #
 # This code is based heavily on the MailBoxer product, under the GPL.
 #
@@ -562,25 +562,26 @@ class XWFMailingList(Folder):
         # We *always* distribute plain mail at the moment.
         if 'content-type' in msg.message:
             msg.message.replace_header('content-type',
-                                        'text/plain; charset=utf-8;')
+                                       'text/plain; charset=utf-8;')
         else:
             msg.message.add_header('content-type',
-                                    'text/plain; charset=utf-8;')
+                                   'text/plain; charset=utf-8;')
 
         # Check if the From address is Yahoo! or AOL
         originalFromAddr = msg.sender
         origHost = self.parseaddr(originalFromAddr)[1].split('@')[1]
         dmarcPolicy = self.get_dmarc_policy_for_host(origHost)
-        if (dmarcPolicy != ReceiverPolicy.none):
+        actualPolicies = (ReceiverPolicy.quarantine, ReceiverPolicy.reject)
+        if (dmarcPolicy in actualPolicies):
             # Set the old From header to 'X-gs-formerly-from'
             oldName = to_unicode_or_bust(msg.name)
             oldHeaderName = Header(oldName, UTF8)
             oldEncodedName = oldHeaderName.encode()
             oldFrom = formataddr((oldEncodedName, originalFromAddr))
             msg.message.add_header('X-gs-formerly-from', oldFrom)
-            m = 'Rewriting From address "{0}" because of DMARC settings for '\
-                '"{1}"'
-            log.info(m.format(originalFromAddr, origHost))
+            m = 'Rewriting From address "{0}" because of DMARC settings '\
+                'for "{1}" ({2})'
+            log.info(m.format(originalFromAddr, origHost, dmarcPolicy))
 
             # Create a new From address from the list address
             user = self.acl_users.get_userByEmail(originalFromAddr)
