@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-##############################################################################
+############################################################################
 #
-# Copyright © 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013,
-#             2014 OnlineGroups.net and Contributors.
+# Copyright © 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
+#             2013, 2014 OnlineGroups.net and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -12,7 +12,7 @@
 # WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
 # FOR A PARTICULAR PURPOSE.
 #
-##############################################################################
+############################################################################
 from setuptools import setup, find_packages
 import codecs
 import os
@@ -20,7 +20,8 @@ from version import get_version
 
 with codecs.open('README.txt', encoding='utf-8') as f:
     long_description = f.read()
-with codecs.open(os.path.join("docs", "HISTORY.txt"), encoding='utf-8') as f:
+with codecs.open(os.path.join("docs", "HISTORY.txt"),
+                 encoding='utf-8') as f:
     long_description += '\n' + f.read()
 
 setup(name='Products.XWFMailingListManager',
@@ -28,25 +29,26 @@ setup(name='Products.XWFMailingListManager',
       description="",
       long_description=long_description,
       classifiers=[
-        'Development Status :: 5 - Production/Stable',
-        "Environment :: Web Environment",
-        "Framework :: Zope2",
-        "Intended Audience :: Developers",
-        'License :: OSI Approved :: Zope Public License',
-        "Natural Language :: English",
-        "Operating System :: POSIX :: Linux",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: Implementation :: CPython",
-        "Topic :: Software Development :: Libraries :: Python Modules",
+          'Development Status :: 5 - Production/Stable',
+          "Environment :: Web Environment",
+          "Framework :: Zope2",
+          "Intended Audience :: Developers",
+          'License :: OSI Approved :: Zope Public License',
+          "Natural Language :: English",
+          "Operating System :: POSIX :: Linux",
+          "Programming Language :: Python",
+          "Programming Language :: Python :: 2",
+          "Programming Language :: Python :: 2.7",
+          "Programming Language :: Python :: Implementation :: CPython",
+          "Topic :: Software Development :: Libraries :: Python Modules",
       ],
       keywords='',
       author='Richard Waid',
       author_email='richard@iopen.net',
       maintainer='Michael JasonSmith',
       maintainer_email='mpj17@onlinegroups.net',
-      url='http://groupserver.org',
+      url='https://source.iopen.net/groupserver/'
+          'Products.XWFMailingListManager/',
       license='ZPL 2.1',
       packages=find_packages(exclude=['ez_setup']),
       namespace_packages=['Products'],
