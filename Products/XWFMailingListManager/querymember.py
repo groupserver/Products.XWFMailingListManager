@@ -7,7 +7,8 @@ log = logging.getLogger("XMLMailingListManager.querymember")
 
 class MemberQuery(object):
     # how many user ID's should we attempt to pass to the database before
-    # we just do the filtering ourselves to avoid the overhead on the database
+    # we just do the filtering ourselves to avoid the overhead on the
+    # database
     USER_FILTER_LIMIT = 200
 
     def __init__(self, context):
@@ -54,8 +55,8 @@ class MemberQuery(object):
         return email_addresses
 
     def get_member_addresses(self, site_id, group_id, id_getter,
-                            preferred_only=True, process_settings=True,
-                            verified_only=True):
+                             preferred_only=True, process_settings=True,
+                             verified_only=True):
         # TODO: We currently can't use site_id
         site_id = ''
 
@@ -67,8 +68,8 @@ class MemberQuery(object):
         ignore_ids = []
         email_addresses = []
 
-        # process anything that might include/exclude specific email addresses
-        # or block email delivery
+        # process anything that might include/exclude specific email
+        # addresses or block email delivery
         if process_settings:
             email_settings = est.select()
             email_settings.append_whereclause(est.c.site_id == site_id)
@@ -93,10 +94,10 @@ class MemberQuery(object):
             if r.rowcount:
                 n_ignore_ids = []
                 for row in r:
-                    # double check for security that this user should actually
-                    # be receiving email for this group
+                    # double check for security that this user should
+                    # actually be receiving email for this group
                     if ((row['user_id'] in user_ids)
-                        and (row['user_id'] not in ignore_ids)):
+                            and (row['user_id'] not in ignore_ids)):
                         n_ignore_ids.append(row['user_id'])
                         email_addresses.append(row['email'].lower())
 
@@ -137,7 +138,13 @@ class MemberQuery(object):
         guet = self.groupUserEmailTable
 
         email_settings = est.select()
-        email_settings.append_whereclause(est.c.site_id == site_id)
+        # FIXME: The user-group-email-settings were historically recorded
+        #        without a site identifier, relying on the
+        #        group-identifiers to be unique. We need to fix this. Sadly
+        #        this will require a lot of work to test. Just adding a
+        #        site identifier check here will cause the digests to not
+        #        go out.
+        # email_settings.append_whereclause(est.c.site_id == site_id)
         email_settings.append_whereclause(est.c.group_id == group_id)
         email_settings.append_whereclause(est.c.setting == 'digest')
 
@@ -149,7 +156,8 @@ class MemberQuery(object):
         email_addresses = []
         if r.rowcount:
             for row in r:
-                if row['user_id'] in user_ids:
+                if ((row['user_id'] in user_ids)
+                        and (row['user_id'] not in digest_ids)):
                     digest_ids.append(row['user_id'])
 
         email_group = guet.select()
@@ -164,12 +172,14 @@ class MemberQuery(object):
                 email_addresses.append(row['email'].lower())
 
         # remove any ids we have already processed
-        digest_ids = filter(lambda x: x not in ignore_ids, digest_ids)
+        digest_ids = [x for x in digest_ids if x not in ignore_ids]
 
         email_user = uet.select()
-        email_user.append_whereclause(uet.c.is_preferred == True)  # lint:ok
+        #lint:disable
+        email_user.append_whereclause(uet.c.is_preferred == True)
         email_user.append_whereclause(uet.c.user_id.in_(digest_ids))
-        email_user.append_whereclause(uet.c.verified_date != None)  # lint:ok
+        email_user.append_whereclause(uet.c.verified_date != None)
+        #lint:enable
 
         r = session.execute(email_user)
         if r.rowcount:
