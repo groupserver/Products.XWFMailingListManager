@@ -72,7 +72,8 @@ class MemberQuery(object):
         # addresses or block email delivery
         if process_settings:
             email_settings = est.select()
-            email_settings.append_whereclause(est.c.site_id == site_id)
+            # FIXME: See get_digest_addresses for why
+            # email_settings.append_whereclause(est.c.site_id == site_id)
             email_settings.append_whereclause(est.c.group_id == group_id)
 
             r = session.execute(email_settings)
