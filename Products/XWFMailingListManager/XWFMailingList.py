@@ -30,7 +30,6 @@ from rfc822 import AddressList
 from zope.component import createObject, getMultiAdapter
 from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
-from OFS.Folder import Folder, manage_addFolder
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from gs.core import to_ascii, to_unicode_or_bust
 from gs.cache import cache
@@ -454,11 +453,11 @@ class XWFMailingList(Folder):
         # strip any existing listid reference
         if include_listid:
             # this *must* be a string, it cannot be unicode
-            list_title = str(self.getValueFor('title'))
+            list_title = to_ascii(self.getValueFor('title'))
         else:
             list_title = ''
 
-        retval = strip_subject(subject, list_title, False)
+        retval = strip_subject(to_ascii(subject), list_title, False)
 
         is_reply = 0
         if (retval.lower().find('re:', 0, 3)) == 0 and (len(retval) > 3):
