@@ -30,6 +30,7 @@ from rfc822 import AddressList
 from zope.component import createObject, getMultiAdapter
 from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
+from OFS.Folder import Folder, manage_addFolder
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from gs.core import to_ascii, to_unicode_or_bust
 from gs.cache import cache
