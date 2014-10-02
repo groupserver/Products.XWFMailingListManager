@@ -982,6 +982,7 @@ class XWFMailingList(Folder):
         commands = [
             self.getValueFor('unsubscribe'),
             self.getValueFor('subscribe'),
+            'confirm', 're: confirm',
             'digest on',
             'digest off', ]
         if check_for_commands(msg, commands):
