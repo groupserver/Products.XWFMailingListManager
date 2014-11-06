@@ -27,6 +27,7 @@ from re import search
 from rfc822 import AddressList
 # import transaction  # See line 1560 below
 from zope.component import createObject, getMultiAdapter
+from zope.globalrequest import getRequest
 from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
@@ -485,8 +486,9 @@ class XWFMailingList(Folder):
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        r = getRequest()  # The actual Zope request; FIXME
 
-        sender = Sender(groupInfo.groupObj, REQUEST)
+        sender = Sender(groupInfo.groupObj, r)
         e = Parser().parsestr(newMail)
         sender.send(e)
 
