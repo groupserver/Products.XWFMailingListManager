@@ -18,8 +18,7 @@
 from __future__ import absolute_import
 from cgi import escape
 from email import message_from_string
-from email.utils import formataddr
-from email.Header import Header
+from email.parser import Parser
 from inspect import stack as inspect_stack
 from logging import getLogger
 log = getLogger('XWFMailingList')
@@ -32,23 +31,22 @@ from AccessControl import ClassSecurityInfo
 from App.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
-from gs.core import to_ascii, to_unicode_or_bust
-from gs.cache import cache
-from gs.dmarc import lookup_receiver_policy, ReceiverPolicy
+from gs.core import to_ascii
 from gs.email import send_email
 from gs.group.member.canpost import IGSPostingUser, \
     Notifier as CanPostNotifier, UnknownEmailNotifier
 from gs.profile.notify import NotifyUser
 from gs.group.list.command import process_command, CommandResult
+from gs.group.list.sender import Sender
 from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption, \
     get_group_by_siteId_and_groupId
 from Products.CustomUserFolder.userinfo import IGSUserInfo
 from Products.GSGroup.groupInfo import IGSGroupInfo
 from .emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
-    RDBFileMetadataStorage, strip_subject
+    RDBFileMetadataStorage
 from .queries import MemberQuery, MessageQuery
 from .utils import check_for_commands, pin, getMailFromRequest
-from .MailBoxerTools import lowerList, parseaddr, splitMail
+from .MailBoxerTools import lowerList, splitMail
 UTF8 = 'utf-8'
 DIGEST = 3
 null_convert = lambda x: x
@@ -447,184 +445,50 @@ class XWFMailingList(Folder):
         """
         return self.getId()
 
-    def create_mailableSubject(self, subject, include_listid=1):
-        """ A helper method for tidying up the mailing list subject for
-        remailing. """
-        # there is an assumption that if we're including a listid we should
-        # strip any existing listid reference
-        if include_listid:
-            # this *must* be a string, it cannot be unicode
-            list_title = to_ascii(self.getValueFor('title'))
-        else:
-            list_title = ''
-
-        retval = strip_subject(to_ascii(subject), list_title, False)
-
-        is_reply = 0
-        if (retval.lower().find('re:', 0, 3)) == 0 and (len(retval) > 3):
-            retval = retval[3:].strip()
-            is_reply = 1
-
-        re_string = '%s' % (is_reply and 'Re: ' or '')
-        if include_listid:
-            retval = '%s[%s] %s' % (re_string, list_title, retval)
-        else:
-            retval = '%s%s' % (re_string, retval)
-        return retval
-
-    @staticmethod
-    @cache('Products.XWFMailingList.dmarc', lambda h: h, 7 * 60)
-    def get_dmarc_policy_for_host(host):
-        retval = lookup_receiver_policy(host)
-        return retval
-
     def listMail(self, REQUEST):
         # Shifted from MailBoxer till reintegration project
 
         # Send a mail to all members of the list.
         mailString = getMailFromRequest(REQUEST)
-        msg = EmailMessage(mailString,
-                list_title=self.getProperty('title', ''),
-                group_id=self.getId(), site_id=self.getProperty('siteId', ''),
-                sender_id_cb=self.get_mailUserId)
+        msg = EmailMessage(
+            mailString,
+            list_title=self.getProperty('title', ''),
+            group_id=self.getId(),
+            site_id=self.getProperty('siteId', ''),
+            sender_id_cb=self.get_mailUserId)
         # TODO: Audit
-        m = 'listMail: Processing message in group "%s", post id "%s" from '\
-            '<%s>' % (self.getId(), msg.post_id, msg.sender)
+        m = 'listMail: Processing message in group "%s", post id "%s" '\
+            'from <%s>' % (self.getId(), msg.post_id, msg.sender)
         log.info(m)
 
         # store mail in the archive? get context for the mail...
         post_id = msg.post_id
         (post_id, file_ids) = self.manage_addMail(msg)
 
-        # The custom header is actually capable of replacing the top of the
-        # message, for example with a banner, so we need to parse it again
-        headers = {}
-        for item in msg.message.items():
-            headers[item[0].lower()] = item[1]
-
-        mail_header = self.mail_header(self,
-                                       REQUEST,
-                                       getValueFor=self.getValueFor,
-                                       title=self.getValueFor('title'),
-                                       mail=headers,
-                                       body=msg.body,
-                                       file_ids=file_ids,
-                                       post_id=post_id)
-
-        # The mail header needs to be committed to a  bytestream,
-        # not just a unicode object.
-        mail_header = mail_header.encode('utf-8', 'ignore').strip()
-
-        customHeader = EmailMessage(mail_header)
-
-        # If customBody is not empty, use it as new mailBody, and we need to
-        # fetch it before any other changes are made, since changing the
-        # header can affect the way the body is decoded
-        if customHeader.body.strip():
-            body = customHeader.body
-        else:
-            body = msg.body
-
-        # unlike the header, the footer is just a footer
-        customFooter = self.mail_footer(self, REQUEST,
-                                              getValueFor=self.getValueFor,
-                                              title=self.getValueFor('title'),
-                                              mail=headers,
-                                              body=msg.body,
-                                              file_ids=file_ids,
-                                              post_id=post_id).strip()
-
-        for hdr in customHeader.message.keys():
-            if customHeader.message[hdr].strip():
-                if hdr in msg.message:
-                    msg.message.replace_header(hdr, customHeader.message[hdr])
-                else:
-                    msg.message.add_header(hdr, customHeader.message[hdr])
-            else:
-                # if the header was blank, it means we want it to be removed
-                del(msg.message[hdr])
-
-        # patch in the archive ID
-        if 'x-archive-id' in msg.message:
-            msg.message.replace_header('x-archive-id', post_id)
-        else:
-            msg.message.add_header('X-Archive-Id', post_id)
-
         # patch in the user ID
         if 'x-gsuser-id' in msg.message:
             msg.message.replace_header('x-gsuser-id', msg.sender_id)
         else:
             msg.message.add_header('X-GSUser-Id', msg.sender_id)
+        headers = dict(list(msg.message.items()))
 
-        # We *always* distribute plain mail at the moment.
-        if 'content-type' in msg.message:
-            msg.message.replace_header('content-type',
-                                       'text/plain; charset=utf-8;')
-        else:
-            msg.message.add_header('content-type',
-                                   'text/plain; charset=utf-8;')
+        # unlike the header, the footer is just a footer
+        customFooter = self.mail_footer(
+            self, REQUEST, getValueFor=self.getValueFor,
+            title=self.getValueFor('title'), mail=headers,
+            body=msg.body, file_ids=file_ids, post_id=post_id).strip()
 
-        # Check if the From address is Yahoo! or AOL
-        originalFromAddr = msg.sender
-        origHost = self.parseaddr(originalFromAddr)[1].split('@')[1]
-        dmarcPolicy = self.get_dmarc_policy_for_host(origHost)
-        actualPolicies = (ReceiverPolicy.quarantine, ReceiverPolicy.reject)
-        if (dmarcPolicy in actualPolicies):
-            # Set the old From header to 'X-gs-formerly-from'
-            oldName = to_unicode_or_bust(msg.name)
-            oldHeaderName = Header(oldName, UTF8)
-            oldEncodedName = oldHeaderName.encode()
-            oldFrom = formataddr((oldEncodedName, originalFromAddr))
-            msg.message.add_header('X-gs-formerly-from', oldFrom)
-            m = 'Rewriting From address "{0}" because of DMARC settings '\
-                'for "{1}" ({2})'
-            log.info(m.format(originalFromAddr, origHost, dmarcPolicy))
+        newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers, msg.body,
+                                          customFooter)
 
-            # Create a new From address from the list address
-            user = self.acl_users.get_userByEmail(originalFromAddr)
-            listMailto = self.getValueFor('mailto')
-            domain = self.parseaddr(listMailto)[1].split('@')[1]
-            if (user is not None):
-                # Create a new From using the user-ID
-                userInfo = createObject('groupserver.UserFromId',
-                                        self.site_root(), user.getId())
-                na = 'user-{userInfo.id}@{domain}'
-                newAddress = na.format(userInfo=userInfo, domain=domain)
-                m = 'Using user-address "{0}"'
-                log.info(m.format(newAddress))
-            else:
-                # Create a new From using the old address
-                na = 'anon-{mbox}-at-{host}@{domain}'
-                mbox, host = self.parseaddr(originalFromAddr)[1].split('@')
-                host = host.replace('.', '-')
-                newAddress = na.format(mbox=mbox, host=host, domain=domain)
-                m = 'Using anon-address "{0}"'
-                log.info(m.format(newAddress))
+        siteId = self.getProperty('siteId', '')
+        groupId = self.getId()
+        site = getattr(self.site_root().Content, siteId)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
 
-            # Pick the "best" name, using length as a proxy for "best"
-            if (user is not None) and (len(userInfo.name) >= len(msg.name)):
-                fn = to_unicode_or_bust(userInfo.name)
-            else:
-                fn = to_unicode_or_bust(msg.name)
-            headerName = Header(fn, UTF8)
-            encodedName = headerName.encode()
-
-            # Set the From address
-            newFrom = formataddr((encodedName, newAddress))
-            msg.message.replace_header('From', newFrom)
-
-        # remove headers that should not be generally used for either our
-        # encoding scheme or in general list mail
-        for hdr in ('content-transfer-encoding', 'disposition-notification-to',
-                    'return-receipt-to'):
-            if hdr in msg.message:
-                del(msg.message[hdr])
-
-        newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers,
-                                      body,
-                                      customFooter)
-
-        self.sendMail(newMail)
+        sender = Sender(groupInfo.groupObj, REQUEST)
+        e = Parser().parsestr(newMail)
+        sender.send(e)
 
         return post_id
 
@@ -1125,10 +989,6 @@ class XWFMailingList(Folder):
         """
         return self.acl_users.get_userIdByEmail(addr) or ''
 
-    def parseaddr(self, header):
-        # wrapper for rfc822.parseaddr, returns (name, addr)
-        return parseaddr(header)
-
     security.declarePrivate('mail_reply')
 
     def mail_reply(self, context, REQUEST, message):
@@ -1181,27 +1041,6 @@ class XWFMailingList(Folder):
                     send_email(returnpath, [email_address], reply_text)
             seen.append(code)
 
-    security.declarePrivate('mail_header')
-    def mail_header(self, context, REQUEST, getValueFor=None, title='',
-                          mail=None, body='', file_ids=(), post_id=''):
-        """ A hook used by the MailBoxer framework, which we provide here as
-        a clean default.
-
-        """
-        header = getattr(self, 'xwf_email_header', None)
-        if header:
-            text = header(REQUEST, list_object=context,
-                                   getValueFor=getValueFor,
-                                   title=title, mail=mail, body=body,
-                                   file_ids=file_ids,
-                                   post_id=post_id)
-
-            if not isinstance(text, unicode):
-                text = unicode(text, 'utf-8', 'ignore')
-            return text
-        else:
-            return u''
-
     security.declarePrivate('mail_footer')
     def mail_footer(self, context, REQUEST, getValueFor=None, title='',
                           mail=None, body='', file_ids=(), post_id=''):
@@ -1247,22 +1086,6 @@ class XWFMailingList(Folder):
         # experimenting with commenting it out.
         # transaction.commit()
         return fileId
-
-    def sendMail(self, mailString):
-        # actually send the email
-
-        # Get members
-        memberlist = self.getValueFor('maillist')
-
-        # Remove "blank" / corrupted / doubled entries
-        maillist = []
-        for email in memberlist:
-            if '@' in email and email not in maillist:
-                maillist.append(email)
-
-        returnpath = self.getValueFor('mailto')
-
-        send_email(returnpath, maillist, mailString.encode('utf-8', 'ignore'))
 
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt',
