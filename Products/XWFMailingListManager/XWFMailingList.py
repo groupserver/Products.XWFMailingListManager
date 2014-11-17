@@ -359,14 +359,15 @@ class XWFMailingList(Folder):
         return users
 
     security.declareProtected('Access contents information', 'getValueFor')
+
     def getValueFor(self, key):
         """ getting the maillist and moderatedlist is a special case,
         working in with the XWFT group framework.
 
         """
 
-        if key in ('digestmaillist', 'maillist', 'moderator', 'moderatedlist',
-                    'mailinlist'):
+        if key in ('digestmaillist', 'maillist', 'moderator',
+                   'moderatedlist', 'mailinlist'):
             maillist = []
             if key in ('digestmaillist', 'maillist'):
                 maillist_script = getattr(self, 'maillist_members', None)
@@ -379,7 +380,8 @@ class XWFMailingList(Folder):
                 maillist_script = None
                 maillist = self.aq_inner.getProperty('moderatedlist', [])
                 if not maillist:
-                    maillist = self.aq_parent.getProperty('moderatedlist', [])
+                    maillist = self.aq_parent.getProperty('moderatedlist',
+                                                          [])
             else:
                 maillist_script = getattr(self, 'mailinlist_members', None)
 
@@ -394,35 +396,35 @@ class XWFMailingList(Folder):
                 addresses = []
                 if key == 'maillist':
                     addresses = memberQuery.get_member_addresses(
-                                self.getProperty('siteId'), self.getId(),
-                                self.get_memberUserObjects)
+                        self.getProperty('siteId'), self.getId(),
+                        self.get_memberUserObjects)
                 elif key == 'digestmaillist':
                     addresses = memberQuery.get_digest_addresses(
-                                self.getProperty('siteId'), self.getId(),
-                                self.get_memberUserObjects)
+                        self.getProperty('siteId'), self.getId(),
+                        self.get_memberUserObjects)
                 elif key == 'moderator':
                     addresses = memberQuery.get_member_addresses(
-                                self.getProperty('siteId'), self.getId(),
-                                self.get_moderatorUserObjects,
-                                preferred_only=False, process_settings=False)
+                        self.getProperty('siteId'), self.getId(),
+                        self.get_moderatorUserObjects,
+                        preferred_only=False, process_settings=False)
                 elif key == 'moderatedlist':
                     addresses = memberQuery.get_member_addresses(
-                                self.getProperty('siteId'), self.getId(),
-                                self.get_moderatedUserObjects,
-                                preferred_only=False, process_settings=False)
+                        self.getProperty('siteId'), self.getId(),
+                        self.get_moderatedUserObjects,
+                        preferred_only=False, process_settings=False)
                 elif key == 'mailinlist':
                     addresses = memberQuery.get_member_addresses(
-                                self.getProperty('siteId'), self.getId(),
-                                self.get_memberUserObjects,
-                                preferred_only=False, process_settings=False)
+                        self.getProperty('siteId'), self.getId(),
+                        self.get_memberUserObjects,
+                        preferred_only=False, process_settings=False)
                 for email in addresses:
                     email = email.strip()
                     if email and email not in maillist:
                         maillist.append(email)
 
             except Exception as x:
-                m = '%s (%s): A problem was experienced while getting values'\
-                  '\n\n%s'
+                m = '%s (%s): A problem was experienced while getting '\
+                    'values\n\n%s'
                 msg = m % (self.getProperty('title', ''), self.listId(), x)
                 log.error(to_ascii(msg))
                 maillist = None
@@ -433,7 +435,8 @@ class XWFMailingList(Folder):
 
             return maillist
 
-        # Again, look for the property locally, then assume it is in the parent
+        # Again, look for the property locally, then assume it is in the
+        # parent
         if self.aq_inner.hasProperty(key):
             return self.aq_inner.getProperty(key)
         else:
@@ -502,19 +505,20 @@ class XWFMailingList(Folder):
         # Checks if member is allowed to send a mail to list
         mailString = getMailFromRequest(REQUEST)
 
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
-                                       group_id=self.getId(),
-                                       site_id=self.getProperty('siteId', ''),
-                                       sender_id_cb=self.get_mailUserId)
+        msg = EmailMessage(
+            mailString, list_title=self.getProperty('title', ''),
+            group_id=self.getId(),
+            site_id=self.getProperty('siteId', ''),
+            sender_id_cb=self.get_mailUserId)
 
         (header, body) = splitMail(mailString)
 
         # First sanity check ... have we already archived this message?
         messageQuery = MessageQuery(self)
         if messageQuery.post(msg.post_id):
-            m = '%s (%s): Post from <%s> has already been archived with post '\
-              'ID %s' % (self.getProperty('title', ''), self.getId(),
-                msg.sender, msg.post_id)
+            m = '%s (%s): Post from <%s> has already been archived with '\
+                'post ID %s' % (self.getProperty('title', ''), self.getId(),
+                                msg.sender, msg.post_id)
             log.info(m)
             return "Message already archived"
 
@@ -532,9 +536,9 @@ class XWFMailingList(Folder):
 
         # message to a moderated list... relay all mails from a moderator
         if moderated and (email not in moderatorlist):
-            m = ' %s (%s): relaying message %s from moderator <%s>' %\
-              (self.getProperty('title', ''), self.getId(),
-               msg.post_id, email)
+            m = '%s (%s): relaying message %s from moderator <%s>' %\
+                (self.getProperty('title', ''), self.getId(),
+                 msg.post_id, email)
             log.info(m)
             modresult = self.processModeration(REQUEST)
             if modresult:
@@ -551,8 +555,8 @@ class XWFMailingList(Folder):
                 return retval
 
         # if all previous tests fail, it must be an unknown sender.
-        m = 'processMail %s (%s): Mail received from unknown sender <%s>' % \
-          (self.getProperty('title', ''), self.getId(), email)
+        m = 'processMail %s (%s): Mail received from unknown sender '\
+            '<%s>' % (self.getProperty('title', ''), self.getId(), email)
         log.info(m)
         log.info('memberlist was: %s' % memberlist)
         self.mail_reply(self, REQUEST, mailString)
@@ -560,7 +564,7 @@ class XWFMailingList(Folder):
     def processModeration(self, REQUEST):
         # a hook for handling the moderation stage of processing the email
         m = '%s (%s) Processing moderation' %\
-          (self.getProperty('title', ''), self.getId())
+            (self.getProperty('title', ''), self.getId())
         log.info(m)
 
         mailString = getMailFromRequest(REQUEST)
@@ -568,10 +572,10 @@ class XWFMailingList(Folder):
         # TODO: erradicate splitMail usage
         (header, body) = splitMail(mailString)
 
-        msg = EmailMessage(mailString,
-          list_title=self.getProperty('title', ''),
-          group_id=self.getId(), site_id=self.getProperty('siteId', ''),
-          sender_id_cb=self.get_mailUserId)
+        msg = EmailMessage(
+            mailString, list_title=self.getProperty('title', ''),
+            group_id=self.getId(), site_id=self.getProperty('siteId', ''),
+            sender_id_cb=self.get_mailUserId)
 
         # Get members
         try:
@@ -590,17 +594,18 @@ class XWFMailingList(Folder):
         moderate = False
         if len(moderatedlist):
             m = '%s (%s) is a moderated list; hunting for individual '\
-              'moderation' % (self.getProperty('title', ''), self.getId())
+                'moderation' % (self.getProperty('title', ''), self.getId())
             log.info(m)
             if msg.sender in moderatedlist:
                 m = '%s (%s): found individual moderation <%s> %s' % \
-                  (self.getProperty('title', ''), self.getId(),
-                   msg.sender, moderatedlist)
+                    (self.getProperty('title', ''), self.getId(),
+                     msg.sender, moderatedlist)
                 log.info(m)
                 moderate = True
             else:
                 m = '%s (%s): not moderating <%s>' % \
-                  (self.getProperty('title', ''), self.getId(), msg.sender)
+                    (self.getProperty('title', ''), self.getId(),
+                     msg.sender)
                 log.info(m)
 
         elif (msg.sender in memberlist) or unclosed:
@@ -613,7 +618,8 @@ class XWFMailingList(Folder):
         if moderate:
             mqueue = getattr(self.aq_explicit, 'mqueue', None)
 
-            # create a default-mailqueue if the traverse to mailqueue fails...
+            # create a default-mailqueue if the traverse to mailqueue
+            # fails...
             if not mqueue:
                 self.setValueFor('mailqueue', 'mqueue')
                 self.manage_addFolder('mqueue', 'Moderated Mail Queue')
