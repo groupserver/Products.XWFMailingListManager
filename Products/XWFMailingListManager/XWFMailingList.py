@@ -1038,28 +1038,6 @@ class XWFMailingList(Folder):
                     send_email(returnpath, [email_address], reply_text)
             seen.append(code)
 
-    security.declarePrivate('mail_footer')
-    def mail_footer(self, context, REQUEST, getValueFor=None, title='',
-                          mail=None, body='', file_ids=(), post_id=''):
-        """ A hook used by the MailBoxer framework, which we provide here as
-        a clean default.
-
-        """
-        footer = getattr(self, 'xwf_email_footer', None)
-        if footer:
-            text = footer(REQUEST, list_object=context,
-                                   getValueFor=getValueFor,
-                                   title=title, mail=mail, body=body,
-                                   file_ids=file_ids,
-                                   post_id=post_id)
-            if not isinstance(text, unicode):
-                text = unicode(text, 'utf-8', 'ignore')
-
-            return text
-
-        else:
-            return u""
-
     def addGSFile(self, title, topic, creator, data, content_type):
         """ Adds an attachment as a file.
 
