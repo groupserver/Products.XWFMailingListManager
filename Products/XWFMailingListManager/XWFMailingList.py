@@ -39,6 +39,7 @@ from gs.group.member.canpost import IGSPostingUser, \
 from gs.profile.notify import NotifyUser
 from gs.group.list.command import process_command, CommandResult
 from gs.group.list.sender import Sender
+from gs.group.list.email.text import Post
 from Products.XWFCore.XWFUtils import removePathsFromFilenames, getOption, \
     get_group_by_siteId_and_groupId
 from Products.CustomUserFolder.userinfo import IGSUserInfo
@@ -469,30 +470,18 @@ class XWFMailingList(Folder):
         post_id = msg.post_id
         (post_id, file_ids) = self.manage_addMail(msg)
 
-        # patch in the user ID
-        if 'x-gsuser-id' in msg.message:
-            msg.message.replace_header('x-gsuser-id', msg.sender_id)
-        else:
-            msg.message.add_header('X-GSUser-Id', msg.sender_id)
-        headers = dict(list(msg.message.items()))
-
-        # unlike the header, the footer is just a footer
-        customFooter = self.mail_footer(
-            self, REQUEST, getValueFor=self.getValueFor,
-            title=self.getValueFor('title'), mail=headers,
-            body=msg.body, file_ids=file_ids, post_id=post_id).strip()
-
-        newMail = "%s\r\n\r\n%s\r\n%s" % (msg.headers, msg.body,
-                                          customFooter)
-
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         r = getRequest()  # The actual Zope request; FIXME
 
+        newMail = "%s\r\n\r\nDropped text." % (msg.headers)
+        e = Parser().parsestr(newMail, headersonly=True)
+        p = Post(groupInfo.groupObj.messages, groupInfo, post_id)
+        textBody = getMultiAdapter((p, r), name='text')()
+        e.set_payload(textBody, 'utf-8')
         sender = Sender(groupInfo.groupObj, r)
-        e = Parser().parsestr(newMail)
         sender.send(e)
 
         return post_id
