@@ -136,12 +136,12 @@ class XWFMailingList(Folder):
             checks for loops etc & bulks mails to list.
         """
         if self.checkMail(REQUEST):
-            return FALSE
+            return FALSE  # This code predates False...
         # Check for subscription/unsubscription-request
         if self.requestMail(REQUEST):
-            return TRUE
+            return TRUE  # ...and True
         if self.cannotPost(REQUEST):
-            return True
+            return TRUE
         # Process the mail...
         retval = self.processMail(REQUEST)
         return retval
