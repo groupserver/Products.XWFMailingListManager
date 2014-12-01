@@ -140,6 +140,8 @@ class XWFMailingList(Folder):
         # Check for subscription/unsubscription-request
         if self.requestMail(REQUEST):
             return TRUE
+        if self.cannotPost(REQUEST):
+            return True
         # Process the mail...
         retval = self.processMail(REQUEST)
         return retval
@@ -770,7 +772,6 @@ class XWFMailingList(Folder):
             m = u'No site identifier associated with "{0}"'.format(groupId)
             raise ValueError(m)
         site = getattr(self.site_root().Content, siteId)
-        siteInfo = createObject('groupserver.SiteInfo', site)
         try:
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         except:
@@ -834,35 +835,6 @@ class XWFMailingList(Folder):
         # or other infinite mail-loops...
         email = msg.sender
         sender_id = msg.sender_id
-        userInfo = createObject('groupserver.UserFromId',
-                                self.site_root(), sender_id)
-        commands = [
-            self.getValueFor('unsubscribe'),
-            self.getValueFor('subscribe'),
-            'confirm', 're: confirm',
-            'digest on',
-            'digest off', ]
-        if check_for_commands(msg, commands):
-            # If the message is a command, we have to let the
-            #   command-handling subsystem deal with it.
-            m = u'%s (%s) email-command from <%s>: "%s"' % \
-                (groupInfo.name, groupInfo.id, msg.sender, msg.subject)
-            log.info(m)
-            return None
-        else:
-            # Not a command
-            insts = (groupInfo.groupObj, userInfo)
-            postingInfo = getMultiAdapter(insts, IGSPostingUser)
-            if not(postingInfo.canPost) and not(userInfo.anonymous):
-                message = '%s (%s): %s' % (userInfo.name, userInfo.id,
-                                           postingInfo.status)
-                log.warning(message)
-                notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
-                notifier.notify(userInfo, siteInfo, groupInfo,
-                                mailString)
-
-                return message
-
         self._v_last_email_checksum = msg.post_id
 
         # look to see if we have a custom_mailcheck hook. If so, call it.
@@ -951,13 +923,8 @@ class XWFMailingList(Folder):
         return retval
 
     def requestMail(self, REQUEST):
-        # Handles requests for subscription changes
-
+        'Handle the email commands'
         mailString = getMailFromRequest(REQUEST)
-
-        # TODO: this needs to be completely removed, but some of the email
-        # depends on it still
-        (header, body) = splitMail(mailString)
 
         msg = EmailMessage(mailString,
                            list_title=self.getProperty('title', ''),
@@ -975,6 +942,35 @@ class XWFMailingList(Folder):
         r = process_command(groupInfo.groupObj, mailString, REQUEST)
         if r == CommandResult.commandStop:
             return email
+
+    def cannotPost(self, REQUEST):
+        mailString = getMailFromRequest(REQUEST)
+        groupId = self.getId()
+        siteId = self.getProperty('siteId', '')
+
+        msg = EmailMessage(mailString,
+                           list_title=self.getProperty('title', ''),
+                           group_id=groupId,
+                           site_id=siteId,
+                           sender_id_cb=self.get_mailUserId)
+        userInfo = createObject('groupserver.UserFromId',
+                                self.site_root(), msg.sender_id)
+
+        site = getattr(self.site_root().Content, siteId)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+
+        insts = (groupInfo.groupObj, userInfo)
+        postingInfo = getMultiAdapter(insts, IGSPostingUser)
+        if not(postingInfo.canPost) and not(userInfo.anonymous):
+            message = '%s (%s): %s' % (userInfo.name, userInfo.id,
+                                       postingInfo.status)
+            log.warning(message)
+            notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
+            siteInfo = createObject('groupserver.SiteInfo', site)
+            notifier.notify(userInfo, siteInfo, groupInfo,
+                            mailString)
+
+            return message
 
     def get_mailUserId(self, addr):
         """ From the email address, get the user's ID.
