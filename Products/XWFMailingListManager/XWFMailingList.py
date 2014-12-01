@@ -514,9 +514,6 @@ class XWFMailingList(Folder):
         # get lower case email for comparisons
         email = msg.sender
 
-        # Get members
-        memberlist = lowerList(self.getValueFor('mailinlist'))
-
         # Get moderators
         moderatorlist = lowerList(self.getValueFor('moderator'))
 
@@ -535,6 +532,8 @@ class XWFMailingList(Folder):
 
         # traffic! relay all mails to a unclosed list or
         # relay if it is sent from members and moderators...
+        # Get members
+        memberlist = lowerList(self.getValueFor('maillist'))
         if unclosed or (email in (memberlist + moderatorlist)):
             if hasattr(self, 'mail_handler'):
                 self.mail_handler(self, REQUEST, mail=header, body=body)
@@ -567,10 +566,7 @@ class XWFMailingList(Folder):
             sender_id_cb=self.get_mailUserId)
 
         # Get members
-        try:
-            memberlist = lowerList(self.getValueFor('mailinlist'))
-        except:
-            memberlist = lowerList(self.getValueFor('maillist'))
+        memberlist = lowerList(self.getValueFor('maillist'))
 
         # Get individually moderated members
         moderatedlist = filter(None,
