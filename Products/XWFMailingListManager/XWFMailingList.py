@@ -32,8 +32,8 @@ from App.class_init import InitializeClass
 from OFS.Folder import Folder, manage_addFolder
 from Products.PageTemplates.PageTemplateFile import PageTemplateFile
 from gs.core import to_ascii
-from gs.group.member.canpost import IGSPostingUser, \
-    Notifier as CanPostNotifier, UnknownEmailNotifier
+from gs.group.member.canpost import (
+    IGSPostingUser, Notifier as CanPostNotifier, UnknownEmailNotifier)
 from gs.profile.notify import NotifyUser
 from gs.group.list.command import process_command, CommandResult
 from gs.group.list.sender import Sender
@@ -461,12 +461,9 @@ calling ``self.listMail``'''
 
         # Get moderators
         moderatorlist = lowerList(self.getValueFor('moderator'))
-
-        moderated = self.getValueFor('moderated')
-        unclosed = self.getValueFor('unclosed')
-
-        # message to a moderated list... relay all mails from a moderator
-        if moderated and (email not in moderatorlist):
+        if self.getValueFor('moderated') and (email not in moderatorlist):
+            # message to a moderated list... relay all mails from a
+            # moderator
             m = '%s (%s): relaying message %s from moderator <%s>' %\
                 (self.getProperty('title', ''), self.getId(),
                  msg.post_id, email)
@@ -474,18 +471,10 @@ calling ``self.listMail``'''
             modresult = self.processModeration(REQUEST)
             if modresult:
                 return modresult
+            # --=mpj17=-- No else?
 
-        # traffic! relay all mails to a unclosed list or
-        # relay if it is sent from members and moderators...
-        # Get members
-        memberlist = lowerList(self.getValueFor('maillist'))
-        if unclosed or (email in (memberlist + moderatorlist)):
-            if hasattr(self, 'mail_handler'):
-                self.mail_handler(self, REQUEST, mail=header, body=body)
-                return email
-            else:
-                retval = self.listMail(REQUEST)
-                return retval
+        retval = self.listMail(REQUEST)
+        return retval
 
     def processModeration(self, REQUEST):
         # a hook for handling the moderation stage of processing the email
@@ -890,10 +879,8 @@ calling ``self.listMail``'''
                            sender_id_cb=self.get_mailUserId)
         userInfo = createObject('groupserver.UserFromId',
                                 self.site_root(), msg.sender_id)
-
         site = getattr(self.site_root().Content, siteId)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-
         insts = (groupInfo.groupObj, userInfo)
         postingInfo = getMultiAdapter(insts, IGSPostingUser)
         if not(postingInfo.canPost) and not(userInfo.anonymous):
