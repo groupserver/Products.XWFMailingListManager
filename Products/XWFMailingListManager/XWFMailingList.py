@@ -58,9 +58,7 @@ FALSE = "FALSE"
 
 class XWFMailingList(Folder):
     """ A mailing list implementation, based heavily on the excellent
-    Mailboxer product.
-
-    """
+    Mailboxer product."""
     security = ClassSecurityInfo()
     meta_type = 'XWF Mailing List'
     version = 0.99
@@ -82,9 +80,7 @@ class XWFMailingList(Folder):
     _v_last_email_checksum = ''
 
     def __init__(self, id, title, mailto):
-        """ Setup a mailing list with reasonable defaults.
-
-        """
+        """ Setup a mailing list with reasonable defaults."""
         self.id = id
         self.title = title
         self.hashkey = str(random())
@@ -103,9 +99,7 @@ class XWFMailingList(Folder):
     def init_properties(self):
         """ Tidy up the property sheet, since we don't want to control most of
         the properties that have already been defined in the parent
-        MailingListManager.
-
-        """
+        MailingListManager."""
         delete_properties = filter(lambda x:
                                     x not in self.mailinglist_properties,
                                    self.propertyIds())
@@ -128,12 +122,13 @@ class XWFMailingList(Folder):
     # Public methods to be called via smtp2zope-gateway
     ##
     security.declareProtected('View', 'manage_mailboxer')
-    def manage_mailboxer(self, REQUEST):
-        """ Default for a all-in-one mailinglist-workflow.
 
-            Handles (un)subscription-requests and
-            checks for loops etc & bulks mails to list.
-        """
+    def manage_mailboxer(self, REQUEST):
+        """Default for a all-in-one mailinglist-workflow.
+
+Handles (un)subscription-requests and checks for loops etc & bulks mails to
+list. Checks that the message can be processed, checks for an email command,
+checks that the person can post, and then processes the email."""
         if self.checkMail(REQUEST):
             return FALSE
         # Check for subscription/unsubscription-request
@@ -212,19 +207,19 @@ class XWFMailingList(Folder):
                 if action in ['approve', 'discard']:
                     if hasattr(self, "mail_approve"):
                         return self.mail_approve(self, REQUEST,
-                                                msg="MAIL_NOT_FOUND")
+                                                 msg="MAIL_NOT_FOUND")
                     else:
-                        REQUEST.RESPONSE.setHeader('Content-type',
-                                                    'text/plain')
+                        REQUEST.RESPONSE.setHeader(b'Content-type',
+                                                   b'text/plain')
                         return "MAIL NOT FOUND! MAYBE THE MAIL WAS ALREADY"\
                             "PROCESSED."
                 else:
                     if hasattr(self, "mail_approve"):
                         return self.mail_approve(self, REQUEST,
-                                                msg="MAIL_PENDING")
+                                                 msg="MAIL_PENDING")
                     else:
-                        REQUEST.RESPONSE.setHeader('Content-type',
-                                                    'text/plain')
+                        REQUEST.RESPONSE.setHeader(b'Content-type',
+                                                   b'text/plain')
                         if len(mqueue.objectValues()):
                             return "PENDING MAILS IN QUEUE!"
                         else:
@@ -239,15 +234,19 @@ class XWFMailingList(Folder):
                 # relay mail to list
                 self.listMail(REQUEST)
                 if hasattr(self, "mail_approve"):
-                    return self.mail_approve(self, REQUEST, msg="MAIL_APPROVE")
+                    return self.mail_approve(self, REQUEST,
+                                             msg="MAIL_APPROVE")
                 else:
-                    REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
+                    REQUEST.RESPONSE.setHeader(b'Content-type',
+                                               b'text/plain')
                     return "MAIL APPROVED\n\n%s" % mail
             else:
                 if hasattr(self, "mail_approve"):
-                    return self.mail_approve(self, REQUEST, msg="MAIL_DISCARD")
+                    return self.mail_approve(self, REQUEST,
+                                             msg="MAIL_DISCARD")
                 else:
-                    REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
+                    REQUEST.RESPONSE.setHeader(b'Content-type',
+                                               b'text/plain')
                     return "MAIL DISCARDED\n\n%s" % mail
 
         if hasattr(self, "mail_approve"):
@@ -256,13 +255,11 @@ class XWFMailingList(Folder):
             REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
             return "INVALID REQUEST! Please check your PIN."
 
-
-    ###
-    # Universal getter / setter for retrieving / storing properties
-    # or calling appropriate handlers in ZODB
-    ##
     security.declareProtected('Manage properties', 'setValueFor')
+
     def setValueFor(self, key, value):
+        '''Universal getter / setter for retrieving / storing properties or
+calling appropriate handlers in ZODB'''
         # We look for the property locally, then assume it is in the parent
         # We don't try to access the property directly, because it might be
         # defined in our base class, which we can't remove
@@ -272,15 +269,15 @@ class XWFMailingList(Folder):
             prop_loc = self.aq_parent
 
         # Use manage_changeProperties as default for setting properties
-        prop_loc.manage_changeProperties({key:value})
+        prop_loc.manage_changeProperties({key: value})
 
     security.declareProtected('Manage properties', 'get_memberUserObjects')
-    def get_memberUserObjects(self, ids_only=False):
-        """ Get the user objects corresponding to the membership list, assuming we can.
 
-        """
+    def get_memberUserObjects(self, ids_only=False):
+        """ Get the user objects corresponding to the membership list,
+assuming we can."""
         member_groups = self.getProperty('member_groups',
-                                        ['%s_member' % self.listId()])
+                                         ['%s_member' % self.listId()])
         uids = []
         for gid in member_groups:
             group = self.acl_users.getGroupById(gid)
@@ -318,9 +315,8 @@ class XWFMailingList(Folder):
 
     security.declareProtected('Manage properties', 'get_moderatedUserObjects')
     def get_moderatedUserObjects(self, ids_only=False):
-        """ Get the user objects corresponding to the moderated list, assuming we can.
-
-        """
+        """ Get the user objects corresponding to the moderated list,
+assuming we can."""
         member_groups = self.getProperty('moderated_groups', [])
         uids = []
         for gid in member_groups:
@@ -362,9 +358,7 @@ class XWFMailingList(Folder):
 
     def getValueFor(self, key):
         """ getting the maillist and moderatedlist is a special case,
-        working in with the XWFT group framework.
-
-        """
+        working in with the XWFT group framework."""
 
         if key in ('digestmaillist', 'maillist', 'moderator',
                    'moderatedlist', 'mailinlist'):
@@ -444,9 +438,7 @@ class XWFMailingList(Folder):
 
     def listId(self):
         """ Mostly intended to be tracked by the catalog, to allow us to
-        track which email belongs to which list.
-
-        """
+        track which email belongs to which list."""
         return self.getId()
 
     def listMail(self, REQUEST):
@@ -498,6 +490,8 @@ class XWFMailingList(Folder):
         return post_id
 
     def processMail(self, REQUEST):
+        '''Do all the moderation processing, then list the message by
+calling ``self.listMail``'''
         # Zeroth sanity check ... herein lies only madness.
         m = 'processMail: list (%s)' % self.getId()
         log.info(m)
@@ -682,50 +676,50 @@ class XWFMailingList(Folder):
             return msg.sender
 
     security.declareProtected('Add Folders', 'manage_addMail')
-    def manage_addMail(self, msg):
-        """ Store mail & attachments in a folder and return it.
 
-        """
+    def manage_addMail(self, msg):
+        """ Store mail & attachments in a folder and return it."""
         ids = []
         for attachment in msg.attachments:
             if ((attachment['filename'] == '')
-                and (attachment['subtype'] == 'plain')):
-                # We definately don't want to save the plain text body again!
+                    and (attachment['subtype'] == 'plain')):
+                # We definately don't want to save the plain text body
+                # again!
                 pass
             elif ((attachment['filename'] == '')
                     and (attachment['subtype'] == 'html')):
                 # We might want to do something with the HTML body some day,
-                # but we archive the HTML body here, as it suggests in the log
-                # message. The HTML body is archived along with the plain text
-                # body.
-                m = '%s (%s): archiving HTML message.' % (
-                                       self.getProperty('title'), self.getId())
+                # but we archive the HTML body here, as it suggests in the
+                # log message. The HTML body is archived along with the
+                # plain text body.
+                m = '%s (%s): archiving HTML message.' % \
+                    (self.getProperty('title'), self.getId())
                 log.info(m)
             elif attachment['contentid'] and (attachment['filename'] == ''):
                 # TODO: What do we want to do with these? They are typically
                 # part of an HTML message, for example the images, but what
                 # should we do with them once we've stripped them?
                 m = '%s (%s): stripped, but not archiving %s attachment '\
-                  '%s; it appears to be part of an HTML message.' % \
-                  (self.getProperty('title'), self.getId(),
-                   attachment['maintype'], attachment['filename'])
+                    '%s; it appears to be part of an HTML message.' % \
+                    (self.getProperty('title'), self.getId(),
+                     attachment['maintype'], attachment['filename'])
                 log.info(m)
             elif attachment['length'] <= 0:
                 # Empty attachment. Kinda pointless archiving this!
                 m = '%s (%s): stripped, but not archiving %s attachment '\
-                  '%s; attachment was of zero size.' % \
-                  (self.getProperty('title'), self.getId(),
-                   attachment['maintype'], attachment['filename'])
+                    '%s; attachment was of zero size.' % \
+                    (self.getProperty('title'), self.getId(),
+                     attachment['maintype'], attachment['filename'])
                 log.warn(m)
             else:
                 m = '%s (%s): stripped and archiving %s attachment %s' %\
-                  (self.getProperty('title'), self.getId(),
-                   attachment['maintype'], attachment['filename'])
+                    (self.getProperty('title'), self.getId(),
+                     attachment['maintype'], attachment['filename'])
                 log.info(m)
 
                 nid = self.addGSFile(attachment['filename'], msg.subject,
-                                        msg.sender_id, attachment['payload'],
-                                        attachment['mimetype'])
+                                     msg.sender_id, attachment['payload'],
+                                     attachment['mimetype'])
                 ids.append(nid)
 
         msgstorage = IRDBStorageForEmailMessage(msg)
@@ -910,7 +904,7 @@ class XWFMailingList(Folder):
 
         if not retval:
             message = u'%s (%s): Host %s is not allowed' %\
-              (self.getProperty('title', ''), self.getId(), REMOTE_IP)
+                (self.getProperty('title', ''), self.getId(), REMOTE_IP)
             log.info(message)
 
         assert type(retval) == bool
@@ -938,9 +932,9 @@ class XWFMailingList(Folder):
 
     def chk_msg_tight_loop(self, msg):
         assert hasattr(self, '_v_last_email_checksum'),\
-                 "no _v_last_email_checksum"
+            "no _v_last_email_checksum"
         retval = self._v_last_email_checksum and \
-          (self._v_last_email_checksum == msg.post_id) or False
+            (self._v_last_email_checksum == msg.post_id) or False
         assert type(retval) == bool, "type was %s, not bool" % type(retval)
         return retval
 
@@ -966,8 +960,7 @@ class XWFMailingList(Folder):
         return retval
 
     def requestMail(self, REQUEST):
-        # Handles requests for subscription changes
-
+        'Handle the email commands'
         mailString = getMailFromRequest(REQUEST)
 
         # TODO: this needs to be completely removed, but some of the email
@@ -1081,14 +1074,15 @@ class XWFMailingList(Folder):
         fileId = storage.add_file(data)
         fileObj = storage.get_file(fileId)
         fixedTitle = removePathsFromFilenames(title)
-        fileObj.manage_changeProperties(content_type=content_type,
-          title=fixedTitle, tags=['attachment'], group_ids=[group_id],
-          dc_creator=creator, topic=topic)
+        fileObj.manage_changeProperties(
+            content_type=content_type, title=fixedTitle,
+            tags=['attachment'], group_ids=[group_id],
+            dc_creator=creator, topic=topic)
         fileObj.reindex_file()
         #
-        # Commit the ZODB transaction -- this basically makes it impossible for
-        # us to rollback, but since our RDB transactions won't be rolled back
-        # anyway, we do this so we don't have dangling metadata.
+        # Commit the ZODB transaction -- this basically makes it impossible
+        # for us to rollback, but since our RDB transactions won't be rolled
+        # back anyway, we do this so we don't have dangling metadata.
         #
         # --=mpj17=-- But it caused death on my local box. So I am
         # experimenting with commenting it out.
@@ -1102,7 +1096,7 @@ manage_addXWFMailingListForm = PageTemplateFile(
 
 
 def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
-                                     REQUEST=None):
+                             REQUEST=None):
     """ Add an XWFMailingList to a container.
 
     """
