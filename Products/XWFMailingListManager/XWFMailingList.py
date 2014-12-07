@@ -130,9 +130,11 @@ Handles (un)subscription-requests and checks for loops etc & bulks mails to
 list. Checks that the message can be processed, checks for an email command,
 checks that the person can post, and then processes the email."""
         if self.checkMail(REQUEST):
-            return FALSE
+            return FALSE  # This code predates False...
         # Check for subscription/unsubscription-request
         if self.requestMail(REQUEST):
+            return TRUE  # ...and True
+        if self.cannotPost(REQUEST):
             return TRUE
         # Process the mail...
         retval = self.processMail(REQUEST)
@@ -842,36 +844,6 @@ calling ``self.listMail``'''
         # Check for hosed denial-of-service-vacation mailers
         # or other infinite mail-loops...
         email = msg.sender
-        sender_id = msg.sender_id
-        userInfo = createObject('groupserver.UserFromId',
-                                self.site_root(), sender_id)
-        commands = [
-            self.getValueFor('unsubscribe'),
-            self.getValueFor('subscribe'),
-            'confirm', 're: confirm',
-            'digest on',
-            'digest off', ]
-        if check_for_commands(msg, commands):
-            # If the message is a command, we have to let the
-            #   command-handling subsystem deal with it.
-            m = u'%s (%s) email-command from <%s>: "%s"' % \
-                (groupInfo.name, groupInfo.id, msg.sender, msg.subject)
-            log.info(m)
-            return None
-        else:
-            # Not a command
-            insts = (groupInfo.groupObj, userInfo)
-            postingInfo = getMultiAdapter(insts, IGSPostingUser)
-            if not(postingInfo.canPost) and not(userInfo.anonymous):
-                message = '%s (%s): %s' % (userInfo.name, userInfo.id,
-                                           postingInfo.status)
-                log.warning(message)
-                notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
-                notifier.notify(userInfo, siteInfo, groupInfo,
-                                mailString)
-
-                return message
-
         self._v_last_email_checksum = msg.post_id
 
         # look to see if we have a custom_mailcheck hook. If so, call it.
@@ -983,6 +955,43 @@ calling ``self.listMail``'''
         r = process_command(groupInfo.groupObj, mailString, REQUEST)
         if r == CommandResult.commandStop:
             return email
+
+    def cannotPost(self, REQUEST):
+        mailString = getMailFromRequest(REQUEST)
+        groupId = self.getId()
+        siteId = self.getProperty('siteId', '')
+
+        msg = EmailMessage(mailString,
+                           list_title=self.getProperty('title', ''),
+                           group_id=groupId,
+                           site_id=siteId,
+                           sender_id_cb=self.get_mailUserId)
+        userInfo = createObject('groupserver.UserFromId',
+                                self.site_root(), msg.sender_id)
+        site = getattr(self.site_root().Content, siteId)
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        insts = (groupInfo.groupObj, userInfo)
+        postingInfo = getMultiAdapter(insts, IGSPostingUser)
+        if not(postingInfo.canPost) and not(userInfo.anonymous):
+            message = '%s (%s): %s' % (userInfo.name, userInfo.id,
+                                       postingInfo.status)
+            log.warning(message)
+            notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
+            siteInfo = createObject('groupserver.SiteInfo', site)
+            notifier.notify(userInfo, siteInfo, groupInfo,
+                            mailString)
+            return message
+        elif not(postingInfo.canPost) and userInfo.anonymous:
+            # if all previous tests fail, it must be an unknown sender.
+            m = 'cannotPost %s (%s): Mail received from unknown sender '\
+                '<%s>'
+            message = m % (self.getProperty('title', ''), groupId,
+                           msg.sender)
+            log.info(message)
+            self.mail_reply(self, REQUEST, mailString)
+            return message
+
+        # If here then everything is fine.
 
     def get_mailUserId(self, addr):
         """ From the email address, get the user's ID.
