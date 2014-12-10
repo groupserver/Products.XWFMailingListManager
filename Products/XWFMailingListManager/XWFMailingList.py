@@ -46,7 +46,7 @@ from Products.GSGroup.groupInfo import IGSGroupInfo
 from .emailmessage import EmailMessage, IRDBStorageForEmailMessage, \
     RDBFileMetadataStorage
 from .queries import MemberQuery, MessageQuery
-from .utils import check_for_commands, pin, getMailFromRequest
+from .utils import pin, getMailFromRequest
 from .MailBoxerTools import lowerList, splitMail
 UTF8 = 'utf-8'
 DIGEST = 3
@@ -97,11 +97,11 @@ class XWFMailingList(Folder):
         return True
 
     def init_properties(self):
-        """ Tidy up the property sheet, since we don't want to control most of
-        the properties that have already been defined in the parent
+        """ Tidy up the property sheet, since we don't want to control most
+        of the properties that have already been defined in the parent
         MailingListManager."""
         delete_properties = filter(lambda x:
-                                    x not in self.mailinglist_properties,
+                                   x not in self.mailinglist_properties,
                                    self.propertyIds())
         props = []
         for item in self._properties:
@@ -141,6 +141,7 @@ checks that the person can post, and then processes the email."""
         return retval
 
     security.declareProtected('View', 'manage_requestboxer')
+
     def manage_requestboxer(self, REQUEST):
         """ Handles un-/subscribe-requests.
 
@@ -157,6 +158,7 @@ checks that the person can post, and then processes the email."""
         return TRUE
 
     security.declareProtected('View', 'manage_listboxer')
+
     def manage_listboxer(self, REQUEST):
         """ Send a mail to all members of the list.
 
@@ -171,6 +173,7 @@ checks that the person can post, and then processes the email."""
         return retval
 
     security.declareProtected('View', 'manage_inboxer')
+
     def manage_inboxer(self, REQUEST):
         """ Wrapper to mail directly into archive.
 
@@ -182,15 +185,16 @@ checks that the person can post, and then processes the email."""
             return FALSE
 
         mailString = getMailFromRequest(REQUEST)
-        msg = EmailMessage(mailString, list_title=self.getProperty('title', ''),
-                                       group_id=self.getId(),
-                                       site_id=self.getProperty('siteId', ''),
-                                       sender_id_cb=self.get_mailUserId)
+        msg = EmailMessage(
+            mailString, list_title=self.getProperty('title', ''),
+            group_id=self.getId(), site_id=self.getProperty('siteId', ''),
+            sender_id_cb=self.get_mailUserId)
 
         self.manage_addMail(msg)
         return TRUE
 
     security.declareProtected('View', 'manage_moderateMail')
+
     def manage_moderateMail(self, REQUEST):
         """ Approves / discards a mail for a moderated list. """
         # TODO: UGLY, UGLY, UGLY!!!
@@ -301,13 +305,15 @@ assuming we can."""
         return retval
 
     security.declareProtected('Manage properties', 'get_memberUserCount')
+
     def get_memberUserCount(self):
         """ Get a count of the number of users corresponding to the
             membership list, assuming we can.
 
         """
         # TODO: --=mpj17=-- Do we need this method?
-        member_groups = self.getProperty('member_groups', ['%s_member' % self.listId()])
+        member_groups = self.getProperty('member_groups',
+                                         ['%s_member' % self.listId()])
         uids = []
         for gid in member_groups:
             group = self.acl_users.getGroupById(gid)
@@ -315,7 +321,9 @@ assuming we can."""
 
         return len(uids)
 
-    security.declareProtected('Manage properties', 'get_moderatedUserObjects')
+    security.declareProtected('Manage properties',
+                              'get_moderatedUserObjects')
+
     def get_moderatedUserObjects(self, ids_only=False):
         """ Get the user objects corresponding to the moderated list,
 assuming we can."""
@@ -331,15 +339,18 @@ assuming we can."""
             return uids
 
         # AM: Avoid nastiness associated with empty strings and null users
-        users = filter(lambda x: x, [ self.acl_users.getUser(uid) for uid in uids if uid ])
+        users = filter(lambda x: x,
+                       [self.acl_users.getUser(uid) for uid in uids
+                        if uid])
 
         return users
 
-    security.declareProtected('Manage properties', 'get_moderatorUserObjects')
-    def get_moderatorUserObjects(self, ids_only=False):
-        """ Get the user objects corresponding to the moderator, assuming we can.
+    security.declareProtected('Manage properties',
+                              'get_moderatorUserObjects')
 
-        """
+    def get_moderatorUserObjects(self, ids_only=False):
+        """ Get the user objects corresponding to the moderator,
+            assuming we can."""
         member_groups = self.getProperty('moderator_groups', [])
         uids = []
         for gid in member_groups:
@@ -352,7 +363,8 @@ assuming we can."""
             return uids
 
         # AM: Avoid nastiness associated with empty strings and null users
-        users = filter(lambda x: x, [ self.acl_users.getUser(uid) for uid in uids if uid ])
+        users = filter(lambda x: x,
+                       [self.acl_users.getUser(uid) for uid in uids if uid])
 
         return users
 
@@ -781,7 +793,6 @@ calling ``self.listMail``'''
             m = u'No site identifier associated with "{0}"'.format(groupId)
             raise ValueError(m)
         site = getattr(self.site_root().Content, siteId)
-        siteInfo = createObject('groupserver.SiteInfo', site)
         try:
             groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         except:
@@ -1018,6 +1029,7 @@ calling ``self.listMail``'''
         log.info(m)
 
     security.declarePrivate('mail_event_default')
+
     def mail_event_default(self, context, event_codes, headers):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
@@ -1052,8 +1064,9 @@ calling ``self.listMail``'''
             seen.append(code)
 
     security.declarePrivate('mail_footer')
+
     def mail_footer(self, context, REQUEST, getValueFor=None, title='',
-                          mail=None, body='', file_ids=(), post_id=''):
+                    mail=None, body='', file_ids=(), post_id=''):
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default.
 
@@ -1061,10 +1074,10 @@ calling ``self.listMail``'''
         footer = getattr(self, 'xwf_email_footer', None)
         if footer:
             text = footer(REQUEST, list_object=context,
-                                   getValueFor=getValueFor,
-                                   title=title, mail=mail, body=body,
-                                   file_ids=file_ids,
-                                   post_id=post_id)
+                          getValueFor=getValueFor,
+                          title=title, mail=mail, body=body,
+                          file_ids=file_ids,
+                          post_id=post_id)
             if not isinstance(text, unicode):
                 text = unicode(text, 'utf-8', 'ignore')
 
