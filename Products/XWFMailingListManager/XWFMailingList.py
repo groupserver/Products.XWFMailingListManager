@@ -35,6 +35,7 @@ from gs.core import to_ascii
 from gs.group.member.canpost import (
     IGSPostingUser, Notifier as CanPostNotifier, UnknownEmailNotifier)
 from gs.profile.notify import NotifyUser
+from gs.group.list.check import IsValidMessage
 from gs.group.list.command import process_command, CommandResult
 from gs.group.list.sender import Sender
 from gs.group.list.email.text import Post
@@ -558,7 +559,8 @@ calling ``self.listMail``'''
 
             moderators = self.get_moderatorUserObjects()
             for moderator in moderators:
-                nDict = {'mailingList': self,
+                nDict = {
+                    'mailingList': self,
                     'pin': pin(self.getValueFor('mailto'),
                                self.getValueFor('hashkey')),
                     'moderatedUserAddress': msg.sender,
@@ -649,28 +651,10 @@ calling ``self.listMail``'''
         return (msg.post_id, ids)
 
     def checkMail(self, REQUEST):
-        '''Check the email for the correct IP address, loops and spam.
+        '''Check the email for loops and spam.
 
-        The work of this method is done in three places:
-            1. The "chk_*" methods of the mailing list.
-            2. The "check_for_commands" method of the mailing list.
-            3. A Group Member Posting Info, which is instantiated here.
-
-        The "chk_*" methods check for fundamental issues with the message:
-          * Mail loops,
-          * Automatic responces,
-          * Verboten text in the message, and
-          * Banned email addresses.
-        If one of these checks fails then the poster is not notified.
-
-        If the message is recognised as a command then this method will
-        return "None" (which is a good thing, see RETURNS below) so the
-        message can be processed by the command-handling subsystem.
-
-        The group member posting info class checks for more user-specific
-        problems, such as exceeding the posting limit and being a banned
-        member of a group. If these checks fail the user is sent a
-        notification.
+        The work of this method is mostly done by the gs.group.list.check
+        product.
 
         RETURNS
             * Unicode if the message should *not* be processed, or
@@ -679,34 +663,17 @@ calling ``self.listMail``'''
         SIDE EFFECTS
             If the user can post, "self._v_last_email_checksum" is set to
             the ID of the message, which is calculated by
-            "emailmessage.EmailMessage".
-
-            If the user cannot post, and the user exists in the system,
-            then he or she is sent a notification, stating why the post
-            was not processed.
-        '''
-        if not(self.chk_request_from_allowed_mta_hosts(REQUEST)):
-            message = u'%s (%s): Host is not allowed' %\
-                      (self.getProperty('title', ''), self.getId())
-            log.warning(message)
-            return message
+            "emailmessage.EmailMessage".'''
 
         groupId = self.getId()
         siteId = self.getProperty('siteId', '')
-        if not siteId:
-            m = u'No site identifier associated with "{0}"'.format(groupId)
-            raise ValueError(m)
         site = getattr(self.site_root().Content, siteId)
-        try:
-            groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-        except:
-            m = u'{0} ({1}): No group found to match listId. This should '\
-                u'not happen.'
-            message = m.format(self.getProperty('title', ''), self.getId())
-            log.error(message)
-            return message
-
+        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         mailString = getMailFromRequest(REQUEST)
+
+        # --=mpj17=-- Because checkMail is the first method called with the
+        # email message it is far more cautious about checking the validity
+        # of the message string.
         try:
             msg = EmailMessage(mailString,
                                list_title=self.getProperty('title', ''),
@@ -716,113 +683,35 @@ calling ``self.listMail``'''
         except ValueError:
             m = u'Could not create an email message in the group "{0}" '\
                 u'with the mail-string starting with\n{1}'
-            message = m.format(groupId, mailString[:256])
-            log.error(message)
+            logMsg = m.format(groupId, mailString[:256])
+            log.error(logMsg)
             raise
-
         try:
             m = u'checkMail: {0} ({1}) checking message from <{2}>'
-            message = m.format(groupInfo.name, groupInfo.id, msg.sender)
-            log.info(message)
+            logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
+            log.info(logMsg)
         except AttributeError:
             m = u'checkMail: problem checking message to "{0}" with the '\
                 u'mail-string starting with\n{1}'
-            message = m.format(groupId, mailString[:256])
-            log.error(message)
+            logMsg = m.format(groupId, mailString[:256])
+            log.error(logMsg)
             raise
 
-        message = u''
-        if self.chk_msg_xmailer_loop(msg):
-            message = u'%s (%s): X-Mailer header detected, a loop is '\
-                      u'likely' % (groupInfo.name, groupInfo.id)
-        elif self.chk_msg_automatic_email(msg):
-            message = u'%s (%s): automated response detected from <%s>' %\
-                      (groupInfo.name, groupInfo.id, msg.get('from', '<>'))
-        elif self.chk_msg_tight_loop(msg):
-            message = u'%s (%s): Detected duplicate message, using tight '\
-                      u'loop, from <%s>' % \
-                      (groupInfo.name, groupInfo.id, msg.get('from'))
-        elif self.chk_msg_disabled(msg):
-            message = u'%s (%s): Email address <%s> is disabled.' %\
-                      (groupInfo.name, groupInfo.id, msg.sender)
-        elif self.chk_msg_spam(mailString):  # --=mpj17=--I moved this far
-            message = u'%s (%s): Spam detected' %\
-                      (groupInfo.name, groupInfo.id)
-        elif self.chk_sender_blacklist(msg):
-            message = '%s (%s): Dropping message from blacklisted '\
-                'address <%s>' % (groupInfo.name, groupInfo.id, msg.sender)
-        if message:
-            assert type(message) == unicode
-            log.warning(message)
-            return message
+        ivm = IsValidMessage(groupInfo.groupObj, msg)
+        if ivm.validMessage:
+            m = u'checkMail: {0} ({1}) message from <{2}> checks ok'
+            logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
+            log.info(logMsg)
+            # Checksum to ensure we are not in a tight loop.
+            # --=mpj17=-- Is this in the right place?
+            self._v_last_email_checksum = msg.post_id
+            retval = None  # Oddly, this is the success value
+        else:
+            retval = ivm.status
+            m = u'checkMail: failed check. status {0}\n{1}'
+            logMsg = m.format(ivm.statusNum, ivm.status)
+            log.warn(logMsg)
 
-        # Check for hosed denial-of-service-vacation mailers
-        # or other infinite mail-loops...
-        email = msg.sender
-        self._v_last_email_checksum = msg.post_id
-
-        # look to see if we have a custom_mailcheck hook. If so, call it.
-        # custom_mailcheck should return True if the message is to be
-        # blocked
-        custom_mailcheck = getattr(self, 'custom_mailcheck', None)
-        if custom_mailcheck:
-            if custom_mailcheck(mailinglist=self, sender=email, header=msg,
-                                body=msg.body):
-                return message
-
-        m = u'checkMail: %s (%s) message from <%s> checks ok' %\
-            (groupInfo.name, groupInfo.id, msg.sender)
-        log.info(m)
-        return None
-
-    def chk_request_from_allowed_mta_hosts(self, REQUEST):
-        '''Check if the request comes from one of the allowed Mail Transfer
-        Agent host-machines.
-        '''
-        retval = True
-        mtahosts = self.getValueFor('mtahosts')
-        if mtahosts:
-            if 'HTTP_X_FORWARDED_FOR' in self.REQUEST.environ.keys():
-                REMOTE_IP = self.REQUEST.environ['HTTP_X_FORWARDED_FOR']
-            else:
-                REMOTE_IP = self.REQUEST.environ['REMOTE_ADDR']
-
-            retval = REMOTE_IP in mtahosts
-
-        if not retval:
-            message = u'%s (%s): Host %s is not allowed' %\
-                (self.getProperty('title', ''), self.getId(), REMOTE_IP)
-            log.info(message)
-
-        assert type(retval) == bool
-        return retval
-
-    def chk_msg_xmailer_loop(self, msg):
-        '''Check to see if the x-mailer header is one that GroupServer
-        set'''
-        retval = msg.get('x-mailer') == self.getValueFor('xmailer')
-        assert type(retval) == bool
-        return retval
-
-    def chk_msg_disabled(self, msg):
-        '''Check if the email is from a disabled email address'''
-        disabled = list(self.getValueFor('disabled'))
-        retval = msg.sender in disabled
-        assert type(retval) == bool
-        return retval
-
-    def chk_msg_automatic_email(self, msg):
-        '''Check for empty return-path, which implies automatic mail'''
-        retval = msg.get('return-path') == '<>'
-        assert type(retval) == bool
-        return retval
-
-    def chk_msg_tight_loop(self, msg):
-        assert hasattr(self, '_v_last_email_checksum'),\
-            "no _v_last_email_checksum"
-        retval = self._v_last_email_checksum and \
-            (self._v_last_email_checksum == msg.post_id) or False
-        assert type(retval) == bool, "type was %s, not bool" % type(retval)
         return retval
 
     def chk_msg_spam(self, mailString):
@@ -836,13 +725,6 @@ calling ``self.listMail``'''
                 log.info(u'%s matches message' % regexp)
                 retval = True
                 break
-        assert type(retval) == bool
-        return retval
-
-    def chk_sender_blacklist(self, msg):
-        # See Ticket 459 <https://projects.iopen.net/groupserver/ticket/459>
-        memberQuery = MemberQuery(self)
-        retval = memberQuery.address_is_blacklisted(msg.sender)
         assert type(retval) == bool
         return retval
 
