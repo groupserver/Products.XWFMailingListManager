@@ -23,7 +23,6 @@ from inspect import stack as inspect_stack
 from logging import getLogger
 log = getLogger('XWFMailingList')
 from random import random
-from re import search
 # import transaction  # See line 1560 below
 from zope.component import createObject, getMultiAdapter
 from zope.globalrequest import getRequest
@@ -35,7 +34,7 @@ from gs.core import to_ascii
 from gs.group.member.canpost import (
     IGSPostingUser, Notifier as CanPostNotifier, UnknownEmailNotifier)
 from gs.profile.notify import NotifyUser
-from gs.group.list.check import IsValidMessage
+from gs.group.list.check.interfaces import IGSValidMessage
 from gs.group.list.command import process_command, CommandResult
 from gs.group.list.sender import Sender
 from gs.group.list.email.text import Post
@@ -697,7 +696,7 @@ calling ``self.listMail``'''
             log.error(logMsg)
             raise
 
-        ivm = IsValidMessage(groupInfo.groupObj, msg)
+        ivm = getMultiAdapter((groupInfo.groupObj, msg), IGSValidMessage)
         if ivm.validMessage:
             m = u'checkMail: {0} ({1}) message from <{2}> checks ok'
             logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
@@ -712,20 +711,6 @@ calling ``self.listMail``'''
             logMsg = m.format(ivm.statusNum, ivm.status)
             log.warn(logMsg)
 
-        return retval
-
-    def chk_msg_spam(self, mailString):
-        '''Check if the message is "spam". Actually, check if the message
-        matches the list of banned regular expressions. This is normally
-        used to prevent out-of-office autoreply messages hitting the list.
-        '''
-        retval = False  # Uncharacteristic optimism
-        for regexp in self.getValueFor('spamlist'):
-            if regexp and search(regexp, mailString):
-                log.info(u'%s matches message' % regexp)
-                retval = True
-                break
-        assert type(retval) == bool
         return retval
 
     def requestMail(self, REQUEST):
