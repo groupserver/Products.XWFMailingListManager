@@ -12,10 +12,7 @@
 # FOR A PARTICULAR PURPOSE.
 #
 ############################################################################
-#
-# This code is based heavily on the MailBoxer product, under the GPL.
-#
-from __future__ import absolute_import
+from __future__ import absolute_import, unicode_literals
 from cgi import escape
 from email import message_from_string
 from email.parser import Parser
@@ -43,7 +40,7 @@ from Products.XWFCore.XWFUtils import (
     removePathsFromFilenames, get_group_by_siteId_and_groupId)
 from Products.GSGroup.groupInfo import IGSGroupInfo
 from .emailmessage import RDBFileMetadataStorage
-from .intefaces import IRDBStorageForEmailMessage
+from .interfaces import IRDBStorageForEmailMessage
 from .queries import MemberQuery, MessageQuery
 from .utils import pin, getMailFromRequest
 from .MailBoxerTools import lowerList, splitMail
@@ -99,9 +96,8 @@ class XWFMailingList(Folder):
         """ Tidy up the property sheet, since we don't want to control most
         of the properties that have already been defined in the parent
         MailingListManager."""
-        delete_properties = filter(lambda x:
-                                   x not in self.mailinglist_properties,
-                                   self.propertyIds())
+        delete_properties = [x for x in self.propertyIds()
+                             if x not in self.mailinglist_properties]
         props = []
         for item in self._properties:
             if item['id'] not in delete_properties:
@@ -396,8 +392,8 @@ assuming we can."""
         return self.getId()
 
     def listMail(self, REQUEST):
-        '''Store a message and send it. Shifted from MailBoxer till
-reintegration project'''
+        '''Store a message and send it. Named for the old MailBoxer
+        method'''
 
         # Send a mail to all members of the list.
         mailString = getMailFromRequest(REQUEST)
@@ -687,25 +683,25 @@ calling ``self.listMail``'''
                                site_id=siteId,
                                sender_id_cb=self.get_mailUserId)
         except ValueError:
-            m = u'Could not create an email message in the group "{0}" '\
-                u'with the mail-string starting with\n{1}'
+            m = 'Could not create an email message in the group "{0}" '\
+                'with the mail-string starting with\n{1}'
             logMsg = m.format(groupId, mailString[:256])
             log.error(logMsg)
             raise
         try:
-            m = u'checkMail: {0} ({1}) checking message from <{2}>'
+            m = 'checkMail: {0} ({1}) checking message from <{2}>'
             logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
             log.info(logMsg)
         except AttributeError:
-            m = u'checkMail: problem checking message to "{0}" with the '\
-                u'mail-string starting with\n{1}'
+            m = 'checkMail: problem checking message to "{0}" with the '\
+                'mail-string starting with\n{1}'
             logMsg = m.format(groupId, mailString[:256])
             log.error(logMsg)
             raise
 
         ivm = getMultiAdapter((groupInfo.groupObj, msg), IGSValidMessage)
         if ivm.validMessage:
-            m = u'checkMail: {0} ({1}) message from <{2}> checks ok'
+            m = 'checkMail: {0} ({1}) message from <{2}> checks ok'
             logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
             log.info(logMsg)
             # Checksum to ensure we are not in a tight loop.
@@ -714,7 +710,7 @@ calling ``self.listMail``'''
             retval = None  # Oddly, this is the success value
         else:
             retval = ivm.status
-            m = u'checkMail: failed check. status {0}\n{1}'
+            m = 'checkMail: failed check. status {0}\n{1}'
             logMsg = m.format(ivm.statusNum, ivm.status)
             log.warn(logMsg)
 
