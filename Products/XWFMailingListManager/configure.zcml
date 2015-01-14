@@ -2,20 +2,20 @@
 <configure xmlns="http://namespaces.zope.org/zope"
            xmlns:browser="http://namespaces.zope.org/browser"
            xmlns:five="http://namespaces.zope.org/five">
-  
+
   <five:deprecatedManageAddDelete
     class="Products.XWFMailingListManager.XWFMailingListManager.XWFMailingListManager" />
   <five:deprecatedManageAddDelete
     class="Products.XWFMailingListManager.XWFVirtualMailingListArchive2.XWFVirtualMailingListArchive2" />
-  
-  <!-- declare a marker interface on the Folder class to allow us 
+
+  <!-- declare a marker interface on the Folder class to allow us
     to add marker Interfaces, views and adaptation -->
   <class class="OFS.Folder.Folder">
-      <implements interface="zope.app.folder.interfaces.IFolder" />
+    <implements interface="zope.app.folder.interfaces.IFolder" />
   </class>
-  <class 
+  <class
     class=".XWFVirtualMailingListArchive2.XWFVirtualMailingListArchive2">
-      <implements interface=".interfaces.IGSMessagesFolder" />
+    <implements interface=".interfaces.IGSMessagesFolder" />
   </class>
 
   <browser:page
@@ -23,13 +23,18 @@
     for=".interfaces.IGSMessagesFolder"
     class=".messagesredirect.GSMessagesRedirect"
     permission="zope2.View" />
-  
+
   <!-- A marker interface -->
   <interface interface=".interfaces.IGSMessagesFolder"
              type="zope.app.content.interfaces.IContentType" />
-  
-  <adapter for=".emailmessage.IEmailMessage"
-           factory=".emailmessage.RDBEmailMessageStorage"
-           provides=".emailmessage.IRDBStorageForEmailMessage" />
+
+  <class class=".messagestore.EmailMessageStore">
+    <implements interface=".interfaces.IRDBStorageForEmailMessage" />
+  </class>
+
+  <adapter
+    for="gs.group.list.base.interfaces.IEmailMessage"
+    factory=".messagestore.store_from_message"
+    provides=".interfaces.IRDBStorageForEmailMessage" />
 
 </configure>
