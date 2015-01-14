@@ -85,21 +85,21 @@ class XWFMailingList(Folder):
         self.mailto = mailto
 
     def valid_property_id(self, id):
-        # A modified version of the 'valid_property_id' in the PropertyManager
-        # class. This one _doesn't_ check for the existence of the ID,
-        # since it might exist in our base class, and we can't remove
-        # things from there
+        # A modified version of the 'valid_property_id' in the
+        # PropertyManager class. This one _doesn't_ check for the existence
+        # of the ID, since it might exist in our base class, and we can't
+        # remove things from there
         if ((not id or id[:1] == '_') or (id[:3] == 'aq_')
            or (' ' in id) or (escape(id) != id)):
             return False
         return True
 
     def init_properties(self):
-        """ Tidy up the property sheet, since we don't want to control most of
-        the properties that have already been defined in the parent
+        """ Tidy up the property sheet, since we don't want to control most
+        of the properties that have already been defined in the parent
         MailingListManager."""
         delete_properties = filter(lambda x:
-                                    x not in self.mailinglist_properties,
+                                   x not in self.mailinglist_properties,
                                    self.propertyIds())
         props = []
         for item in self._properties:
@@ -287,15 +287,17 @@ assuming we can."""
             return uids
 
         # AM: Avoid nastiness associated with empty strings and null users
-        users = filter(lambda x: x, [ self.acl_users.getUser(uid) for uid in uids if uid ])
+        users = [x for x in [self.acl_users.getUser(uid)
+                             for uid in uids if uid] if x]
 
         return users
 
-    security.declareProtected('Manage properties', 'get_moderatorUserObjects')
-    def get_moderatorUserObjects(self, ids_only=False):
-        """ Get the user objects corresponding to the moderator, assuming we can.
+    security.declareProtected('Manage properties',
+                              'get_moderatorUserObjects')
 
-        """
+    def get_moderatorUserObjects(self, ids_only=False):
+        """ Get the user objects corresponding to the moderator, assuming
+        we can."""
         member_groups = self.getProperty('moderator_groups', [])
         uids = []
         for gid in member_groups:
@@ -308,7 +310,8 @@ assuming we can."""
             return uids
 
         # AM: Avoid nastiness associated with empty strings and null users
-        users = filter(lambda x: x, [ self.acl_users.getUser(uid) for uid in uids if uid ])
+        users = [x for x in [self.acl_users.getUser(uid)
+                             for uid in uids if uid] if x]
 
         return users
 
@@ -496,8 +499,8 @@ calling ``self.listMail``'''
         memberlist = lowerList(self.getValueFor('maillist'))
 
         # Get individually moderated members
-        moderatedlist = filter(None,
-                               lowerList(self.getValueFor('moderatedlist') or []))
+        ml = self.getValueFor('moderatedlist') or []
+        moderatedlist = [_f for _f in lowerList(ml) if _f]
 
         unclosed = self.getValueFor('unclosed')
 
@@ -554,9 +557,11 @@ calling ``self.listMail``'''
             # FIXME: Moderation *totally* broken for the unclosed case
             #
             moderatedUser = self.acl_users.getUser(msg.sender_id)
-            assert moderatedUser, 'Moderated user %s not found' % msg.sender_id
+            assert moderatedUser, 'Moderated user %s not found' % \
+                msg.sender_id
 
             moderators = self.get_moderatorUserObjects()
+            mun = moderatedUser.getProperty('fn', '')
             for moderator in moderators:
                 nDict = {
                     'mailingList': self,
@@ -571,26 +576,27 @@ calling ``self.listMail``'''
                     'body': msg.body,
                     'absolute_url': self.absolute_url(),
                     'moderatedUserId': msg.sender_id,
-                    'moderatedUserName': moderatedUser.getProperty('fn','')}
+                    'moderatedUserName': mun}
                 notify = NotifyUser(moderator)
                 notify.send_notification('mail_moderator', 'default',
-                    n_dict=nDict)
+                                         n_dict=nDict)
 
-            nDict = {'mailingList': self,
-              'pin': pin(self.getValueFor('mailto'),
-                          self.getValueFor('hashkey')),
-              'moderatedUserAddress': msg.sender,
-              'groupName': self.title,
-              'groupEmail': self.getValueFor('mailto'),
-              'subject': msg.subject,
-              'mid': msg.post_id,
-              'body': msg.body,
-              'absolute_url': self.absolute_url(),
-              'moderatedUserName': moderatedUser.getProperty('fn','')}
+            nDict = {
+                'mailingList': self,
+                'pin': pin(self.getValueFor('mailto'),
+                           self.getValueFor('hashkey')),
+                'moderatedUserAddress': msg.sender,
+                'groupName': self.title,
+                'groupEmail': self.getValueFor('mailto'),
+                'subject': msg.subject,
+                'mid': msg.post_id,
+                'body': msg.body,
+                'absolute_url': self.absolute_url(),
+                'moderatedUserName': moderatedUser.getProperty('fn', '')}
 
             notify = NotifyUser(moderatedUser)
-            notify.send_notification('mail_moderated_user',
-              'default', n_dict=nDict)
+            notify.send_notification('mail_moderated_user', 'default',
+                                     n_dict=nDict)
 
             return msg.sender
 
