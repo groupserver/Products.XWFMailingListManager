@@ -1,40 +1,24 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
+############################################################################
+#
+# Copyright © 2013, 2014, 2015 OnlineGroups.net and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+############################################################################
+from __future__ import absolute_import, unicode_literals
 from zope.interface import Interface
-from zope.schema import Bool, Bytes, Choice, Field, Int, Text, TextLine 
+
 
 class IGSMessagesFolder(Interface):
     pass
 
-class IGSTopicView(Interface):
-    pass
 
-class IGSPostView(Interface):
+class IRDBStorageForEmailMessage(Interface):
     pass
-                              
-class IGSPostMessageContentProvider(Interface):
-    """A content provider for the "Add to Topic" and "Start Topic" forms"""
-    startNew = Bool(title=u'Start a New Topic',
-                    description=u'Set to "True" if a new topic is started',
-                    required=False,
-                    default=True)
-    topic = Text(title=u"Topic",
-                 description=u"The topic that the new post is added to",
-                 required=False, 
-                 default=u'Enter your new topic here')
-    groupInfo = Field(title=u"Group Information",
-                     description=u"Information about the group",
-                     required=True,
-                     default=None)
-    siteInfo = Field(title=u"Site Information",
-                     description=u"Information about the site",
-                     required=True, 
-                     default=None)
-    replyToId = Text(title=u'Reply-To Post Identifier',
-                     description=u'Used when adding to a topic',
-                     required=False,
-                     default=u'')
-    pageTemplateFileName = Text(title=u"Page Template File Name",
-                                description=u"""The name of the ZPT file
-                                that is used to render the post.""",
-                                required=False,
-                                default=u"browser/templates/postMessage.pt")

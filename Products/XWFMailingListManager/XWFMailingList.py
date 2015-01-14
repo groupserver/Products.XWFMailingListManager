@@ -42,7 +42,8 @@ from gs.group.list.email.text import Post
 from Products.XWFCore.XWFUtils import (
     removePathsFromFilenames, get_group_by_siteId_and_groupId)
 from Products.GSGroup.groupInfo import IGSGroupInfo
-from .emailmessage import IRDBStorageForEmailMessage, RDBFileMetadataStorage
+from .emailmessage import RDBFileMetadataStorage
+from .intefaces import IRDBStorageForEmailMessage
 from .queries import MemberQuery, MessageQuery
 from .utils import pin, getMailFromRequest
 from .MailBoxerTools import lowerList, splitMail
