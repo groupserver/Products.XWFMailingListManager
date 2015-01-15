@@ -34,13 +34,12 @@ from gs.profile.notify import NotifyUser
 from gs.group.list.base import EmailMessage
 from gs.group.list.check.interfaces import IGSValidMessage
 from gs.group.list.command import process_command, CommandResult
-from gs.group.list.sender import Sender
 from gs.group.list.email.text import Post
+from gs.group.list.sender import Sender
+from gs.group.list.store.interfaces import IRDBStorageForEmailMessage
 from Products.XWFCore.XWFUtils import (
     removePathsFromFilenames, get_group_by_siteId_and_groupId)
 from Products.GSGroup.groupInfo import IGSGroupInfo
-from .emailmessage import RDBFileMetadataStorage
-from .interfaces import IRDBStorageForEmailMessage
 from .queries import MemberQuery, MessageQuery
 from .utils import pin, getMailFromRequest
 from .MailBoxerTools import lowerList, splitMail

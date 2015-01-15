@@ -18,7 +18,3 @@ from zope.interface import Interface
 
 class IGSMessagesFolder(Interface):
     pass
-
-
-class IRDBStorageForEmailMessage(Interface):
-    pass

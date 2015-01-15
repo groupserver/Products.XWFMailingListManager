@@ -28,13 +28,4 @@
   <interface interface=".interfaces.IGSMessagesFolder"
              type="zope.app.content.interfaces.IContentType" />
 
-  <class class=".messagestore.EmailMessageStore">
-    <implements interface=".interfaces.IRDBStorageForEmailMessage" />
-  </class>
-
-  <adapter
-    for="gs.group.list.base.interfaces.IEmailMessage"
-    factory=".messagestore.store_from_message"
-    provides=".interfaces.IRDBStorageForEmailMessage" />
-
 </configure>

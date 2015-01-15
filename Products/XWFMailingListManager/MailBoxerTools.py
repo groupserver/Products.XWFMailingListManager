@@ -18,10 +18,11 @@
 #####
 
 import StringIO, re, rfc822, multifile, mimetools, mimify
-from html2txt import convert_to_txt
+from gs.group.list.base.html2txt import convert_to_txt
+
 
 def splitMail(mailString):
-    """ returns (header,body) of a mail given as string 
+    """ returns (header,body) of a mail given as string
     """
     msg = mimetools.Message(StringIO.StringIO(str(mailString)))
 
@@ -29,7 +30,7 @@ def splitMail(mailString):
     mailHeader = {}
     for (key,value) in msg.items():
         mailHeader[key] = value
-        
+
     # Get body
     msg.rewindbody()
     mailBody = msg.fp.read()
@@ -61,7 +62,7 @@ def parseaddrList(header):
     """ wrapper for rfc822.AddressList, returns list of (name, addr)
     """
     return list(rfc822.AddressList(header))
-    
+
 
 def lowerList(stringlist):
     """ lowers all items of a list
@@ -71,7 +72,7 @@ def lowerList(stringlist):
 
 def getPlainBodyFromMail(mailString):
     """ get content-type and body from mail given as string
-    """    
+    """
     (textBody,
      contentType,
      htmlBody,
@@ -85,26 +86,26 @@ def getPlainBodyFromMail(mailString):
         if match:
             charset="charset=%s;" % match.group(1)
         return ('text/plain;%s' % charset, convert_to_txt(htmlBody))
-    
+
 
 def headersAsString(mailString, customHeaders={}):
     """ returns the headers as a string, optionally patching the headers with
         custom headers.
-	
+
     """
     msg = mimetools.Message(StringIO.StringIO(mailString))
     # patch the headers with our custom headers
     for hdr in customHeaders.keys():
         msg[hdr] = customHeaders[hdr]
-    
+
     return str(msg).strip()
 
 
 def unpackMail(mailString):
     """ returns body, content-type, html-body and attachments for mail-string.
-    """    
+    """
     return unpackMultifile(multifile.MultiFile(StringIO.StringIO(mailString)))
-    
+
 
 def unpackMultifile(multifile, attachments=()):
     """ Unpack multifile into plainbody, content-type, htmlbody and attachments.
@@ -144,7 +145,7 @@ def unpackMultifile(multifile, attachments=()):
 
             if tmpHtmlBody:
                 htmlBody = tmpHtmlBody
-        
+
             if tmpAttachments:
                 attachments = tmpAttachments
 
@@ -172,12 +173,12 @@ def unpackMultifile(multifile, attachments=()):
         if not name:
             name = '%s.%s' % (maintype,subtype)
             htmlBody = body
-        
+
         attachments.append({'filename' : mime_decode_header(name),
                             'content-id': mime_decode_header(msg.get('content-id','')),
                             'filebody' : body,
                             'maintype' : maintype,
                             'subtype' : subtype})
-            
+
     return (textBody, contentType, htmlBody, tuple(attachments))
 
