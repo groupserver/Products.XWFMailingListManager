@@ -416,23 +416,22 @@ assuming we can."""
     def listMail(self, msg):
         '''Store a message and send it. Named for the old MailBoxer
         method'''
-
-        # Send a mail to all members of the list.
-        # TODO: Audit
-        m = 'listMail: Processing message in group "%s", post id "%s" '\
-            'from <%s>' % (self.getId(), msg.post_id, msg.sender)
-        log.info(m)
-
-        # store mail in the archive? get context for the mail...
-        storage = IStorageForEmailMessage(msg)
-        post_id = msg.post_id
-        (post_id, file_ids) = storage.manage_addMail(msg)
-
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         r = getRequest()  # The actual Zope request; FIXME
+
+        # Send a mail to all members of the list.
+        # TODO: Audit
+        m = 'listMail: Storing message in group "%s", post id "%s" '\
+            'from <%s>' % (self.getId(), msg.post_id, msg.sender)
+        log.info(m)
+
+        # store mail in the archive? get context for the mail...
+        storage = getMultiAdapter((groupInfo, msg), IStorageForEmailMessage)
+        post_id = msg.post_id
+        (post_id, file_ids) = storage.manage_addMail(msg)
 
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
