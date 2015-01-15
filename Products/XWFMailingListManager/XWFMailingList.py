@@ -36,9 +36,8 @@ from gs.group.list.check.interfaces import IGSValidMessage
 from gs.group.list.command import process_command, CommandResult
 from gs.group.list.email.text import Post
 from gs.group.list.sender import Sender
-from gs.group.list.store.interfaces import IRDBStorageForEmailMessage
-from Products.XWFCore.XWFUtils import (
-    removePathsFromFilenames, get_group_by_siteId_and_groupId)
+from gs.group.list.store.interfaces import IStorageForEmailMessage
+from Products.XWFCore.XWFUtils import (get_group_by_siteId_and_groupId)
 from Products.GSGroup.groupInfo import IGSGroupInfo
 from .queries import MemberQuery, MessageQuery
 from .utils import pin, getMailFromRequest
@@ -123,15 +122,16 @@ class XWFMailingList(Folder):
 Handles (un)subscription-requests and checks for loops etc & bulks mails to
 list. Checks that the message can be processed, checks for an email command,
 checks that the person can post, and then processes the email."""
-        if self.checkMail(REQUEST):
+        message = self.message_from_request(REQUEST)
+        if self.checkMail(message):
             return FALSE  # This code predates False...
         # Check for subscription/unsubscription-request
-        if self.requestMail(REQUEST):
+        if self.requestMail(message, REQUEST):
             return TRUE  # ...and True
-        if self.cannotPost(REQUEST):
+        if self.cannotPost(message, REQUEST):
             return TRUE
         # Process the mail...
-        retval = self.processMail(REQUEST)
+        retval = self.processMail(message, REQUEST)
         return retval
 
     security.declareProtected('View', 'manage_listboxer')
@@ -147,14 +147,37 @@ Puts a mail into archive and then bulks it to all members on list. Assumes
 
 If any of these does not hold (as in, this is an email not a post from the
 Web) then ``manage_mailboxer`` should be used."""
-
-        if self.checkMail(REQUEST):
+        message = self.message_from_request(REQUEST)
+        if self.checkMail(message):
             retval = False
         else:
-            retval = self.listMail(REQUEST)
+            retval = self.listMail(message)
         return retval
 
     security.declareProtected('View', 'manage_moderateMail')
+
+    def message_from_request(self, REQUEST):
+        ''''''
+        groupId = self.getId()
+        siteId = self.getProperty('siteId', '')
+        mailString = getMailFromRequest(REQUEST)
+
+        # --=mpj17=-- Because checkMail is the first method called with the
+        # email message it is far more cautious about checking the validity
+        # of the message string.
+        try:
+            retval = EmailMessage(
+                mailString, list_title=self.getProperty('title', ''),
+                group_id=groupId, site_id=siteId,
+                sender_id_cb=self.get_mailUserId)
+        except ValueError:
+            m = 'Could not create an email message in the group "{0}" '\
+                'with the mail-string starting with\n{1}'
+            logMsg = m.format(groupId, mailString[:256])
+            log.error(logMsg)
+            raise
+        assert retval, 'Failed to generate the message from the request'
+        return retval
 
     def manage_moderateMail(self, REQUEST):
         """ Approves / discards a mail for a moderated list. """
@@ -390,26 +413,20 @@ assuming we can."""
         track which email belongs to which list."""
         return self.getId()
 
-    def listMail(self, REQUEST):
+    def listMail(self, msg):
         '''Store a message and send it. Named for the old MailBoxer
         method'''
 
         # Send a mail to all members of the list.
-        mailString = getMailFromRequest(REQUEST)
-        msg = EmailMessage(
-            mailString,
-            list_title=self.getProperty('title', ''),
-            group_id=self.getId(),
-            site_id=self.getProperty('siteId', ''),
-            sender_id_cb=self.get_mailUserId)
         # TODO: Audit
         m = 'listMail: Processing message in group "%s", post id "%s" '\
             'from <%s>' % (self.getId(), msg.post_id, msg.sender)
         log.info(m)
 
         # store mail in the archive? get context for the mail...
+        storage = IStorageForEmailMessage(msg)
         post_id = msg.post_id
-        (post_id, file_ids) = self.manage_addMail(msg)
+        (post_id, file_ids) = storage.manage_addMail(msg)
 
         siteId = self.getProperty('siteId', '')
         groupId = self.getId()
@@ -428,24 +445,14 @@ assuming we can."""
 
         return post_id
 
-    def processMail(self, REQUEST):
+    def processMail(self, msg, REQUEST):
         '''Do all the moderation processing, then list the message by
 calling ``self.listMail``'''
         # Zeroth sanity check ... herein lies only madness.
         m = 'processMail: list (%s)' % self.getId()
         log.info(m)
 
-        # Checks if member is allowed to send a mail to list
-        mailString = getMailFromRequest(REQUEST)
-
-        msg = EmailMessage(
-            mailString, list_title=self.getProperty('title', ''),
-            group_id=self.getId(),
-            site_id=self.getProperty('siteId', ''),
-            sender_id_cb=self.get_mailUserId)
-
-        (header, body) = splitMail(mailString)
-
+        # FIXME: Should be in gs.group.list.check
         # First sanity check ... have we already archived this message?
         messageQuery = MessageQuery(self)
         if messageQuery.post(msg.post_id):
@@ -457,7 +464,6 @@ calling ``self.listMail``'''
 
         # get lower case email for comparisons
         email = msg.sender
-
         # Get moderators
         moderatorlist = lowerList(self.getValueFor('moderator'))
         if self.getValueFor('moderated') and (email not in moderatorlist):
@@ -472,7 +478,7 @@ calling ``self.listMail``'''
                 return modresult
             # --=mpj17=-- No else?
 
-        retval = self.listMail(REQUEST)
+        retval = self.listMail(msg)
         return retval
 
     def processModeration(self, REQUEST):
@@ -596,62 +602,7 @@ calling ``self.listMail``'''
 
             return msg.sender
 
-    security.declareProtected('Add Folders', 'manage_addMail')
-
-    def manage_addMail(self, msg):
-        """ Store mail & attachments in a folder and return it."""
-        ids = []
-        for attachment in msg.attachments:
-            if ((attachment['filename'] == '')
-                    and (attachment['subtype'] == 'plain')):
-                # We definately don't want to save the plain text body
-                # again!
-                pass
-            elif ((attachment['filename'] == '')
-                    and (attachment['subtype'] == 'html')):
-                # We might want to do something with the HTML body some day,
-                # but we archive the HTML body here, as it suggests in the
-                # log message. The HTML body is archived along with the
-                # plain text body.
-                m = '%s (%s): archiving HTML message.' % \
-                    (self.getProperty('title'), self.getId())
-                log.info(m)
-            elif attachment['contentid'] and (attachment['filename'] == ''):
-                # TODO: What do we want to do with these? They are typically
-                # part of an HTML message, for example the images, but what
-                # should we do with them once we've stripped them?
-                m = '%s (%s): stripped, but not archiving %s attachment '\
-                    '%s; it appears to be part of an HTML message.' % \
-                    (self.getProperty('title'), self.getId(),
-                     attachment['maintype'], attachment['filename'])
-                log.info(m)
-            elif attachment['length'] <= 0:
-                # Empty attachment. Kinda pointless archiving this!
-                m = '%s (%s): stripped, but not archiving %s attachment '\
-                    '%s; attachment was of zero size.' % \
-                    (self.getProperty('title'), self.getId(),
-                     attachment['maintype'], attachment['filename'])
-                log.warn(m)
-            else:
-                m = '%s (%s): stripped and archiving %s attachment %s' %\
-                    (self.getProperty('title'), self.getId(),
-                     attachment['maintype'], attachment['filename'])
-                log.info(m)
-
-                nid = self.addGSFile(attachment['filename'], msg.subject,
-                                     msg.sender_id, attachment['payload'],
-                                     attachment['mimetype'])
-                ids.append(nid)
-
-        msgstorage = IRDBStorageForEmailMessage(msg)
-        msgstorage.insert()
-
-        filemetadatastorage = RDBFileMetadataStorage(self, msg, ids)
-        filemetadatastorage.insert()
-
-        return (msg.post_id, ids)
-
-    def checkMail(self, REQUEST):
+    def checkMail(self, msg):
         '''Check the email for loops and spam.
 
         The work of this method is mostly done by the gs.group.list.check
@@ -670,31 +621,14 @@ calling ``self.listMail``'''
         siteId = self.getProperty('siteId', '')
         site = getattr(self.site_root().Content, siteId)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-        mailString = getMailFromRequest(REQUEST)
 
-        # --=mpj17=-- Because checkMail is the first method called with the
-        # email message it is far more cautious about checking the validity
-        # of the message string.
-        try:
-            msg = EmailMessage(mailString,
-                               list_title=self.getProperty('title', ''),
-                               group_id=groupId,
-                               site_id=siteId,
-                               sender_id_cb=self.get_mailUserId)
-        except ValueError:
-            m = 'Could not create an email message in the group "{0}" '\
-                'with the mail-string starting with\n{1}'
-            logMsg = m.format(groupId, mailString[:256])
-            log.error(logMsg)
-            raise
         try:
             m = 'checkMail: {0} ({1}) checking message from <{2}>'
             logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
             log.info(logMsg)
         except AttributeError:
-            m = 'checkMail: problem checking message to "{0}" with the '\
-                'mail-string starting with\n{1}'
-            logMsg = m.format(groupId, mailString[:256])
+            m = 'checkMail: problem checking message to "{0}"'
+            logMsg = m.format(groupId)
             log.error(logMsg)
             raise
 
@@ -715,15 +649,8 @@ calling ``self.listMail``'''
 
         return retval
 
-    def requestMail(self, REQUEST):
+    def requestMail(self, msg, REQUEST):
         'Handle the email commands'
-        mailString = getMailFromRequest(REQUEST)
-
-        msg = EmailMessage(mailString,
-                           list_title=self.getProperty('title', ''),
-                           group_id=self.getId(),
-                           site_id=self.getProperty('siteId', ''),
-                           sender_id_cb=self.get_mailUserId)
         # get subject
         # get email-address
         email = msg.sender
@@ -732,20 +659,15 @@ calling ``self.listMail``'''
         groupId = self.getId()
         site = getattr(self.site_root().Content, siteId)
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
+        mailString = msg.message.as_string()
         r = process_command(groupInfo.groupObj, mailString, REQUEST)
         if r == CommandResult.commandStop:
             return email
 
-    def cannotPost(self, REQUEST):
-        mailString = getMailFromRequest(REQUEST)
+    def cannotPost(self, msg, REQUEST):
         groupId = self.getId()
         siteId = self.getProperty('siteId', '')
 
-        msg = EmailMessage(mailString,
-                           list_title=self.getProperty('title', ''),
-                           group_id=groupId,
-                           site_id=siteId,
-                           sender_id_cb=self.get_mailUserId)
         userInfo = createObject('groupserver.UserFromId',
                                 self.site_root(), msg.sender_id)
         site = getattr(self.site_root().Content, siteId)
@@ -758,6 +680,7 @@ calling ``self.listMail``'''
             log.warning(message)
             notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
             siteInfo = createObject('groupserver.SiteInfo', site)
+            mailString = msg.message.as_string()
             notifier.notify(userInfo, siteInfo, groupInfo,
                             mailString)
             return message
@@ -797,30 +720,6 @@ calling ``self.listMail``'''
             (groupInfo.name, groupInfo.id, emailAddress)
         log.info(m)
 
-    def addGSFile(self, title, topic, creator, data, content_type):
-        """ Adds an attachment as a file.
-
-        """
-        # TODO: group ID should be more robust
-        group_id = self.getId()
-        storage = self.FileLibrary2.get_fileStorage()
-        fileId = storage.add_file(data)
-        fileObj = storage.get_file(fileId)
-        fixedTitle = removePathsFromFilenames(title)
-        fileObj.manage_changeProperties(
-            content_type=content_type, title=fixedTitle,
-            tags=['attachment'], group_ids=[group_id],
-            dc_creator=creator, topic=topic)
-        fileObj.reindex_file()
-        #
-        # Commit the ZODB transaction -- this basically makes it impossible
-        # for us to rollback, but since our RDB transactions won't be rolled
-        # back anyway, we do this so we don't have dangling metadata.
-        #
-        # --=mpj17=-- But it caused death on my local box. So I am
-        # experimenting with commenting it out.
-        # transaction.commit()
-        return fileId
 
 manage_addXWFMailingListForm = PageTemplateFile(
     'management/manage_addXWFMailingListForm.zpt',
