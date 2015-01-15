@@ -431,7 +431,7 @@ assuming we can."""
         # store mail in the archive? get context for the mail...
         storage = getMultiAdapter((groupInfo, msg), IStorageForEmailMessage)
         post_id = msg.post_id
-        (post_id, file_ids) = storage.manage_addMail(msg)
+        (post_id, file_ids) = storage.store()
 
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
