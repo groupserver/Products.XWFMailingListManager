@@ -422,22 +422,25 @@ assuming we can."""
         groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         r = getRequest()  # The actual Zope request; FIXME
 
-        # Send a mail to all members of the list.
-        # TODO: Audit
-        m = 'listMail: Storing message in group "%s", post id "%s" '\
-            'from <%s>' % (self.getId(), msg.post_id, msg.sender)
-        log.info(m)
-
-        # store mail in the archive? get context for the mail...
+        # Store mail in the archive
         storage = getMultiAdapter((groupInfo, msg), IStorageForEmailMessage)
         storage.store()
 
+        # Build the new message, using the headers from the old message
+        m = 'Buiding a new email for post "{0}" in {1} ({2}) on {3}'
+        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id, siteId)
+        log.info(logMsg)
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
         p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
         textPage = getMultiAdapter((p, r), name='text')
         textBody = textPage()
         e.set_payload(textBody, 'utf-8')
+
+        # Send the new pessage
+        m = 'Sending an email for post "{0}" in {1} ({2}) on {3}'
+        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id, siteId)
+        log.info(logMsg)
         sender = Sender(groupInfo.groupObj, r)
         sender.send(e)
 
