@@ -162,7 +162,7 @@ Web) then ``manage_mailboxer`` should be used."""
         siteId = self.getProperty('siteId', '')
         mailString = getMailFromRequest(REQUEST)
 
-        # --=mpj17=-- Because checkMail is the first method called with the
+        # --=mpj17=-- Because this is the first method called with the
         # email message it is far more cautious about checking the validity
         # of the message string.
         try:
@@ -430,19 +430,18 @@ assuming we can."""
 
         # store mail in the archive? get context for the mail...
         storage = getMultiAdapter((groupInfo, msg), IStorageForEmailMessage)
-        post_id = msg.post_id
-        (post_id, file_ids) = storage.store()
+        storage.store()
 
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
-        p = Post(groupInfo.groupObj.messages, groupInfo, post_id)
+        p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
         textPage = getMultiAdapter((p, r), name='text')
         textBody = textPage()
         e.set_payload(textBody, 'utf-8')
         sender = Sender(groupInfo.groupObj, r)
         sender.send(e)
 
-        return post_id
+        return msg.post_id
 
     def processMail(self, msg, REQUEST):
         '''Do all the moderation processing, then list the message by
