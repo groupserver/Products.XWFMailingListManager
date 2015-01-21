@@ -21,6 +21,7 @@ from logging import getLogger
 log = getLogger('XWFMailingList')
 from random import random
 # import transaction  # See line 1560 below
+from zope.cachedescriptors.property import Lazy
 from zope.component import createObject, getMultiAdapter
 from zope.globalrequest import getRequest
 from AccessControl import ClassSecurityInfo
@@ -38,7 +39,6 @@ from gs.group.list.email.text import Post
 from gs.group.list.sender import Sender
 from gs.group.list.store.interfaces import IStorageForEmailMessage
 from Products.XWFCore.XWFUtils import (get_group_by_siteId_and_groupId)
-from Products.GSGroup.groupInfo import IGSGroupInfo
 from .queries import MemberQuery, MessageQuery
 from .utils import pin, getMailFromRequest
 from .MailBoxerTools import lowerList, splitMail
@@ -126,7 +126,7 @@ checks that the person can post, and then processes the email."""
         if self.checkMail(message):
             return FALSE  # This code predates False...
         # Check for subscription/unsubscription-request
-        if self.requestMail(message, REQUEST):
+        if self.requestMail(message):
             return TRUE  # ...and True
         if self.cannotPost(message, REQUEST):
             return TRUE
@@ -413,35 +413,51 @@ assuming we can."""
         track which email belongs to which list."""
         return self.getId()
 
+    @Lazy
+    def site(self):
+        siteId = self.getProperty('siteId', '')
+        retval = getattr(self.site_root().Content, siteId)
+        return retval
+
+    @Lazy
+    def siteInfo(self):
+        retval = createObject('groupserver.SiteInfo', self.site)
+        return retval
+
+    @Lazy
+    def groupInfo(self):
+        retval = createObject('groupserver.GroupInfo', self.site,
+                              self.getId())
+        return retval
+
     def listMail(self, msg):
         '''Store a message and send it. Named for the old MailBoxer
         method'''
-        siteId = self.getProperty('siteId', '')
-        groupId = self.getId()
-        site = getattr(self.site_root().Content, siteId)
-        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         r = getRequest()  # The actual Zope request; FIXME
-
         # Store mail in the archive
-        storage = getMultiAdapter((groupInfo, msg), IStorageForEmailMessage)
+        storage = getMultiAdapter((self.groupInfo, msg),
+                                  IStorageForEmailMessage)
         storage.store()
 
         # Build the new message, using the headers from the old message
         m = 'Buiding a new email for post "{0}" in {1} ({2}) on {3}'
-        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id, siteId)
+        logMsg = m.format(msg.post_id, self.groupInfo.name,
+                          self.groupInfo.id, self.siteInfo.id)
         log.info(logMsg)
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
-        p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
+        p = Post(self.groupInfo.groupObj.messages, self.groupInfo,
+                 msg.post_id)
         textPage = getMultiAdapter((p, r), name='text')
         textBody = textPage()
         e.set_payload(textBody, 'utf-8')
 
         # Send the new pessage
         m = 'Sending an email for post "{0}" in {1} ({2}) on {3}'
-        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id, siteId)
+        logMsg = m.format(msg.post_id, self.groupInfo.name,
+                          self.groupInfo.id, self.siteInfo.id)
         log.info(logMsg)
-        sender = Sender(groupInfo.groupObj, r)
+        sender = Sender(self.groupInfo.groupObj, r)
         sender.send(e)
 
         return msg.post_id
@@ -487,12 +503,9 @@ calling ``self.listMail``'''
         m = '%s (%s) Processing moderation' %\
             (self.getProperty('title', ''), self.getId())
         log.info(m)
-
         mailString = getMailFromRequest(REQUEST)
-
         # TODO: erradicate splitMail usage
         (header, body) = splitMail(mailString)
-
         msg = EmailMessage(
             mailString, list_title=self.getProperty('title', ''),
             group_id=self.getId(), site_id=self.getProperty('siteId', ''),
@@ -500,7 +513,6 @@ calling ``self.listMail``'''
 
         # Get members
         memberlist = lowerList(self.getValueFor('maillist'))
-
         # Get individually moderated members
         ml = self.getValueFor('moderatedlist') or []
         moderatedlist = [_f for _f in lowerList(ml) if _f]
@@ -617,26 +629,23 @@ calling ``self.listMail``'''
             If the user can post, "self._v_last_email_checksum" is set to
             the ID of the message, which is calculated by
             "emailmessage.EmailMessage".'''
-
-        groupId = self.getId()
-        siteId = self.getProperty('siteId', '')
-        site = getattr(self.site_root().Content, siteId)
-        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-
         try:
             m = 'checkMail: {0} ({1}) checking message from <{2}>'
-            logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
+            logMsg = m.format(self.groupInfo.name, self.groupInfo.id,
+                              msg.sender)
             log.info(logMsg)
         except AttributeError:
             m = 'checkMail: problem checking message to "{0}"'
-            logMsg = m.format(groupId)
+            logMsg = m.format(self.groupInfo.id)
             log.error(logMsg)
             raise
 
-        ivm = getMultiAdapter((groupInfo.groupObj, msg), IGSValidMessage)
+        ivm = getMultiAdapter((self.groupInfo.groupObj, msg),
+                              IGSValidMessage)
         if ivm.validMessage:
             m = 'checkMail: {0} ({1}) message from <{2}> checks ok'
-            logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
+            logMsg = m.format(self.groupInfo.name, self.groupInfo.id,
+                              msg.sender)
             log.info(logMsg)
             # Checksum to ensure we are not in a tight loop.
             # --=mpj17=-- Is this in the right place?
@@ -650,46 +659,33 @@ calling ``self.listMail``'''
 
         return retval
 
-    def requestMail(self, msg, REQUEST):
+    def requestMail(self, msg):
         'Handle the email commands'
-        # get subject
-        # get email-address
-        email = msg.sender
-
-        siteId = self.getProperty('siteId', '')
-        groupId = self.getId()
-        site = getattr(self.site_root().Content, siteId)
-        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
         mailString = msg.message.as_string()
-        r = process_command(groupInfo.groupObj, mailString, REQUEST)
+        request = getRequest()  # The actual Zope request; FIXME
+        r = process_command(self.groupInfo.groupObj, mailString, request)
         if r == CommandResult.commandStop:
-            return email
+            return msg.sender
 
     def cannotPost(self, msg, REQUEST):
-        groupId = self.getId()
-        siteId = self.getProperty('siteId', '')
-
         userInfo = createObject('groupserver.UserFromId',
                                 self.site_root(), msg.sender_id)
-        site = getattr(self.site_root().Content, siteId)
-        groupInfo = createObject('groupserver.GroupInfo', site, groupId)
-        insts = (groupInfo.groupObj, userInfo)
+        insts = (self.groupInfo.groupObj, userInfo)
         postingInfo = getMultiAdapter(insts, IGSPostingUser)
         if not(postingInfo.canPost) and not(userInfo.anonymous):
             message = '%s (%s): %s' % (userInfo.name, userInfo.id,
                                        postingInfo.status)
             log.warning(message)
-            notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
-            siteInfo = createObject('groupserver.SiteInfo', site)
+            notifier = CanPostNotifier(self.groupInfo.groupObj, REQUEST)
             mailString = msg.message.as_string()
-            notifier.notify(userInfo, siteInfo, groupInfo,
+            notifier.notify(userInfo, self.siteInfo, self.groupInfo,
                             mailString)
             return message
         elif not(postingInfo.canPost) and userInfo.anonymous:
             # if all previous tests fail, it must be an unknown sender.
             m = 'cannotPost %s (%s): Mail received from unknown sender '\
                 '<%s>'
-            message = m % (self.getProperty('title', ''), groupId,
+            message = m % (self.getProperty('title', ''), self.groupInfo.id,
                            msg.sender)
             log.info(message)
             self.mail_reply(self, REQUEST, mailString)
@@ -698,9 +694,7 @@ calling ``self.listMail``'''
         # If here then everything is fine.
 
     def get_mailUserId(self, addr):
-        """ From the email address, get the user's ID.
-
-        """
+        """ From the email address, get the user's ID."""
         return self.acl_users.get_userIdByEmail(addr) or ''
 
     security.declarePrivate('mail_reply')
@@ -709,16 +703,15 @@ calling ``self.listMail``'''
         """ A hook used by the MailBoxer framework, which we provide here as
         a clean default. """
         # The email message that is sent to unknown email addresses
-        siteId = self.getProperty('siteId', '')
         groupId = self.getId()
-        group = get_group_by_siteId_and_groupId(self, siteId, groupId)
-        groupInfo = IGSGroupInfo(group)
+        group = get_group_by_siteId_and_groupId(self, self.siteInfo.id,
+                                                groupId)
         emailAddress = message_from_string(message)['From']
 
         notifier = UnknownEmailNotifier(group, REQUEST)
         notifier.notify(emailAddress, message)
         m = '%s (%s) sent Unknown Email Address notification to <%s>' % \
-            (groupInfo.name, groupInfo.id, emailAddress)
+            (self.groupInfo.name, self.groupInfo.id, emailAddress)
         log.info(m)
 
 
@@ -730,9 +723,7 @@ manage_addXWFMailingListForm = PageTemplateFile(
 
 def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
                              REQUEST=None):
-    """ Add an XWFMailingList to a container.
-
-    """
+    """ Add an XWFMailingList to a container."""
     ob = XWFMailingList(id, title, mailto)
     self._setObject(id, ob)
     ob = getattr(self, id)
