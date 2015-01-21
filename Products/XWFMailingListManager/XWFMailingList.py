@@ -108,12 +108,8 @@ class XWFMailingList(Folder):
 
         self._properties = tuple(props)
         self._p_changed = 1
-
         return True
 
-    ###
-    # Public methods to be called via smtp2zope-gateway
-    ##
     security.declareProtected('View', 'manage_mailboxer')
 
     def manage_mailboxer(self, REQUEST):
