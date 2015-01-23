@@ -21,7 +21,6 @@ from logging import getLogger
 log = getLogger('XWFMailingList')
 from random import random
 # import transaction  # See line 1560 below
-from zope.cachedescriptors.property import Lazy
 from zope.component import createObject, getMultiAdapter
 from zope.globalrequest import getRequest
 from AccessControl import ClassSecurityInfo
@@ -79,6 +78,9 @@ class XWFMailingList(Folder):
         self.title = title
         self.hashkey = str(random())
         self.mailto = mailto
+        self.__site = None
+        self.__siteInfo = None
+        self.__groupInfo = None
 
     def valid_property_id(self, id):
         # A modified version of the 'valid_property_id' in the
@@ -409,21 +411,18 @@ assuming we can."""
         track which email belongs to which list."""
         return self.getId()
 
-    @Lazy
     def site(self):
         siteId = self.getProperty('siteId', '')
         retval = getattr(self.site_root().Content, siteId)
         return retval
 
-    @Lazy
     def siteInfo(self):
-        retval = createObject('groupserver.SiteInfo', self.site)
+        retval = createObject('groupserver.SiteInfo', self.site())
         return retval
 
-    @Lazy
     def groupInfo(self):
-        retval = createObject('groupserver.GroupInfo', self.site,
-                              self.getId())
+        retval = createObject('groupserver.GroupInfo',
+                              self.site(), self.getId())
         return retval
 
     def listMail(self, msg):
@@ -431,29 +430,29 @@ assuming we can."""
         method'''
         r = getRequest()  # The actual Zope request; FIXME
         # Store mail in the archive
-        storage = getMultiAdapter((self.groupInfo, msg),
-                                  IStorageForEmailMessage)
+        siteInfo = self.siteInfo()
+        groupInfo = self.groupInfo()
+        storage = getMultiAdapter((groupInfo, msg), IStorageForEmailMessage)
         storage.store()
 
         # Build the new message, using the headers from the old message
         m = 'Buiding a new email for post "{0}" in {1} ({2}) on {3}'
-        logMsg = m.format(msg.post_id, self.groupInfo.name,
-                          self.groupInfo.id, self.siteInfo.id)
+        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id,
+                          siteInfo.id)
         log.info(logMsg)
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
-        p = Post(self.groupInfo.groupObj.messages, self.groupInfo,
-                 msg.post_id)
+        p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
         textPage = getMultiAdapter((p, r), name='text')
         textBody = textPage()
         e.set_payload(textBody, 'utf-8')
 
         # Send the new pessage
         m = 'Sending an email for post "{0}" in {1} ({2}) on {3}'
-        logMsg = m.format(msg.post_id, self.groupInfo.name,
-                          self.groupInfo.id, self.siteInfo.id)
+        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id,
+                          siteInfo.id)
         log.info(logMsg)
-        sender = Sender(self.groupInfo.groupObj, r)
+        sender = Sender(groupInfo.groupObj, r)
         sender.send(e)
 
         return msg.post_id
@@ -626,22 +625,21 @@ calling ``self.listMail``'''
             the ID of the message, which is calculated by
             "emailmessage.EmailMessage".'''
         try:
+            groupInfo = self.groupInfo()
             m = 'checkMail: {0} ({1}) checking message from <{2}>'
-            logMsg = m.format(self.groupInfo.name, self.groupInfo.id,
-                              msg.sender)
+            logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
             log.info(logMsg)
         except AttributeError:
             m = 'checkMail: problem checking message to "{0}"'
-            logMsg = m.format(self.groupInfo.id)
+            logMsg = m.format(self.getId())
             log.error(logMsg)
             raise
 
-        ivm = getMultiAdapter((self.groupInfo.groupObj, msg),
+        ivm = getMultiAdapter((groupInfo.groupObj, msg),
                               IGSValidMessage)
         if ivm.validMessage:
             m = 'checkMail: {0} ({1}) message from <{2}> checks ok'
-            logMsg = m.format(self.groupInfo.name, self.groupInfo.id,
-                              msg.sender)
+            logMsg = m.format(groupInfo.name, groupInfo.id, msg.sender)
             log.info(logMsg)
             # Checksum to ensure we are not in a tight loop.
             # --=mpj17=-- Is this in the right place?
@@ -659,29 +657,30 @@ calling ``self.listMail``'''
         'Handle the email commands'
         mailString = msg.message.as_string()
         request = getRequest()  # The actual Zope request; FIXME
-        r = process_command(self.groupInfo.groupObj, mailString, request)
+        r = process_command(self.groupInfo().groupObj, mailString, request)
         if r == CommandResult.commandStop:
             return msg.sender
 
     def cannotPost(self, msg, REQUEST):
         userInfo = createObject('groupserver.UserFromId',
                                 self.site_root(), msg.sender_id)
-        insts = (self.groupInfo.groupObj, userInfo)
+        groupInfo = self.groupInfo()
+        insts = (groupInfo.groupObj, userInfo)
         postingInfo = getMultiAdapter(insts, IGSPostingUser)
         if not(postingInfo.canPost) and not(userInfo.anonymous):
             message = '%s (%s): %s' % (userInfo.name, userInfo.id,
                                        postingInfo.status)
             log.warning(message)
-            notifier = CanPostNotifier(self.groupInfo.groupObj, REQUEST)
+            notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
             mailString = msg.message.as_string()
-            notifier.notify(userInfo, self.siteInfo, self.groupInfo,
+            notifier.notify(userInfo, self.siteInfo(), groupInfo,
                             mailString)
             return message
         elif not(postingInfo.canPost) and userInfo.anonymous:
             # if all previous tests fail, it must be an unknown sender.
             m = 'cannotPost %s (%s): Mail received from unknown sender '\
                 '<%s>'
-            message = m % (self.getProperty('title', ''), self.groupInfo.id,
+            message = m % (self.getProperty('title', ''), groupInfo.id,
                            msg.sender)
             log.info(message)
             self.mail_reply(self, REQUEST, mailString)
@@ -700,14 +699,14 @@ calling ``self.listMail``'''
         a clean default. """
         # The email message that is sent to unknown email addresses
         groupId = self.getId()
-        group = get_group_by_siteId_and_groupId(self, self.siteInfo.id,
+        group = get_group_by_siteId_and_groupId(self, self.siteInfo().id,
                                                 groupId)
         emailAddress = message_from_string(message)['From']
 
         notifier = UnknownEmailNotifier(group, REQUEST)
         notifier.notify(emailAddress, message)
         m = '%s (%s) sent Unknown Email Address notification to <%s>' % \
-            (self.groupInfo.name, self.groupInfo.id, emailAddress)
+            (self.groupInfo().name, self.groupInfo().id, emailAddress)
         log.info(m)
 
 
