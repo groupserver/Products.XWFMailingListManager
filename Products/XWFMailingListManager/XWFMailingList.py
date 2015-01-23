@@ -445,6 +445,11 @@ assuming we can."""
         p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
         textPage = getMultiAdapter((p, r), name='text')
         textBody = textPage()
+        # Delete the Content-Transfer-Encoding header so the correct one is
+        # set when we add the payload.
+        # https://docs.python.org/2/library/email.message.html#email.message.Message.set_charset
+        if 'Content-Transfer-Encoding' in e:
+            del(e['Content-Transfer-Encoding'])
         e.set_payload(textBody, 'utf-8')
 
         # Send the new pessage
