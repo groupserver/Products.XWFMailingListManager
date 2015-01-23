@@ -667,12 +667,12 @@ calling ``self.listMail``'''
         groupInfo = self.groupInfo()
         insts = (groupInfo.groupObj, userInfo)
         postingInfo = getMultiAdapter(insts, IGSPostingUser)
+        mailString = msg.message.as_string()
         if not(postingInfo.canPost) and not(userInfo.anonymous):
             message = '%s (%s): %s' % (userInfo.name, userInfo.id,
                                        postingInfo.status)
             log.warning(message)
             notifier = CanPostNotifier(groupInfo.groupObj, REQUEST)
-            mailString = msg.message.as_string()
             notifier.notify(userInfo, self.siteInfo(), groupInfo,
                             mailString)
             return message
@@ -705,8 +705,9 @@ calling ``self.listMail``'''
 
         notifier = UnknownEmailNotifier(group, REQUEST)
         notifier.notify(emailAddress, message)
+        groupInfo = self.groupInfo()
         m = '%s (%s) sent Unknown Email Address notification to <%s>' % \
-            (self.groupInfo().name, self.groupInfo().id, emailAddress)
+            (groupInfo.name, groupInfo.id, emailAddress)
         log.info(m)
 
 
