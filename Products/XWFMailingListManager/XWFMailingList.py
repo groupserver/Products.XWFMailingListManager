@@ -442,14 +442,22 @@ assuming we can."""
         log.info(logMsg)
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
-        p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
-        textPage = getMultiAdapter((p, r), name='text')
-        textBody = textPage()
+        # The message could have been (is likely to have been) a
+        # multipart/mixed or multipart/alternative before we got to it
+        e.set_type('text/plain')
+        # Not that the boundary hurts, but it looks messy
+        if e.get_boundary():
+            e.del_param('boundary')
         # Delete the Content-Transfer-Encoding header so the correct one is
         # set when we add the payload.
         # https://docs.python.org/2/library/email.message.html#email.message.Message.set_charset
         if 'Content-Transfer-Encoding' in e:
             del(e['Content-Transfer-Encoding'])
+        # Now generate the text, which is a page in the context of a post
+        p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
+        textPage = getMultiAdapter((p, r), name='text')
+        textBody = textPage()
+        # Add the text to the message
         e.set_payload(textBody, 'utf-8')
 
         # Send the new pessage
