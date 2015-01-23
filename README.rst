@@ -80,6 +80,35 @@ similar, but it is used when someone posts from the Web (so it
 skips much if the checking, which it presumes has already
 happened).
 
+Moderation
+----------
+
+The code for moderating a post is also contained within the
+``Products.XWFMailingListManager.XWFMailingList`` class. It
+works, presumably, but it is fragile and lacks unit tests. The
+way moderation works is as follows:
+
+* A post comes into the mailing list. It is checked to see if the
+  member can post, as usual.
+
+* The member is then checked to see if he or she is in the
+  ``moderated`` list.
+
+  + If the member is moderated then the post is stored in the
+    ``mqueue`` folder of the mailing list object in the ZODB, and
+    everyone informed of the fact.
+  + If the member is unmoderated then the message is sent on.
+
+* A moderator then responds to the moderation by making an HTTP
+  ``GET`` request for ``manage_moderateMail``. This either
+
+  + Deletes the message, or 
+  + Sends the queued message through the message-processing queue
+    again.
+
+`We are not proud`_ of this code.
+
+.. _We are not proud: https://redmine.iopen.net/issues/249
 
 Acknowledgements
 ================
