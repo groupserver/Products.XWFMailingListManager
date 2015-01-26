@@ -201,8 +201,8 @@ Web) then ``manage_mailboxer`` should be used."""
                     else:
                         REQUEST.RESPONSE.setHeader(b'Content-type',
                                                    b'text/plain')
-                        return "MAIL NOT FOUND! MAYBE THE MAIL WAS ALREADY"\
-                            "PROCESSED."
+                        return "MAIL NOT FOUND! MAYBE THE MAIL WAS "\
+                            "ALREADY PROCESSED?"
                 else:
                     if hasattr(self, "mail_approve"):
                         return self.mail_approve(self, REQUEST,
@@ -230,7 +230,7 @@ Web) then ``manage_mailboxer`` should be used."""
                 else:
                     REQUEST.RESPONSE.setHeader(b'Content-type',
                                                b'text/plain')
-                    return "MAIL APPROVED\n\n%s" % mail
+                    return "MAIL APPROVED\n\n%s" % to_ascii(mail)
             else:
                 if hasattr(self, "mail_approve"):
                     return self.mail_approve(self, REQUEST,
@@ -238,12 +238,11 @@ Web) then ``manage_mailboxer`` should be used."""
                 else:
                     REQUEST.RESPONSE.setHeader(b'Content-type',
                                                b'text/plain')
-                    return "MAIL DISCARDED\n\n%s" % mail
+                    return "MAIL DISCARDED\n\n%s" % to_ascii(mail)
 
         if hasattr(self, "mail_approve"):
             return self.mail_approve(self, REQUEST, msg="INVALID_REQUEST")
         else:
-            REQUEST.RESPONSE.setHeader('Content-type', 'text/plain')
             return "INVALID REQUEST! Please check your PIN."
 
     security.declareProtected('Manage properties', 'setValueFor')
