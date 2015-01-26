@@ -188,7 +188,9 @@ Web) then ``manage_mailboxer`` should be used."""
         action = REQUEST.get('action', '')
         if (REQUEST.get('pin') == pin(self.getValueFor('mailto'),
                                       self.getValueFor('hashkey'))):
-            mqueue = self.restrictedTraverse(self.getValueFor('mailqueue'))
+            mqueueName = self.getValueFor('mailqueue')
+            mqueueName = mqueueName if mqueueName else 'mailq'
+            mqueue = self.restrictedTraverse(mqueueName)
             mid = REQUEST.get('mid', '-1')
 
             if not hasattr(mqueue, mid):
@@ -220,7 +222,8 @@ Web) then ``manage_mailboxer`` should be used."""
             mqueue.manage_delObjects([mid])
             if action == 'approve':
                 # relay mail to list
-                self.listMail(REQUEST)
+                message = self.message_from_request(REQUEST)
+                self.listMail(message)
                 if hasattr(self, "mail_approve"):
                     return self.mail_approve(self, REQUEST,
                                              msg="MAIL_APPROVE")
@@ -560,7 +563,7 @@ calling ``self.listMail``'''
             # fails...
             if not mqueue:
                 self.setValueFor('mailqueue', 'mqueue')
-                self.manage_addFolder('mqueue', 'Moderated Mail Queue')
+                self.manage_addFolder(b'mqueue', 'Moderated Mail Queue')
                 mqueue = self.mqueue
 
             title = "%s / %s" % (msg.subject, msg.get('from'))
