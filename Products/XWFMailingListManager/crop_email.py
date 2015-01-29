@@ -2,7 +2,7 @@
 
 
 def crop_email(text, lines=0, max_consecutive_comment=12,
-                max_consecutive_whitespace=3):
+               max_consecutive_whitespace=3):
     slines = text.split('\n')
     intro = []
     body = []
@@ -12,7 +12,7 @@ def crop_email(text, lines=0, max_consecutive_comment=12,
     consecutive_whitespace = 0
     for line in slines:
         if (line[:2] == '--' or line[:2] == '==' or line[:2] == '__' or
-            line[:2] == '~~' or line[:3] == '- -'):
+                line[:2] == '~~' or line[:3] == '- -'):
             bodystart = 1
 
         if bodystart:
@@ -34,7 +34,7 @@ def crop_email(text, lines=0, max_consecutive_comment=12,
             bodystart = 1
 
         if ((len(line) > 3)
-            and (line[:4] == '<' or line.lower().find('wrote:') != -1)):
+                and (line[:4] == '<' or line.lower().find('wrote:') != -1)):
             consecutive_comment += 1
         else:
             consecutive_comment = 0
