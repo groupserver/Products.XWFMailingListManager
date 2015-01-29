@@ -40,7 +40,7 @@ from gs.group.list.store.interfaces import IStorageForEmailMessage
 from Products.XWFCore.XWFUtils import (get_group_by_siteId_and_groupId)
 from .queries import MemberQuery, MessageQuery
 from .utils import pin, getMailFromRequest
-from .MailBoxerTools import lowerList, splitMail
+from .MailBoxerTools import splitMail
 UTF8 = 'utf-8'
 DIGEST = 3
 null_convert = lambda x: x
@@ -492,7 +492,8 @@ calling ``self.listMail``'''
         # get lower case email for comparisons
         email = msg.sender
         # Get moderators
-        moderatorlist = lowerList(self.getValueFor('moderator'))
+        moderatorlist = [mod.lower() for mod in
+                         self.getValueFor('moderator')]
         if self.getValueFor('moderated') and (email not in moderatorlist):
             # message to a moderated list... relay all mails from a
             # moderator
@@ -522,10 +523,10 @@ calling ``self.listMail``'''
             sender_id_cb=self.get_mailUserId)
 
         # Get members
-        memberlist = lowerList(self.getValueFor('maillist'))
+        memberlist = [member for member in self.getValueFor('maillist')]
         # Get individually moderated members
         ml = self.getValueFor('moderatedlist') or []
-        moderatedlist = [_f for _f in lowerList(ml) if _f]
+        moderatedlist = [_f.lower() for _f in ml if _f]
 
         unclosed = self.getValueFor('unclosed')
 
