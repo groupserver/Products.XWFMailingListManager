@@ -2,7 +2,7 @@
 ############################################################################
 #
 # Copyright © 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-#             2013, 2014 OnlineGroups.net and Contributors.
+#             2013, 2014, 2015 OnlineGroups.net and Contributors.
 # All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
@@ -55,38 +55,28 @@ setup(name='Products.XWFMailingListManager',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'pytz',
           'SQLAlchemy',
-          'zope.app.pagetemplate',
-          'zope.browserpage',
-          'zope.cachedescriptors',
           'zope.component',
-          'zope.datetime',
           'zope.globalrequest',
-          'zope.schema',
-          'zope.sqlalchemy',
-          'zope.tales',
+          'zope.interface',
           'AccessControl',
           'Zope2',
           'gs.cache[redis]',  # With Redis support
-          'gs.config[zope]',  # With Zope support
           'gs.core',
           'gs.database',
-          'gs.dmarc',
-          'gs.email',
           'gs.group.base',
           'gs.group.list.base',
           'gs.group.list.check',
           'gs.group.list.command',
+          'gs.group.list.email.text',
           'gs.group.list.sender',
           'gs.group.list.store',
           'gs.group.member.canpost',
-          'gs.group.member.leave',
           'gs.profile.notify',
-          'Products.CustomUserFolder',
           'Products.GSAuditTrail',
-          'Products.GSGroup',
-          'Products.GSGroupMember',
           'Products.GSProfile',
+          'Products.XWFCore',
       ],
       entry_points="""
       # -*- Entry points: -*-
