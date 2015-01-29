@@ -14,7 +14,6 @@
 ############################################################################
 from __future__ import absolute_import, unicode_literals
 from unittest import TestCase
-from Products.GSGroup import GSGroupInfo
 import Products.XWFMailingListManager.XWFMailingList  # lint:ok
 from Products.XWFMailingListManager.XWFMailingList import XWFMailingList
 
