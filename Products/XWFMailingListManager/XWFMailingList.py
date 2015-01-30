@@ -744,7 +744,7 @@ def manage_addXWFMailingList(self, id, mailto, title='Mailing List',
     self._setObject(id, ob)
     ob = getattr(self, id)
     ob.init_properties()
-    manage_addFolder(ob, 'archive', 'mailing list archives')
+    manage_addFolder(ob, b'archive', 'mailing list archives')
 
     if REQUEST is not None:
         return self.manage_main(self, REQUEST)
