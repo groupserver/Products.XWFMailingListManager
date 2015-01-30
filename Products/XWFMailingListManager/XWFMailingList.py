@@ -415,6 +415,10 @@ assuming we can."""
 
     def site(self):
         siteId = self.getProperty('siteId', '')
+        if not siteId:
+            m = '"siteId" for the mailing list "{0}" not set'
+            msg = m.format(self.getId())
+            raise ValueError(msg)
         retval = getattr(self.site_root().Content, siteId)
         return retval
 
