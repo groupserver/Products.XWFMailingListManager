@@ -230,7 +230,7 @@ Web) then ``manage_mailboxer`` should be used."""
                 else:
                     REQUEST.RESPONSE.setHeader(b'Content-type',
                                                b'text/plain')
-                    return "MAIL APPROVED\n\n%s" % to_ascii(mail)
+                    return "MAIL APPROVED"
             else:
                 if hasattr(self, "mail_approve"):
                     return self.mail_approve(self, REQUEST,
@@ -238,7 +238,7 @@ Web) then ``manage_mailboxer`` should be used."""
                 else:
                     REQUEST.RESPONSE.setHeader(b'Content-type',
                                                b'text/plain')
-                    return "MAIL DISCARDED\n\n%s" % to_ascii(mail)
+                    return "MAIL DISCARDED"
 
         if hasattr(self, "mail_approve"):
             return self.mail_approve(self, REQUEST, msg="INVALID_REQUEST")
