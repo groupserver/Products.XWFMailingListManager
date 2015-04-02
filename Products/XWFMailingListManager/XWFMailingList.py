@@ -189,7 +189,7 @@ Web) then ``manage_mailboxer`` should be used."""
         if (REQUEST.get('pin') == pin(self.getValueFor('mailto'),
                                       self.getValueFor('hashkey'))):
             mqueueName = self.getValueFor('mailqueue')
-            mqueueName = mqueueName if mqueueName else 'mailq'
+            mqueueName = to_ascii(mqueueName) if mqueueName else b'mailq'
             mqueue = self.restrictedTraverse(mqueueName)
             mid = REQUEST.get('mid', '-1')
 
@@ -654,6 +654,13 @@ calling ``self.listMail``'''
             logMsg = m.format(self.getId())
             log.error(logMsg)
             raise
+
+        if (self.getId() != groupInfo.id):
+            m = 'checkMail: list ID ({0}) does not equal group ID ({1}) '\
+                'when checking message from <{2}>'
+            logMsg = m.format(self.getId(), groupInfo.id, msg.sender)
+            log.warn(logMsg)
+            return 'ID missmatch'  # Sorry Dijkstra
 
         ivm = getMultiAdapter((groupInfo.groupObj, msg),
                               IGSValidMessage)
