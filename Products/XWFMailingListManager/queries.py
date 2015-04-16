@@ -26,7 +26,7 @@ class MessageQuery(object):
             self.post_id_mapTable = None
 
     def __add_std_where_clauses(self, statement, table,
-                                       site_id, group_ids=[]):
+                                       site_id, group_ids=None):
         '''Add the standard "where" clauses to an SQL statement
 
         DESCRIPTION
@@ -46,7 +46,7 @@ class MessageQuery(object):
         SIDE EFFECTS
         '''
         statement.append_whereclause(table.c.site_id == site_id)
-        if group_ids:
+        if group_ids is not None:
             inStatement = table.c.group_id.in_(group_ids)
             statement.append_whereclause(inStatement)
         return statement
@@ -121,7 +121,9 @@ class MessageQuery(object):
 
         return topic_id
 
-    def latest_posts(self, site_id, group_ids=[], limit=None, offset=0):
+    def latest_posts(self, site_id, group_ids=None, limit=None, offset=0):
+        if group_ids is None:
+            group_ids = []
         statement = self.postTable.select(limit=limit, offset=offset,
                                  order_by=sa.desc(self.postTable.c.date))
         self.__add_std_where_clauses(statement, self.postTable,
@@ -135,7 +137,9 @@ class MessageQuery(object):
 
         return retval
 
-    def post_count(self, site_id, group_ids=[]):
+    def post_count(self, site_id, group_ids=None):
+        if group_ids is None:
+            group_ids = []
         statement = sa.select([sa.func.sum(self.topicTable.c.num_posts)])
         self.__add_std_where_clauses(statement, self.topicTable,
                                            site_id, group_ids)
@@ -148,7 +152,9 @@ class MessageQuery(object):
         assert retval >= 0
         return retval
 
-    def topic_count(self, site_id, group_ids=[]):
+    def topic_count(self, site_id, group_ids=None):
+        if group_ids is None:
+            group_ids = []
         statement = sa.select([sa.func.count(self.topicTable.c.topic_id)])
         self.__add_std_where_clauses(statement, self.topicTable,
                                      site_id, group_ids)
@@ -159,14 +165,14 @@ class MessageQuery(object):
         assert retval >= 0
         return retval
 
-    def latest_topics(self, site_id, group_ids=[], limit=None, offset=0):
+    def latest_topics(self, site_id, group_ids=None, limit=None, offset=0):
         """
             Returns:
              ({'topic_id': ID, 'subject': String, 'first_post_id': ID,
                'last_post_id': ID, 'count': Int, 'last_post_date': Date,
-               'group_id': ID, 'site_id': ID}, ...)
-
-        """
+               'group_id': ID, 'site_id': ID}, ...)"""
+        if group_ids is None:
+            group_ids = []
         tt = self.topicTable
         statement = tt.select(limit=limit, offset=offset,
                               order_by=sa.desc(tt.c.last_post_date))
