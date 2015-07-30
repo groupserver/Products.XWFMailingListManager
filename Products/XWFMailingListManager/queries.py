@@ -46,7 +46,7 @@ class MessageQuery(object):
         SIDE EFFECTS
         '''
         statement.append_whereclause(table.c.site_id == site_id)
-        if group_ids is not None:
+        if group_ids:
             inStatement = table.c.group_id.in_(group_ids)
             statement.append_whereclause(inStatement)
         return statement
