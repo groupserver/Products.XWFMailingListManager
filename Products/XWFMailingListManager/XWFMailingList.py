@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 ############################################################################
 #
-# Copyright IOPEN Technologies Ltd., 2003, Copyright © 2014 OnlineGroups.net
-# and Contributors. All Rights Reserved.
+# Copyright © IOPEN Technologies Ltd., 2003,
+# Copyright © 2014, 2015 OnlineGroups.net and Contributors.
+#
+# All Rights Reserved.
 #
 # This software is subject to the provisions of the Zope Public License,
 # Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
@@ -34,7 +36,6 @@ from gs.profile.notify import NotifyUser
 from gs.group.list.base import EmailMessage
 from gs.group.list.check.interfaces import IGSValidMessage
 from gs.group.list.command import process_command, CommandResult
-from gs.group.list.email.text import Post
 from gs.group.list.sender import Sender
 from gs.group.list.store.interfaces import IStorageForEmailMessage
 from Products.XWFCore.XWFUtils import (get_group_by_siteId_and_groupId)
@@ -441,38 +442,30 @@ assuming we can."""
         storage = getMultiAdapter((groupInfo, msg), IStorageForEmailMessage)
         storage.store()
 
+        # Now generate the text, which is a page in the context of a post
+        # Emulate how zope.publisher will do this
+        log.info('Buiding a new email for post "%s" in %s (%s) on %s',
+                 msg.post_id, groupInfo.name, groupInfo.id, siteInfo.id)
+        messages = getattr(groupInfo.groupObj, 'messages')
+        emailTraversal = getMultiAdapter((messages, r), name='gs-group-list-email')
+        emailTraversal.publishTraverse(r, msg.post_id)  # This loads the post from the RDB
+        # Call the message, causing it to render and dump out the plain-text and HTML versions
+        # and chuck them into a multipart/alternative message
+        outgoingEmail = emailTraversal()
+
         # Build the new message, using the headers from the old message
-        m = 'Buiding a new email for post "{0}" in {1} ({2}) on {3}'
-        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id,
-                          siteInfo.id)
-        log.info(logMsg)
         newMail = "%s\r\n\r\nDropped text." % (msg.headers)
         e = Parser().parsestr(newMail, headersonly=True)
-        # The message could have been (is likely to have been) a
-        # multipart/mixed or multipart/alternative before we got to it
-        e.set_type('text/plain')
-        # Not that the boundary hurts, but it looks messy
-        if e.get_boundary():
-            e.del_param('boundary')
-        # Delete the Content-Transfer-Encoding header so the correct one is
-        # set when we add the payload.
-        # https://docs.python.org/2/library/email.message.html#email.message.Message.set_charset
-        if 'Content-Transfer-Encoding' in e:
-            del(e['Content-Transfer-Encoding'])
-        # Now generate the text, which is a page in the context of a post
-        p = Post(groupInfo.groupObj.messages, groupInfo, msg.post_id)
-        textPage = getMultiAdapter((p, r), name='text')
-        textBody = textPage()
-        # Add the text to the message
-        e.set_payload(textBody, 'utf-8')
+        # Add the headers to the message
+        for header, val in e.items():
+            if header not in outgoingEmail:
+                outgoingEmail.add_header(header, val)
 
         # Send the new pessage
-        m = 'Sending an email for post "{0}" in {1} ({2}) on {3}'
-        logMsg = m.format(msg.post_id, groupInfo.name, groupInfo.id,
-                          siteInfo.id)
-        log.info(logMsg)
+        log.info('Sending an email for post "%s" in %s (%s) on %s',
+                 msg.post_id, groupInfo.name, groupInfo.id, siteInfo.id)
         sender = Sender(groupInfo.groupObj, r)
-        sender.send(e)
+        sender.send(outgoingEmail)
 
         return msg.post_id
 
