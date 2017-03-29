@@ -337,7 +337,7 @@ assuming we can."""
 
     security.declareProtected('Access contents information', 'getValueFor')
 
-    def getValueFor(self, key):
+    def getValueFor(self, key,forSending=False):
         """ getting the maillist and moderatedlist is a special case,
         working in with the XWFT group framework."""
 
@@ -369,7 +369,10 @@ assuming we can."""
                 if key == 'maillist':
                     addresses = memberQuery.get_member_addresses(
                         self.getProperty('siteId'), self.getId(),
-                        self.get_memberUserObjects)
+                        #If this is for checking senders, get all the member email addresses
+                        #Even the ones that aren't preferred
+                        #Even if they are using Digest or Web Only for delivery
+                        self.get_memberUserObjects,not forSending, not forSending)
                 elif key == 'digestmaillist':
                     addresses = memberQuery.get_digest_addresses(
                         self.getProperty('siteId'), self.getId(),
@@ -519,8 +522,8 @@ calling ``self.listMail``'''
             group_id=self.getId(), site_id=self.getProperty('siteId', ''),
             sender_id_cb=self.get_mailUserId)
 
-        # Get members
-        memberlist = [member for member in self.getValueFor('maillist')]
+        # Get members who are on the list, whether or not they're receiving email
+        memberlist = [member for member in self.getValueFor('maillist',True)]
         # Get individually moderated members
         ml = self.getValueFor('moderatedlist') or []
         moderatedlist = [_f.lower() for _f in ml if _f]
@@ -547,8 +550,8 @@ calling ``self.listMail``'''
                 log.info(m)
 
         elif (msg.sender in memberlist) or unclosed:
-            # --=mpj17=-- If we are here, then we are moderating *everyone*
-            moderate = True
+            #There is no one moderated currently, and this person is on the list
+            moderate = False
         else:
             self.mail_reply(self, REQUEST, mailString)
             return msg.sender
@@ -622,6 +625,7 @@ calling ``self.listMail``'''
                                      n_dict=nDict)
 
             return msg.sender
+        return False
 
     def checkMail(self, msg):
         '''Check the email for loops and spam.
